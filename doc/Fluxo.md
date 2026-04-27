@@ -288,7 +288,7 @@
 
 - O administrador aperta em "Confirmar".
 
-- O iten é atualizado com a novo valor e é adicionado na aba "Ofertas".
+- O item é atualizado com a novo valor e é adicionado na aba "Ofertas".
 
 ### Caso de Uso 15: Gerenciar Gatos a mostra
 
