@@ -226,6 +226,17 @@
 - O sistema realoca o cliente para o menu do seu perfil com  as configurações da sua conta.
 
 
+#### Fluxo Alternativo A: Cancelar Logout
+
+- O usuário acessa o menu do seu perfil com as configurações da sua conta e aperta o botão de "Logout".
+
+- O sistema apresenta uma mensagem perguntando "Quer confirmar o Logout?".
+
+- O usuário decide que não quer mais fazer Logout e aperta o botão cancelar.
+
+- O sistema redireciona o usuário para o menu do seu perfil com  as configurações da sua conta.
+
+
 ### Caso de Uso 6: Busca de produtos.
 
 #### Atores: 
@@ -248,6 +259,41 @@
 
 - A busca é finalizada.
 
+
+
+#### Fluxo Alternativo A: Campo vazio
+
+- O sistema apresenta a página inicial do site.
+
+- O usuário aperta na barra de pesquisa.
+
+- O usuário não preenche o campo e aperta a barra de pesquisa.
+
+- O sistema analisa e pede que o usuário digite o tipo de refeição desejada.
+
+- O usuário digita a refeição desejada e clica na barra de pesquisa.
+
+- O sistema verifica no banco de dados se tem a refeição desejada.
+
+- O banco de dados retorna verdadeiro.
+
+- O sistema direciona o usuário para a página com a flor desejada.
+
+
+#### Fluxo Alternativo B: Estoque vazio
+
+- O sistema apresenta a página inicial do site.
+
+- O usuário aperta na barra de pesquisa.
+
+- O usuário digita o tipo de flor que deseja e aperta no botão "Enter".
+
+- O sistema consulta o banco de dados.
+
+- O banco de dados retorna negativo.
+
+- O sistema apresenta mensagem dizendo que a flor digitada não tem no momento.
+
 ### Caso de uso 7: Carrinho de compras.
 
 #### Atores: 
@@ -269,6 +315,31 @@
 - O cliente finaliza a compra e é redirecionado para a pagina inicial.
 
 
+#### Fluxo alternativo A: Cliente não comprar o produto no carrinho
+
+- O cliente clica no ícone do "carrinho de compras".
+
+- O sistema redireciona o cliente para a página contendo os itens desejados.
+
+- O cliente não compra os itens desejados.
+
+- O item permanece no carrinho de compras.
+
+- O cliente vola para a pagina principal.
+
+ #### Fluxo Alternativo B: Cliente não adicionar produtos no carrinho.
+
+- O cliente clica no ícone do "carrinho de compras".
+
+- O sistema redireciona o cliente para a página do carrinho.
+
+- O sistema não identifica nenhum item no carrinho de compras.
+
+- O sistema manda um texto avisando ao cliente que não tem itens no carrinho.
+
+- O sistema entrega a opção de adicionar itens ao carrinho e retorna a pagina "menu".
+
+
 ### Caso de Uso 8: Interação com os gatos
 
 #### Atores:
@@ -281,7 +352,9 @@
 
 - O sistema redireciona o cliente para a página contendo vários gatos.
 
-- O cliente usa o cursor para os movimentar como quiser.
+- O cliente clica no gato desejado para saber suas informações.
+
+- Se o gato for adotavel, o cliente clica em "contate-nos" caso desejar adota-lo.
 
 - O cliente volta para a página principal do menu.
 
@@ -299,11 +372,24 @@
 
 - O cliente clica no botão "Editar Carrinho".
 
-- O Cliente atualiza os campos do pedido(QTD de itens, ingredientes do item, tamanho do item).
+- O Cliente atualiza os campos do pedido (QTD de itens, ingredientes do item, tamanho do item).
 
 - O cliente clica em "Confirmar".
 
 - O carrinho é atualizado.
+
+
+#### Fluxo Alternativo A: Cancelar  Edição.
+
+- O cliente clica no ícone do "carrinho de compras".
+
+- O sistema redireciona o cliente para a página contendo os itens desejados.
+
+- O cliente clica no botão "Editar Carrinho".
+
+- O cliente clica em "cancelar edição".
+
+- O cliente é rediricionado para a pagina do carrinho. 
 
 ### Caso de Uso 10: Excluir itens do carrinho de compras.
 
@@ -324,7 +410,21 @@
 - O cliente clica em "Confirmar".
 
 - O carrinho é atualizado.
-- 
+
+#### Fluxo Alternativo A: Cancelar exclusão
+
+- O cliente clica no ícone do "carrinho de compras".
+
+- O sistema redireciona o cliente para a página contendo os itens desejados.
+
+- O cliente clica no botão "Excluir item".
+
+- O cliente clica no botão "Cancelar exclusão".
+
+- O cliente é rediricionado na pagina do carrinho.
+
+
+  
 ### Caso de Uso 11: Gerenciar Catálogo de produtos.
 
 #### Atores: 
@@ -346,6 +446,48 @@
 - Clica em "Salvar".
 
 - O sistema adiciona o novo produto ao catálogo.
+
+#### Fluxo Alternativo A: Editar Catálogo de produtos.
+
+- O administrador acessa o sistema.
+
+- Seleciona a opção "Catálogo de Produtos".
+
+- Visualiza a lista de produtos cadastrados.
+
+- O administrador clica em "Editar Catálogo de produtos".
+
+- O Administrador clica no prdouto desejado.
+
+- O administrador pode alterar as informações do prdouto (nome, descrição, preço, imagem, categoria).
+
+- O admnistrador clica em "salvar".
+
+- - O sistema retorna para o banco de dados.
+
+- O sistema atualiza a pagina.
+
+#### Fluxo Alternativo B: Excluir produto do Catálogo de Produtos.
+
+- O administrador acessa o sistema.
+
+- Seleciona a opção "Catálogo de Produtos".
+
+- Visualiza a lista de produtos cadastrados.
+
+- O administrador clica em "Editar Catálogo de produtos".
+
+- O Administrador clica no prdouto desejado.
+
+- O admnistrador clica em "excluir produto".
+
+- O administrador clica em "Confirmar Exclusão".
+
+- O sistema retorna para o banco de dados.
+
+- o sistema atualiza a pagina.
+
+  
 
 ### Caso de Uso 12: Editar pedidos.
 
