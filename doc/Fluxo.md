@@ -22,6 +22,49 @@
   
 - O sistema encaminha o cliente para a página principal do site.
 
+#### Fluxo Alternativo A: O email já está cadastrado
+
+- O sistema apresenta formulário de cadastro.
+ 
+- O usuário preenche os campos.
+
+- O sistema consulta o banco de dados.
+
+- O banco de dados retorna que o email informado já está em uso.
+
+- O sistema exibe uma mensagem de erro informando que o email digitado já está em uso.
+
+- O usuário digita um novo email no formulário e tenta novamente.
+
+- O sistema registra as informações no banco de dados e informa usuário.
+
+#### Fluxo Alternativo B: Campo vazio
+
+- O sistema apresenta formulário de cadastro.
+
+- O usuário não preenche um dos campos e clica no botão de "Criar Conta"
+
+- O sistema analisa os campos de cadastro e pede que o usuário preencha todos os campos.
+
+- O usuário preenche todos os campos  e clica no botão de "Criar Conta".
+
+- O sistema registra as informações no banco de dados e informa usuário.
+
+
+#### Fluxo Alternativo C: Senha diferente dos padrões exigidos
+
+- O sistema apresenta formulário de cadastro.
+
+- O usuário insere uma senha.
+
+- O sistema analisa se a senha está dentro dos padrões exigidos  (mínimo 8 caracteres e 1 símbolo)
+
+- O sistema exibe uma mensagem de erro e informa ao usuário que a senha está fora dos padrões.
+
+- O sistema exibe uma mensagem sugerindo que o usuário coloque a senha correta.
+  
+- O sistema registra as informações no banco de dados e informa usuário.
+
 ### Caso de Uso 2: Login.
 
 #### Atores: 
@@ -41,6 +84,46 @@
 - O banco de dados retorna uma confirmação positiva.
 
 - O sistema encaminha o cliente para a página principal do site.
+
+#### Fluxo Alternativo A: Email inválido
+
+- O sistema apresenta a página de formulário de Login.
+
+- O usuário insere um email.
+
+- O sistema consulta o banco de dados.
+
+- O banco de dados retorna que o email informado já está em uso.
+
+- O sistema exibe uma mensagem dizendo que o email está inválido e sugere que o usuário digite outro email.
+
+#### Fluxo Alternativo B: Senha inválida
+
+- O sistema apresenta a página de formulário de Login.
+
+- O usuário insere uma senha.
+
+- O sistema consulta o banco de dados.
+
+- O banco de dados retorna que a senha informada está inválida.
+
+- O sistema exibe uma mensagem dizendo que a senha está invalida e sugere que o usuário insira uma senha correta.
+
+#### Fluxo Alternativo C: Campo vazio
+
+- O sistema apresenta a página de formulário de Login.
+
+- O usuário não preenche um dos campos e clica no botão de "Login".
+
+- O sistema analisa os campos de cadastro e pede que o usuário preencha todos os campos.
+
+- O usuário preenche todos os campos (insere email e senha)  e clica no botão de "Login".
+
+- O sistema verifica no banco de dados se as informações estão corretas.
+
+- O banco de dados retorna verdadeiro.
+
+- O sistema redireciona o usuário para a página inicial do site.
 
 ### Caso de Uso 3: Excluir cliente.
 
@@ -72,6 +155,28 @@
   
 - O sistema realoca o cliente para a página de login e cadastro.
 
+#### Fluxo Alternativo A: Senha incorreta.
+
+- O usuário acessa o menu do seu perfil com as configurações da sua conta e aperta no botão "Excluir conta".
+
+- O sistema pede que o usuário insira senha para continuar.
+
+- O usuário insere a senha.
+
+- O sistema verifica no banco de dados se a senha está correta.
+
+- O banco de dados retorna negativo.
+
+- O sistema envia uma mensagem de erro e pede que ao usuário que ele insira a senha correta.
+
+- O usuário insere a senha correta.
+
+- O sistema verifica no banco de dados se a senha está correta.
+
+- O banco de dados retorna uma confirmação positiva.
+
+- O sistema envia uma mensagem de sucesso e envia o usuário para a página de cadastro e login. 
+
 ### Caso de Uso 4: Editar dados de cadastro.
 
 #### Atores: 
@@ -89,6 +194,18 @@
 - O cliente edita dados do seu cadastro e aperta o botão confirmar.
   
 - O sistema edita os dados do cliente no banco de dados.
+
+#### Fluxo Alternativo A: Cancelar edição
+
+- O usuário acessa o menu do seu perfil com as configurações da sua conta.
+
+- O usuário aperta o botão "editar dados de cadastro da conta".
+  
+- O sistema exibe os dados de cadastro do usuário.
+
+- O usuário decide que não quer mais editar e aperta o botão cancelar.
+
+- O sistema redireciona o usuário para o menu do seu perfil com  as configurações da sua conta.
 
 ### Caso de Uso 5: Logout
 
@@ -121,13 +238,13 @@
 
 - O cliente aperta na barra de pesquisa.
 
-- O cliente digita o tipo de flor que deseja.
+- O cliente digita o tipo de refeição que deseja.
 
 - O cliente aperta no botão "Enter".
 
 - O sistema consulta o banco de dados.
 
-- O banco retorna a flor desejada.
+- O banco retorna a refeição desejada.
 
 - A busca é finalizada.
 
