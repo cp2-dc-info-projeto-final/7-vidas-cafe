@@ -277,7 +277,7 @@
 
 - O banco de dados retorna verdadeiro.
 
-- O sistema direciona o usuário para a página com a flor desejada.
+- O sistema direciona o usuário para a página com a refeição desejada.
 
 
 #### Fluxo Alternativo B: Estoque vazio
@@ -286,13 +286,13 @@
 
 - O usuário aperta na barra de pesquisa.
 
-- O usuário digita o tipo de flor que deseja e aperta no botão "Enter".
+- O usuário digita o tipo de refeição que deseja e aperta no botão "Enter".
 
 - O sistema consulta o banco de dados.
 
 - O banco de dados retorna negativo.
 
-- O sistema apresenta mensagem dizendo que a flor digitada não tem no momento.
+- O sistema apresenta mensagem dizendo que a refeição digitada não tem no momento.
 
 ### Caso de uso 7: Carrinho de compras.
 
