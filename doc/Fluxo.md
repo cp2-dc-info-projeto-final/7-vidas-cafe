@@ -236,7 +236,6 @@
 
 - O sistema redireciona o usuário para o menu do seu perfil com  as configurações da sua conta.
 
-
 ### Caso de Uso 6: Busca de produtos.
 
 #### Atores: 
@@ -314,8 +313,7 @@
   
 - O cliente finaliza a compra e é redirecionado para a pagina inicial.
 
-
-#### Fluxo alternativo A: Cliente não comprar o produto no carrinho
+#### Fluxo Alternativo A: Cliente não comprar o produto no carrinho
 
 - O cliente clica no ícone do "carrinho de compras".
 
@@ -339,8 +337,7 @@
 
 - O sistema entrega a opção de adicionar itens ao carrinho e retorna a pagina "menu".
 
-
-### Caso de Uso 8: Interação com os gatos
+### Caso de Uso 8: Adoção de gatos.
 
 #### Atores:
 
@@ -354,9 +351,21 @@
 
 - O cliente clica no gato desejado para saber suas informações.
 
-- Se o gato for adotavel, o cliente clica em "contate-nos" caso desejar adota-lo.
+- Se o gato for adotavel, o cliente clica em "Contate-nos" caso desejar adota-lo.
 
-- O cliente volta para a página principal do menu.
+- O sitema disponibiliza o contato de whatsapp da cafeteria.
+
+#### Fluxo Alternativo A: O gato não é adotável.
+
+- O cliente clica no ícone "Gatos".
+
+- O sistema redireciona o cliente para a página contendo vários gatos.
+
+- O cliente clica no gato desejado para saber suas informações.
+
+- Se o gato não for adotável, o cliente clica na opção "Voltar".
+
+- O sistema redireciona o cliente para a aba "Gatos".
 
 ### Caso de Uso 9: Editar carrinho de compras.
 
@@ -378,8 +387,7 @@
 
 - O carrinho é atualizado.
 
-
-#### Fluxo Alternativo A: Cancelar  Edição.
+#### Fluxo Alternativo A: Cancelar Edição.
 
 - O cliente clica no ícone do "carrinho de compras".
 
@@ -423,8 +431,6 @@
 
 - O cliente é rediricionado na pagina do carrinho.
 
-
-  
 ### Caso de Uso 11: Gerenciar Catálogo de produtos.
 
 #### Atores: 
@@ -487,8 +493,6 @@
 
 - o sistema atualiza a pagina.
 
-  
-
 ### Caso de Uso 12: Editar pedidos.
 
 #### Atores:
@@ -525,7 +529,41 @@
 
 - O administrador pode optar por editar ou excluir o cadastro.
 
-### Caso de Uso 14: Adicionar Promoções.
+#### Fluxo Alternativo A: Editar clientes.
+
+- O administrador acessa o sistema.
+
+- O administrador vai até a seção "Clientes".
+
+- O administrador visualiza a lista de clientes cadastrados.
+
+- O administrador clica sobre um cliente para ver detalhes.
+
+- O administrador clica em "Editar".
+
+- O administrador modifica as informações do cliente(email, senha e etcetera).
+
+- O administrador clica em "Salvar".
+
+- O sistema atualiza o banco de dados.
+
+#### Fluxo Alternativo B: Exluir clientes.
+
+- O administrador acessa o sistema.
+
+- O administrador vai até a seção "Clientes".
+
+- O administrador visualiza a lista de clientes cadastrados.
+
+- O administrador clica sobre um cliente para ver detalhes.
+
+- O administrador clica em "Excluir".
+
+- O sistema apaga os dados do cliente.
+
+- O sistema atualiza.
+
+### Caso de Uso 14: Gerenciar Promoções.
 
 #### Atores:
 
@@ -549,7 +587,35 @@
 
 - O item é atualizado com a novo valor e é adicionado na aba "Ofertas".
 
-### Caso de Uso 15: Gerenciar Gatos a mostra
+#### Fluxo Alternativo A: Editar Promoções.
+
+- O administrador entra na aba "Promoções".
+
+- O administrador clica em um produto.
+
+- O administrador clica em "Editar".
+
+- O administrador modifica as informaçoes da promoção(Porcentagem da promoção e tempo de promoção).
+
+- O administrador clica em "Salvar".
+
+- O sistema atualiza com as novas informações.
+
+#### Fluxo Alternativo B: Exluir Promoções.
+
+-- O administrador entra na aba "Promoções".
+
+- O administrador clica em um produto.
+
+- O administrador clica em "Excluir"
+
+- O sistema pergunta se o administrador tem certeza desta ação.
+
+- O administrador clica em "Sim".
+
+- O sistema excluir a promoção e retira o produto da aba "Promoções".
+
+### Caso de Uso 15: Gerenciar Gatos a mostra.
 
 #### Atores:
 
@@ -569,13 +635,25 @@
 
 - O gato é adicionado a aba "Gatos".
 
-### Caso de Uso 16: Excluir Gato
+#### Fluxo Alternativo A: Editar Gatos
 
-#### Atores:
+- O administra clica na aba "Gatos".
 
-- Administrador
+- O administrador clica em "Opções".
 
-#### Fluxo principal:
+- O administrador clica no gato desejado.
+
+- O administrador clica em "Editar".
+
+- O sistema abre uma aba com todas as informções editáveis do gato.
+
+- O administrador altera as informações do gato.
+
+- O administrador clica em "Salvar".
+
+- O sistema atualiza com as novas informações do gato.
+
+#### Fluxo Alternativo B: Excluir Gatos
 
 - O administra clica na aba "Gatos".
 
