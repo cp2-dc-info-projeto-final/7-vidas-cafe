@@ -603,7 +603,7 @@
 
 #### Fluxo Alternativo B: Exluir Promoções.
 
--- O administrador entra na aba "Promoções".
+- O administrador entra na aba "Promoções".
 
 - O administrador clica em um produto.
 
