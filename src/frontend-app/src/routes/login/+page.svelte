@@ -83,6 +83,12 @@
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </Button>
+          <Button 
+            class="w-full" 
+            href="http://127.0.0.1:5173/users/new"
+          >
+            Cadastre-se
+          </Button>
       </form>
     </Card>
   </div>
