@@ -12,11 +12,6 @@
 
   let user: UserFormData = { id: 0, login: '', email: '', senha: '', role: 'user' }; // dados do form
   
-  // Opções de roles
-  const roleOptions = [
-    { value: 'user', name: 'Usuário' },
-    { value: 'admin', name: 'Administrador' }
-  ];
   let loading = false;
   let error = '';
   let fieldErrors: ApiFieldError[] = [];
@@ -118,8 +113,8 @@
     {/if}
     <!-- Campo login -->
     <div>
-      <Label for="login">Login</Label>
-      <Input id="login" bind:value={user.login} placeholder="Digite o login" required class="mt-1" />
+      <Label for="login">Nome de Usuário</Label>
+      <Input id="login" bind:value={user.login} placeholder="Digite o Nome do usuário" required class="mt-1" />
       {#if errorOf('login')}
         <div class="mt-1 text-sm text-red-500">{errorOf('login')}</div>
       {/if}
@@ -146,14 +141,6 @@
       />
       {#if errorOf('senha')}
         <div class="mt-1 text-sm text-red-500">{errorOf('senha')}</div>
-      {/if}
-    </div>
-    <!-- Campo role -->
-    <div>
-      <Label for="role">Perfil</Label>
-      <Select id="role" bind:value={user.role} items={roleOptions} class="mt-1" />
-      {#if errorOf('role')}
-        <div class="mt-1 text-sm text-red-500">{errorOf('role')}</div>
       {/if}
     </div>
     <!-- Botões de ação -->

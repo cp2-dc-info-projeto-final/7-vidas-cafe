@@ -49,12 +49,12 @@
     <Card class="p-6 w-full">
       <form on:submit|preventDefault={handleLogin} class="space-y-6">
           <div>
-            <Label for="login" class="mb-2">Login</Label>
+            <Label for="login" class="mb-2">Nome de Usuário</Label>
             <Input
               id="login"
               type="text"
               bind:value={login}
-              placeholder="Digite seu login"
+              placeholder="Digite seu nome de usuário"
               required
             />
           </div>
