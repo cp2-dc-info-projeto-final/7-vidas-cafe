@@ -100,7 +100,7 @@
 </script>
 
 <!-- Card do formulário -->
-<Card class="max-w-md mx-auto mt-10 p-0 overflow-hidden shadow-lg border border-gray-200 rounded-lg">
+<Card class="max-w-md mx-auto mt-10 p-0 overflow-hidden shadow-lg border border-[#BE946F] bg-[#BE946F] rounded-lg">
   <!-- Formulário principal -->
   <form class="flex flex-col gap-6 p-6" on:submit|preventDefault={handleSubmit}>
     <!-- Título -->
@@ -114,7 +114,7 @@
     <!-- Campo login -->
     <div>
       <Label for="login">Nome de Usuário</Label>
-      <Input id="login" bind:value={user.login} placeholder="Digite o Nome do usuário" required class="mt-1" />
+      <Input id="login" bind:value={user.login} placeholder="Digite o Nome do usuário" required class="mt-1 bg-[#E9DACE] border-black" />
       {#if errorOf('login')}
         <div class="mt-1 text-sm text-red-500">{errorOf('login')}</div>
       {/if}
@@ -122,7 +122,7 @@
     <!-- Campo email -->
     <div>
       <Label for="email">Email</Label>
-      <Input id="email" type="email" bind:value={user.email} placeholder="Digite o e-mail" required class="mt-1" />
+      <Input id="email" type="email" bind:value={user.email} placeholder="Digite o e-mail" required class="mt-1 bg-[#E9DACE] border-black" />
       {#if errorOf('email')}
         <div class="mt-1 text-sm text-red-500">{errorOf('email')}</div>
       {/if}
@@ -137,7 +137,7 @@
         placeholder={id === null ? 'Digite a senha (mínimo 6 caracteres)' : 'Nova senha (opcional)'} 
         required={id === null}
         minlength={6}
-        class="mt-1" 
+        class="mt-1 bg-[#E9DACE] border-black" 
       />
       {#if errorOf('senha')}
         <div class="mt-1 text-sm text-red-500">{errorOf('senha')}</div>
