@@ -73,24 +73,24 @@
 </script>
 
 <div class="relative px-8">
-  <Navbar class="fixed start-0 top-0 -20 w-full bg-amber-950 px-2 py-2.5 sm:px-4">
+  <Navbar class="fixed start-0 top-0 -20 w-full bg-[#6E5645] px-2 py-2.5 sm:px-4">
     <NavBrand href="/">
       <img src="images/logo_sete_vidas_cafe.png" class="me-3 h-6 sm:h-28" alt="Logo aleatória" />
-      <Heading class="self-center text-xl font-semibold whitespace-nowrap text-primary-500 dark:text-primary-400">Sete Vidas Café</Heading>
+      <Heading class="self-center text-xl font-semibold whitespace-nowrap text-[#573104] dark:text-primary-400">Sete Vidas Café</Heading>
     </NavBrand>
     <NavHamburger />
     <NavUl>
-      <NavLi href="/" class="text-lg font-bold px-4 py-2 text-primary-500 dark:text-primary-400 hover:text-yellow-300 hover:bg-gray-700 focus:text-yellow-400 focus:bg-gray-700 transition-colors rounded-lg">Home</NavLi>
-      <NavLi href="/about" class="text-lg font-bold px-4 py-2 text-primary-500 dark:text-primary-400 hover:text-yellow-300 hover:bg-gray-700 focus:text-yellow-400 focus:bg-gray-700 transition-colors rounded-lg">Sobre</NavLi>
+      <NavLi href="/" class="text-lg font-bold px-4 py-2 text-[#573104] dark:text-primary-400 hover:text-yellow-300 hover:bg-gray-700 focus:text-yellow-400 focus:bg-gray-700 transition-colors rounded-lg">Home</NavLi>
+      <NavLi href="/about" class="text-lg font-bold px-4 py-2 text-[#573104] dark:text-primary-400 hover:text-yellow-300 hover:bg-gray-700 focus:text-yellow-400 focus:bg-gray-700 transition-colors rounded-lg">Sobre</NavLi>
       
       {#if hasToken}
         {#if user} <!-- se existir usuário é porque conseguiu logar-->
           {#if user.role === 'admin'} <!-- só exibe menu usuários para admin-->
-            <NavLi href="/users" class="text-lg font-bold px-4 py-2 text-primary-500 dark:text-primary-400 hover:text-yellow-300 hover:bg-gray-700 focus:text-yellow-400 focus:bg-gray-700 transition-colors rounded-lg">Usuários</NavLi>
+            <NavLi href="/users" class="text-lg font-bold px-4 py-2 text-[#573104] dark:text-primary-400 hover:text-yellow-300 hover:bg-gray-700 focus:text-yellow-400 focus:bg-gray-700 transition-colors rounded-lg">Usuários</NavLi>
           {/if}
           <NavLi>
             <div class="flex items-center">
-              <span class="text-primary-500 dark:text-primary-400 px-4 py-2">Olá, {user.login}</span>
+              <span class="text-[#573104] dark:text-primary-400 px-4 py-2">Olá, {user.login}</span>
               <button 
                 class="ml-2 px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-sm flex items-center gap-1"
                 on:click={handleLogout}
@@ -103,11 +103,11 @@
         {:else if loadingUser}
           <NavLi class="text-lg font-bold px-4 py-2 text-primary-500 dark:text-primary-400">Carregando...</NavLi>
         {:else}
-          <NavLi href="/login" class="text-lg font-bold px-4 py-2 text-primary-500 dark:text-primary-400 hover:text-yellow-300 hover:bg-gray-700 focus:text-yellow-400 focus:bg-gray-700 transition-colors rounded-lg">Login</NavLi>
+          <NavLi href="/login" class="text-lg font-bold px-4 py-2 text-[#573104] dark:text-primary-400 hover:text-yellow-300 hover:bg-gray-700 focus:text-yellow-400 focus:bg-gray-700 transition-colors rounded-lg">Login</NavLi>
         {/if}
       {:else}
         <!-- se não tem token, exibe botão de login-->
-        <NavLi href="/login" class="text-lg font-bold px-4 py-2 text-primary-500 dark:text-primary-400 hover:text-yellow-300 hover:bg-gray-700 focus:text-yellow-400 focus:bg-gray-700 transition-colors rounded-lg">Login</NavLi>
+        <NavLi href="/login" class="text-lg font-bold px-4 py-2 text-[#573104] dark:text-primary-400 hover:text-yellow-300 hover:bg-gray-700 focus:text-yellow-400 focus:bg-gray-700 transition-colors rounded-lg">Login</NavLi>
       {/if}
     </NavUl>
   </Navbar>

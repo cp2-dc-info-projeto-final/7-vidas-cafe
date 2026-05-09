@@ -37,12 +37,12 @@
 </script>
 
 <svelte:head>
-  <title>Login - Projeto Modelo 2025</title>
+  <title>Sete Vidas Café</title>
 </svelte:head>
 
-<div class="h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+<div class="h-screen flex flex-col items-center justify-center p-4">
   <div class="w-full max-w-sm">
-    <h2 class="text-center text-3xl font-extrabold text-gray-900 mb-6">
+    <h2 class="text-center text-3xl font-extrabold text-[#573104] mb-6">
       Login
     </h2>
     
@@ -80,15 +80,16 @@
             type="submit"
             class="w-full" 
             disabled={loading}
+            color="amber"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </Button>
-          <Button 
-            class="w-full" 
-            href="http://127.0.0.1:5173/users/new"
-          >
-            Cadastre-se
-          </Button>
+         
+             
+            <a href="http://127.0.0.1:5173/users/new"
+            style = "color: #82451A" >Cadastre-se
+          
+          </a>
       </form>
     </Card>
   </div>

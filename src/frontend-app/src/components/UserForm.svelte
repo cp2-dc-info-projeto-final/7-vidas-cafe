@@ -104,7 +104,7 @@
   <!-- Formulário principal -->
   <form class="flex flex-col gap-6 p-6" on:submit|preventDefault={handleSubmit}>
     <!-- Título -->
-    <Heading tag="h3" class="mb-2 text-center">
+    <Heading tag="h3" class="mb-2 text-center" style = color:#82451A;>
       {id === null ? 'Cadastrar Usuário' : 'Editar Usuário'}
     </Heading>
     <!-- Mensagem de erro -->
@@ -146,12 +146,12 @@
     <!-- Botões de ação -->
     <div class="flex gap-4 justify-end mt-4">
       <!-- Botão cancelar/voltar -->
-      <Button color="light" type="button" onclick={handleCancel} disabled={loading}>
+      <Button color="amber" type="button" onclick={handleCancel} disabled={loading}>
         <ArrowLeftOutline class="inline w-5 h-5 mr-2 align-text-bottom" />
         {id === null ? 'Voltar' : 'Cancelar'}
       </Button>
       <!-- Botão salvar -->
-      <Button type="submit" color="primary" disabled={loading}>
+      <Button type="submit" color="amber" disabled={loading}>
         <FloppyDiskAltOutline class="inline w-5 h-5 mr-2 align-text-bottom" />
         {id === null ? 'Cadastrar' : 'Salvar'}
       </Button>
