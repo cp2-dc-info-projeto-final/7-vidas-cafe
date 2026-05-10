@@ -43,11 +43,11 @@
 
 <div class="h-screen flex flex-col items-center justify-center p-4 ">
   <div class="w-full max-w-sm ">
-    <h2 class="text-center text-3xl font-extrabold text-[#573104] mb-6">
+    <h2 class="text-center text-3xl font-extrabold text-secondary-600 mb-6">
       Login
     </h2>
     
-    <Card class="p-6 w-full bg-[#BE946F] border-[#BE946F]" >
+    <Card class="p-6 w-full bg-primary-350 border-primary-350" >
       <form on:submit|preventDefault={handleLogin} class="space-y-6">
           <div>
             <Label for="login" class="mb-2">Nome de Usuário</Label>

@@ -5,30 +5,44 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-primary-50: #fff5f2;
-  --color-primary-100: #fff1ee;
-  --color-primary-200: #ffe4de;
-  --color-primary-300: #ffd5cc;
-  --color-primary-400: #ffbcad;
-  --color-primary-500: #fe795d;
-  --color-primary-600: #ef562f;
-  --color-primary-700: #eb4f27;
-  --color-primary-800: #cc4522;
-  --color-primary-900: #a5371b;
+  /* Tons de Marron */
+  --color-primary-50: #F5F2EF;
+  --color-primary-100: #E4DAD3;
+  --color-primary-200: #D2C2B7;
+  --color-primary-300: #C0AA9B;
+  --color-primary-350: #BE946F;
+  --color-primary-400: #AE927E;
+  --color-primary-500: #9D7B62;
+  --color-primary-600: #816551;
+  --color-primary-700: #6E5645;
+  --color-primary-800: #48382D;
+  --color-primary-900: #2C221B;
+  --color-primary-950: #100C0A;
+/*Tons de Marron */
+  --color-secondary-50: #CCAB8E;
+  --color-secondary-100: #B89A80;
+  --color-secondary-200: #A38973;
+  --color-secondary-300: #907965;
+  --color-secondary-400: #7D6958;
+  --color-secondary-500: #6A5A4C;
+  --color-secondary-600: #584B3F;
+  --color-secondary-700: #473C34;
+  --color-secondary-800: #362E28;
+  --color-secondary-900: #26211D;
+  --color-secondary-950: #171412;
+/* Tons de Laranja */
+  --color-tertiary-50: #FBF2E9;
+  --color-tertiary-100: #F4DBC3;
+  --color-tertiary-200: #EDC49C;
+  --color-tertiary-300: #E6AD75;
+  --color-tertiary-400: #DF964E;
+  --color-tertiary-500: #D78028;
+  --color-tertiary-600: #B16920;
+  --color-tertiary-700: #8A5219;
+  --color-tertiary-800: #633B12;
+  --color-tertiary-900: #3C240B;
+  --color-tertiary-950: #160D04;
 
-  --color-secondary-50: #f0f9ff;
-  --color-secondary-100: #e0f2fe;
-  --color-secondary-200: #bae6fd;
-  --color-secondary-300: #7dd3fc;
-  --color-secondary-400: #38bdf8;
-  --color-secondary-500: #0ea5e9;
-  --color-secondary-600: #0284c7;
-  --color-secondary-700: #0369a1;
-  --color-secondary-800: #075985;
-  --color-secondary-900: #0c4a6e;
-
-  --color-terciary-50: #F3945A;
-  --color-terciary-100: #B8622E;
 }
 
 @source "../node_modules/flowbite-svelte/dist";
