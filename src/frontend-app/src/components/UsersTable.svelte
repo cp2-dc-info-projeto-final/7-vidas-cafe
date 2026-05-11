@@ -87,29 +87,29 @@
   <!-- Tabela para telas médias/grandes -->
   <div class="hidden xl:block">
     <!-- Tabela de usuários -->
-    <Table class="w-full max-w-5xl mx-auto my-8 shadow-lg border border-gray-200 rounded-lg">
+    <Table class="w-full max-w-5xl mx-auto my-8 shadow-lg border border-primary-900 bg-primary-350 rounded border">
       <TableHead>
-        <TableHeadCell class="w-16">ID</TableHeadCell>
-        <TableHeadCell class="w-32">Login</TableHeadCell>
-        <TableHeadCell class="min-w-0">Email</TableHeadCell>
-        <TableHeadCell class="w-20">Role</TableHeadCell>
-        <TableHeadCell class="w-24"></TableHeadCell> <!-- coluna para editar/remover -->
+        <TableHeadCell class="w-16 bg-primary-350 border-primary-400">ID</TableHeadCell>
+        <TableHeadCell class="w-32 bg-primary-350 border-primary-400">Login</TableHeadCell>
+        <TableHeadCell class="min-w-0 bg-primary-350 border-primary-400">Email</TableHeadCell>
+        <TableHeadCell class="w-20 bg-primary-350 border-primary-400">Role</TableHeadCell>
+        <TableHeadCell class="w-24 bg-primary-350 border-primary-400"></TableHeadCell> <!-- coluna para editar/remover -->
       </TableHead>
       <TableBody>
         {#each users as user}
-          <TableBodyRow>
-            <TableBodyCell>{user.id}</TableBodyCell>
-            <TableBodyCell>{user.login}</TableBodyCell>
-            <TableBodyCell class="truncate max-w-0">{user.email}</TableBodyCell>
+          <TableBodyRow class="bg-tertiary-200 border-primary-500">
+            <TableBodyCell class="text-primary-700">{user.id}</TableBodyCell>
+            <TableBodyCell class="text-primary-700">{user.login}</TableBodyCell>
+            <TableBodyCell class="truncate max-w-0 text-primary-700">{user.email}</TableBodyCell>
             <TableBodyCell>
-              <Badge color={user.role === 'admin' ? 'red' : 'blue'} class="text-xs">
+              <Badge color={user.role === 'admin' ? 'amber' : 'orange'} class="text-xs">
                 {user.role}
               </Badge>
             </TableBodyCell>
             <TableBodyCell>
               <!-- Botão editar -->
               <button
-                class="p-2 rounded border border-primary-200 hover:border-primary-400 transition bg-transparent"
+                class="p-2 rounded border border-primary-500 hover:border-tertiary-50 transition bg-transparent"
                 title="Editar"
                 on:click={() => goto(`/users/edit/${user.id}`)}
               >
@@ -118,7 +118,7 @@
               <!-- Botão remover -->
               <button
                 title="Remover"
-                class="p-2 rounded border border-red-100 hover:border-red-300 transition bg-transparent"
+                class="p-2 rounded border border-primary-500 hover:border-red-500 transition bg-transparent"
                 on:click={() => openConfirm(user.id)}
                 disabled={deletingId === user.id || loading}
               >
@@ -147,11 +147,11 @@
             <div class="flex gap-2">
               <!-- Botão editar -->
               <button
-                class="p-2 rounded border border-primary-200 hover:border-primary-400 transition bg-transparent"
+                class="p-2 rounded border border-tertiary-500 hover:border-primary-400 transition bg-transparent"
                 title="Editar"
                 on:click={() => goto(`/users/edit/${user.id}`)}
               >
-                <UserEditOutline class="w-5 h-5 text-primary-500" />
+                <UserEditOutline class="w-5 h-5 text-primary-900" />
               </button>
               <!-- Botão remover -->
               <button
