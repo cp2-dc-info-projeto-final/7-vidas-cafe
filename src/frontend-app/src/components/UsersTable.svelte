@@ -102,7 +102,7 @@
             <TableBodyCell class="text-primary-700">{user.login}</TableBodyCell>
             <TableBodyCell class="truncate max-w-0 text-primary-700">{user.email}</TableBodyCell>
             <TableBodyCell>
-              <Badge color={user.role === 'admin' ? 'amber' : 'orange'} class="text-xs">
+              <Badge color={user.role === 'admin' ? 'secondary' : 'orange'} class="text-xs">
                 {user.role}
               </Badge>
             </TableBodyCell>

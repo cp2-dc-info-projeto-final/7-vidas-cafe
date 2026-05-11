@@ -52,7 +52,7 @@
           <div>
             <Label for="login" class="mb-2">Nome de Usuário</Label>
             <Input
-              class="bg-[#E9DACE] border-black"
+              class="bg-tertiary-100 border-black"
               id="login"
               type="text"
               bind:value={login}
@@ -64,7 +64,7 @@
           <div>
             <Label for="password" class="mb-2">Senha</Label>
             <Input
-              class="bg-[#E9DACE] border-black"
+              class="bg-tertiary-100 border-black"
               id="password"
               type="password"
               bind:value={password}
@@ -81,9 +81,8 @@
 
           <Button 
             type="submit"
-            class="w-full" 
+            class="w-full bg-primary-600" 
             disabled={loading}
-            color="amber"
           >
             {loading ? 'Entrando...' : 'Entrar'}
           </Button>
