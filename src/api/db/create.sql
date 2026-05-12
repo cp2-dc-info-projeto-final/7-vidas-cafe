@@ -17,6 +17,37 @@ CREATE TABLE usuario (
     CONSTRAINT ck_usuario_role_valid CHECK (role IN ('admin', 'user')) -- tipos de usuário
 );
 
+DROP TABLE IF EXISTS cardapio;
+
+CREATE TABLE cardapio (
+    id bigint GENERATED ALWAYS AS IDENTITY,
+    nome text not null,
+    preco text not null,
+    categoria TEXT not null,
+    tamanho TEXT NOT NULL,
+    descricao TEXT not null,
+
+    CONSTRAINT pk_cardapio PRIMARY KEY(id),
+    CONSTRAINT uk_cardapio_nome UNIQUE (nome)
+);
+
+DROP TABLE IF EXISTS gatos;
+
+CREATE TABLE gatos (
+    id bigint GENERATED ALWAYS AS IDENTITY,
+    nome text not null,
+    idade text not null,
+    raca TEXT not null,
+    castracao TEXT NOT NULL,
+    personalidade TEXT not null,
+    adocao TEXT NOT NULL,
+
+    CONSTRAINT pk_gatos PRIMARY KEY(id),
+    CONSTRAINT uk_gatos_nome UNIQUE (nome)
+);
+
+
+
 INSERT INTO usuario (login, email, senha, role) VALUES
 -- senha efelantinho
 ('hermenegildo', 'hermenegildo@email.com', '$2a$12$f2c.uHGHS4drfaz6HR870OLamkarD57kI.gkr4//Vbbp0vN9IrFfG', 'admin'),

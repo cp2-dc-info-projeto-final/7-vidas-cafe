@@ -146,12 +146,12 @@
     <!-- Botões de ação -->
     <div class="flex gap-4 justify-end mt-4">
       <!-- Botão cancelar/voltar -->
-      <Button color="amber" type="button" onclick={handleCancel} disabled={loading}>
+      <Button  class="bg-primary-600" type="button" onclick={handleCancel} disabled={loading}>
         <ArrowLeftOutline class="inline w-5 h-5 mr-2 align-text-bottom" />
         {id === null ? 'Voltar' : 'Cancelar'}
       </Button>
       <!-- Botão salvar -->
-      <Button type="submit" color="amber" disabled={loading}>
+      <Button type="submit" class="bg-primary-600" disabled={loading}>
         <FloppyDiskAltOutline class="inline w-5 h-5 mr-2 align-text-bottom" />
         {id === null ? 'Cadastrar' : 'Salvar'}
       </Button>

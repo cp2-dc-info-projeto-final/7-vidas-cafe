@@ -89,7 +89,7 @@
          
              
             <a href="http://127.0.0.1:5173/users/new"
-            style = "color: #82451A" >Cadastre-se</a>
+            class = "text-primary-800" >Cadastre-se</a>
       </form>
     </Card>
   </div>
