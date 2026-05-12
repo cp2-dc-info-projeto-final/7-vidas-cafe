@@ -86,7 +86,7 @@
 {:else}
 <input
 type="text"
-placeholder="Pesquisar Usuários"
+placeholder="Pesquisar Usuário"
 style="padding: 10px;
 width: 300px;
 border-radius: 6px;
