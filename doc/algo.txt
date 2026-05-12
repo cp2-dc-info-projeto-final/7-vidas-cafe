@@ -1,0 +1,28 @@
+// Rota para listar paletras (com filtro opcional por titulo)
+app.get("/api/palestra", (req, res) => {
+  const filtro = req.query.titulo ? `%${req.query.titulo}%` : "%";
+  db.all(
+    `SELECT pa.id, pa.titulo, pa.palestrante, pa.horario
+    FROM palestra pa
+    LEFT JOHN inscricao i
+    ON i.id_palestra = pa.id
+    LEFT JOHN participante p on p.id = i.id_participante 
+    WHERE pa.titulo LIKE ?
+    GROUP BY pa.id 
+    ORDER BY pa.id DESC    
+    `,
+    [filtro],
+    (err, rows) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({ error: "Erro ao consultar palestras" });
+      }
+      res.json(rows);
+    }
+  );
+});
+
+<div class="filtro">
+    <label>Pesquisar por nome:</label>
+    <input type="text" id="pesquisa" placeholder="Digite o nome da palestra..." />
+  </div>
