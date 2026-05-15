@@ -50,6 +50,22 @@ router.get('/me', verifyToken, async function(req, res) {
   }
 });
 
+router.get('/nome/:filtro', verifyToken, isAdmin, async function(req, res) {
+  try {
+    const { filtro } = req.params;
+    const result = await pool.query( 'SELECT id, login, email, role FROM usuario WHERE login ILIKE $1 ORDER BY id', ['%'+filtro+'%']);
+    
+    return sendSuccess(res, 200, null, result.rows);
+   
+  } catch (error) {
+    console.error('Erro ao buscar usuário:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
 /* GET parametrizado - Buscar usuário por ID */
 router.get('/:id', verifyToken, isAdmin, async function(req, res) {
   try {

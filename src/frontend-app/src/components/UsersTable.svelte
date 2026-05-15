@@ -15,6 +15,7 @@
   let deletingId: number | null = null; // id em deleção
   let confirmOpen = false; // modal aberto?
   let confirmTargetId: number | null = null; // id alvo do modal
+  let filtro = '';
 
   // Abre modal de confirmação
   function openConfirm(id: number) {
@@ -77,6 +78,27 @@
       loading = false;
     }
   });
+
+  $: filtro, buscarUsuarios();
+
+  async function buscarUsuarios()
+  {
+    if(filtro !== '')
+    {
+      try {
+        const res = await api.get(`/users/nome/${encodeURIComponent(filtro)}`);
+        users = res.data.data ?? [];
+      } catch (e: any) {
+        console.error('Erro ao buscar usuários:', e);
+      }
+    }
+    else
+    {
+        const res = await api.get('/users');
+        users = res.data.data ?? [];
+    }
+  }
+
 </script>
 
 {#if loading}
@@ -90,9 +112,16 @@ placeholder="Pesquisar Usuário"
 style="padding: 10px;
 width: 300px;
 border-radius: 6px;
-"
+display:flex;"
 class="bg-tertiary-100 border-black"
+bind:value={filtro}
 />
+<style>
+  input::placeholder {
+    color: #C47B54; 
+    opacity: 1; 
+  }
+</style>
   <!-- Tabela para telas médias/grandes -->
   <div class="hidden xl:block">
     <!-- Tabela de usuários -->
