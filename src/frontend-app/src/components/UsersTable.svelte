@@ -86,7 +86,7 @@
     if(filtro !== '')
     {
       try {
-        const res = await api.get(`/users/nome/${encodeURIComponent(filtro)}`);
+        const res = await api.get(`/users/nome/${encodeURIComponent(filtro)}`);""
         users = res.data.data ?? [];
       } catch (e: any) {
         console.error('Erro ao buscar usuários:', e);

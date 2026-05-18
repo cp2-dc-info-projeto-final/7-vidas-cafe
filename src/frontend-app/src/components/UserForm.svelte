@@ -12,6 +12,10 @@
 
   let user: UserFormData = { id: 0, login: '', email: '', senha: '', role: 'user' }; // dados do form
   
+  const roleOptions = [
+    { value: 'user', name: 'Usuário' },
+    { value: 'admin', name: 'Administrador' }
+  ]; 
   let loading = false;
   let error = '';
   let fieldErrors: ApiFieldError[] = [];

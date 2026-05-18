@@ -21,11 +21,11 @@ DROP TABLE IF EXISTS cardapio;
 
 CREATE TABLE cardapio (
     id bigint GENERATED ALWAYS AS IDENTITY,
-    nome text not null,
-    preco text not null,
-    categoria TEXT not null,
+    nome TEXT NOT NULL,
+    preco TEXT NOT NULL,
+    categoria TEXT NOT NULL,
     tamanho TEXT NOT NULL,
-    descricao TEXT not null,
+    descricao TEXT NOT NULL,
 
     CONSTRAINT pk_cardapio PRIMARY KEY(id),
     CONSTRAINT uk_cardapio_nome UNIQUE (nome)
@@ -35,12 +35,15 @@ DROP TABLE IF EXISTS gatos;
 
 CREATE TABLE gatos (
     id bigint GENERATED ALWAYS AS IDENTITY,
-    nome text not null,
-    idade text not null,
-    raca TEXT not null,
+    nome TEXT NOT NULL,
+    idade TEXT NOT NULL,
+    raca TEXT NOT NULL,
     castracao TEXT NOT NULL,
-    personalidade TEXT not null,
+    personalidade TEXT NOT NULL,
     adocao TEXT NOT NULL,
+    tutor bigint,
+    FOREIGN KEY (tutor)
+        REFERENCES usuario(id),
 
     CONSTRAINT pk_gatos PRIMARY KEY(id),
     CONSTRAINT uk_gatos_nome UNIQUE (nome)
