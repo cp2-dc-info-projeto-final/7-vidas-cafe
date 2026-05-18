@@ -19,6 +19,7 @@
   let loading = false;
   let error = '';
   let fieldErrors: ApiFieldError[] = [];
+  let currentUser = {role: 'admin'};
 
   function errorOf(field: string): string | null {
     return fieldErrors.find((item) => item.field === field)?.message ?? null;
@@ -147,6 +148,15 @@
         <div class="mt-1 text-sm text-red-500">{errorOf('senha')}</div>
       {/if}
     </div>
+    {#if id !== null && currentUser.role === 'admin'}
+      <div class="">
+        <Label for="role">Perfil</Label>
+        <Select id="role" bind:value={user.role} items={roleOptions} class="mt-1" style= "background-color:#F4DBC3; border-color: black;"/>
+        {#if errorOf('role')}
+          <div class="mt-1 text-sm text-red-500">{errorOf('role')}</div>
+        {/if}
+      </div>
+    {/if}
     <!-- Botões de ação -->
     <div class="flex gap-4 justify-end mt-4">
       <!-- Botão cancelar/voltar -->
