@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Navbar, NavBrand, NavLi, NavUl, NavHamburger, Heading} from "flowbite-svelte";
   import { onMount } from "svelte";
-  import { logout, getCurrentUser, getToken, type User } from "$lib/auth";
+  import { logout, getCurrentUser, getToken, type User, login } from "$lib/auth";
   import { goto } from "$app/navigation";
   import { ArrowRightToBracketOutline } from "flowbite-svelte-icons";
   import { page } from "$app/stores";
@@ -84,13 +84,16 @@
       <NavLi href="/about" nonActiveClass="text-lg font-bold px-4 py-2 text-primary-950 dark:text-primary-400 hover:text-tertiary-200 hover:bg-primary-700 focus:text-tertiary-950 focus:bg-tertiary-50 transition-colors rounded-lg">Sobre</NavLi>
       
       {#if hasToken}
-        {#if user} <!-- se existir usuário é porque conseguiu logar-->
-          {#if user.role === 'admin'} <!-- só exibe menu usuários para admin-->
+        {#if user}
+        {#if user.role === 'admin'} <!-- só exibe menu usuários para admin-->
             <NavLi href="/users" nonActiveClass="text-lg font-bold px-4 py-2 text-primary-950 dark:text-primary-400 hover:text-tertiary-50 hover:bg-tertiary-800 focus:text-tertiary-950 focus:bg-tertiary-50 transition-colors rounded-lg">Usuários</NavLi>
           {/if}
+         <NavLi href="/perfil" nonActiveClass="inline-block text-3xl font-medium px-4 py-1 -mt-2 -mb-2 text-tertiary-200 dark:text-primary-400 hover:text-tertiary-100 hover:bg-primary-600 focus:text-tertiary-950 focus:bg-tertiary-50 transition-colors rounded-lg">{user.login}</NavLi>
+
+        <!-- se existir usuário é porque conseguiu logar-->
+          
           <NavLi>
             <div class="flex items-center">
-              <span class="text-primary-950 dark:text-primary-400 px-4 py-2">Olá, {user.login}</span>
               <button 
                 class="ml-2 px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-sm flex items-center gap-1"
                 on:click={handleLogout}
