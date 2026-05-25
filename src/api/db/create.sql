@@ -77,10 +77,7 @@ DROP TABLE IF EXISTS carrinho CASCADE;
 CREATE TABLE carrinho(
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     quantidade INT NOT NULL DEFAULT 1,
-    item BIGINT,
-    CONSTRAINT fk_carrinho_cardapio
-    Foreign Key (item) REFERENCES cardapio(id)
-    ON DELETE CASCADE
+    preco_total DECIMAL(10, 2)
 );
 
 DROP TABLE IF EXISTS itens_carrinho CASCADE;
