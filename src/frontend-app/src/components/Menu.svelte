@@ -88,7 +88,7 @@
         {#if user.role === 'admin'} <!-- só exibe menu usuários para admin-->
             <NavLi href="/users" nonActiveClass="text-lg font-bold px-4 py-2 text-primary-950 dark:text-primary-400 hover:text-tertiary-50 hover:bg-tertiary-800 focus:text-tertiary-950 focus:bg-tertiary-50 transition-colors rounded-lg">Usuários</NavLi>
           {/if}
-         <NavLi href="/perfil" nonActiveClass="inline-block text-3xl font-medium px-4 py-1 -mt-2 -mb-2 text-tertiary-200 dark:text-primary-400 hover:text-tertiary-100 hover:bg-primary-600 focus:text-tertiary-950 focus:bg-tertiary-50 transition-colors rounded-lg">{user.login}</NavLi>
+         <NavLi href="/perfil" nonActiveClass="inline-block text-3xl border border-tertiary-700 font-medium px-4 py-1 -mt-2 -mb-2 text-tertiary-200 dark:text-primary-400 hover:text-tertiary-100 hover:bg-primary-600 focus:text-tertiary-950 focus:bg-tertiary-50 transition-colors rounded-lg">{user.login}</NavLi>
 
         <!-- se existir usuário é porque conseguiu logar-->
           
