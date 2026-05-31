@@ -53,16 +53,13 @@ router.get('/me', verifyToken, async function(req, res) {
 router.get('/nome/:filtro', verifyToken, isAdmin, async function(req, res) {
   try {
     const { filtro } = req.params;
-    const result = await pool.query( 'SELECT id, login, email, cpf, dat_nas, num_tel, role FROM usuario WHERE login ILIKE $1 ORDER BY id', ['%'+filtro+'%']);
+    const result = await pool.query('SELECT id, login, email, cpf, dat_nas, num_tel, role FROM usuario WHERE login ILIKE $1 ORDER BY id', ['%' + filtro + '%']);
     
     return sendSuccess(res, 200, null, result.rows);
    
   } catch (error) {
     console.error('Erro ao buscar usuário:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erro interno do servidor'
-    });
+    return sendError(res, 500, 'Erro interno do servidor');
   }
 });
 
@@ -86,10 +83,10 @@ router.get('/:id', verifyToken, isAdmin, async function(req, res) {
 /* POST - Criar novo usuário */
 router.post('/', async function(req, res) {
   try {
-    const { login, email, senha, cpf, dat_nas, num_tel, role = 'user' } = req.body;
+    const { login, email, senha, confirmarSenha, cpf, dat_nas, num_tel, role = 'user' } = req.body;
     
     // Validação básica
-    if (!login || !email || !senha || !cpf || !dat_nas || !num_tel  ) {
+    if (!login || !email || !senha || !cpf || !dat_nas || !num_tel) {
       const errors = [];
       if (!login) errors.push({ field: 'login', message: 'Login é obrigatório', code: 'REQUIRED' });
       if (!email) errors.push({ field: 'email', message: 'Email é obrigatório', code: 'REQUIRED' });
@@ -118,20 +115,27 @@ router.post('/', async function(req, res) {
     }
 
     // Verificar se CPF ja existe
-    const existingCpf = await pool.query(' SELECT id FROM usuario WHERE cpf = $1',[cpf])
-    if (existingCpf.rows.length > 0){
+    const existingCpf = await pool.query('SELECT id FROM usuario WHERE cpf = $1', [cpf]);
+    if (existingCpf.rows.length > 0) {
       return sendError(res, 409, 'CPF já está em uso', [
-        {field: 'cpf', message: 'CPF já está em uso', code: 'CONFLICT'}
+        { field: 'cpf', message: 'CPF já está em uso', code: 'CONFLICT' }
       ]);
     }
 
     // Verificar se Telefone ja existe
-    const existingTele = await pool.query(' SELECT id FROM usuario WHERE num_tel = $1',[num_tel])
-    if (existingTele.rows.length > 0){
+    const existingTele = await pool.query('SELECT id FROM usuario WHERE num_tel = $1', [num_tel]);
+    if (existingTele.rows.length > 0) {
       return sendError(res, 409, 'Telefone já está em uso', [
-        {field: 'num_tel', message: 'Telefone já está em uso', code: 'CONFLICT'}
+        { field: 'num_tel', message: 'Telefone já está em uso', code: 'CONFLICT' }
       ]);
     }
+
+    if (senha !== confirmarSenha) {
+      return sendError(res, 400, 'As senhas não coincidem', [
+        { field: 'confirmarSenha', message: 'As senhas não coincidem', code: 'MISMATCH' }
+      ]);
+    }
+ 
     // Hash da senha
     const hashedPassword = await bcrypt.hash(senha, 12);
 
@@ -139,15 +143,21 @@ router.post('/', async function(req, res) {
       'INSERT INTO usuario (login, email, senha, cpf, dat_nas, num_tel, role) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, login, email, cpf, dat_nas, num_tel, role',
       [login, email, hashedPassword, cpf, dat_nas, num_tel, role]
     );
-    await pool.query( 'INSERT INTO carrinho (usuario_id) VALUES ($1)', [result.rows[0].id]);
+
     return sendSuccess(res, 201, 'Usuário criado com sucesso', result.rows[0]);
 
-  } catch (error) {
+  } 
+  catch (error) {
     console.error('Erro ao criar usuário:', error);
+    console.error('Código:', error.code);
+    console.error('Detalhe:', error.detail);
+    console.error('Constraint:', error.constraint);
+
     // Verificar se é erro de constraint
     if (error.code === '23514') {
       return sendError(res, 400, 'Dados inválidos. Verifique os campos e tente novamente.');
     }
+
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
@@ -157,11 +167,13 @@ router.post('/', async function(req, res) {
 router.post('/login', async function(req, res) {
   try {
     const { login, password } = req.body;
+
     // obtém o usuário do banco de dados
-    const result = await pool.query(`SELECT 
-      id, login, email, senha as passwordHash, role
+    const result = await pool.query(`
+      SELECT id, login, email, senha, role
       FROM usuario 
-      WHERE login = $1`, [login]);
+      WHERE login = $1
+    `, [login]);
 
     /*
      tratar login inválido igual senha incorreta
@@ -181,7 +193,7 @@ router.post('/login', async function(req, res) {
      mas fornecendo a senha dá para aplicar a hash e ver coincidem
     */
     
-    bcrypt.compare(password, user.passwordhash, (err, isMatch) => {
+    bcrypt.compare(password, user.senha, (err, isMatch) => {
       if (err) {
         console.error('Erro no bcrypt:', err);
         return sendError(res, 500, 'Erro interno do servidor');
@@ -190,18 +202,15 @@ router.post('/login', async function(req, res) {
       if (!isMatch) {
         return sendError(res, 401, 'Credenciais inválidas');
       }
-
       // Cria o token com as informações do usuário logado e sua chave pública
       const token = jwt.sign(
         { 
           id: user.id, 
           login: user.login,
           email: user.email,
-          // tipo do usuário, que vem do banco
           role: user.role 
-          // a senha não entra no token para não ser exposta
         }, 
-        process.env.JWT_SECRET, //chave secreta, nunca exponha!! >>> PERIGO <<<
+        process.env.JWT_SECRET,
         { expiresIn: '1h' } 
       );
 
@@ -210,111 +219,6 @@ router.post('/login', async function(req, res) {
 
   } catch (error) {
     console.error('Erro ao autenticar usuário:', error);
-    return sendError(res, 500, 'Erro interno do servidor');
-  }
-  
-});
-
-
-/* PUT - Atualizar usuário */
-router.put('/:id', verifyToken, isAdmin, async function(req, res) {
-  try {
-    const { id } = req.params;
-    const { login, email, senha, cpf, dat_nas, num_tel, role } = req.body;
-    
-    // Validação básica
-    if (!login || !email || !cpf || !dat_nas || !num_tel || !role) {
-      const errors = [];
-      if (!login) errors.push({ field: 'login', message: 'Login é obrigatório', code: 'REQUIRED' });
-      if (!email) errors.push({ field: 'email', message: 'Email é obrigatório', code: 'REQUIRED' });
-      if (!cpf) errors.push({ field: 'cpf', message: 'CPF é obrigatório', code: 'REQUIRED' });
-      if (!dat_nas) errors.push({ field: 'dat_nas', message: 'Data de nascimento é obrigatória', code: 'REQUIRED' });
-      if (!num_tel) errors.push({ field: 'num_tel', message: 'Telefone é obrigatório', code: 'REQUIRED' });
-      if (!role) errors.push({ field: 'role', message: 'Role é obrigatório', code: 'REQUIRED' });
-      return sendError(res, 400, 'Todos os campos obrigatórios devem ser preenchidos', errors);
-    }
-    
-    // Verificar se o usuário existe
-    const userExists = await pool.query('SELECT id FROM usuario WHERE id = $1', [id]);
-    if (userExists.rows.length === 0) {
-      return sendError(res, 404, 'Usuário não encontrado');
-    }
-    
-    // Verificar se o login já está em uso por outro usuário
-    const existingUser = await pool.query('SELECT id FROM usuario WHERE login = $1 AND id != $2', [login, id]);
-    if (existingUser.rows.length > 0) {
-      return sendError(res, 409, 'Login já está em uso por outro usuário', [
-        { field: 'login', message: 'Login já está em uso por outro usuário', code: 'CONFLICT' }
-      ]);
-    }
-
-    // Verificar se o email já está em uso por outro usuário
-    const existingEmail = await pool.query('SELECT id FROM usuario WHERE email = $1 AND id != $2', [email, id]);
-    if (existingEmail.rows.length > 0) {
-      return sendError(res, 409, 'Email já está em uso por outro usuário', [
-        { field: 'email', message: 'Email já está em uso por outro usuário', code: 'CONFLICT' }
-      ]);
-    }
-
-    //Verificar se o cpf ja esta em uso por outro usuário
-    const existingCpf = await pool.query('SELECT id FROM usuario WHERE cpf = $1 AND id != $2', [cpf, id]);
-    if (existingCpf.rows.length > 0) {
-      return sendError(res, 409, 'CPF já está em uso por outro usuário', [
-        { field: 'cpf', message: 'CPF já está em uso por outro usuário', code: 'CONFLICT' }
-      ]);
-    }
-
-    const existingTele = await pool.query('SELECT id FROM usuario WHERE num_tel = $1 AND id != $2', [num_tel, id]);
-    if (existingTele.rows.length > 0) {
-      return sendError(res, 409, 'Telefone já está em uso por outro usuário', [
-        { field: 'num_tel', message: 'Telefone já está em uso por outro usuário', code: 'CONFLICT' }
-      ]);
-    }
-    
-    let query, params;
-    
-    if (senha && senha.trim() !== '') {
-      // Atualizar com nova senha
-      const hashedPassword = await bcrypt.hash(senha, 12);
-      query = 'UPDATE usuario SET login = $1, email = $2, senha = $3, cpf = $4, dat_nas = $5, num_tel = $6, role = $7 WHERE id = $8 RETURNING id, login, email, cpf, dat_nas, num_tel, role';
-      params = [login, email, hashedPassword, cpf, dat_nas, num_tel, role, id];
-    } else {
-      // Atualizar sem alterar senha
-      query = 'UPDATE usuario SET login = $1, email = $2, cpf = $3, dat_nas = $4, num_tel = $5, role = $6 WHERE id = $7 RETURNING id, login, email, cpf, dat_nas, num_tel, role';
-      params = [login, email, cpf, dat_nas, num_tel, role, id];
-    }
-    
-    const result = await pool.query(query, params);
-    
-    return sendSuccess(res, 200, 'Usuário atualizado com sucesso', result.rows[0]);
-  } catch (error) {
-    console.error('Erro ao atualizar usuário:', error);
-    // Verificar se é erro de constraint
-    if (error.code === '23514') {
-      return sendError(res, 400, 'Dados inválidos. Verifique os campos e tente novamente.');
-    }
-    return sendError(res, 500, 'Erro interno do servidor');
-  }
-});
-
-/* DELETE - Remover usuário */
-router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
-  try {
-    const { id } = req.params;
-    if (req.user.id == id) {return sendError(res,400,'Você não pode excluir sua própria conta');
-}
-    
-    // Verificar se o usuário existe
-    const userExists = await pool.query('SELECT id FROM usuario WHERE id = $1', [id]);
-    if (userExists.rows.length === 0) {
-      return sendError(res, 404, 'Usuário não encontrado');
-    }
-    
-    await pool.query('DELETE FROM usuario WHERE id = $1', [id]);
-    
-    return sendSuccess(res, 200, 'Usuário deletado com sucesso');
-  } catch (error) {
-    console.error('Erro ao deletar usuário:', error);
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });

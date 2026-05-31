@@ -10,7 +10,7 @@
 
   export let id: number | null = null; // id do usuário
 
-  let user: UserFormData = { id: 0, login: '', email: '', senha: '', cpf: '', dat_nas: '', num_tel: '', role: 'user' }; // dados do form
+  let user: UserFormData = { id: 0, login: '', email: '', senha: '', confirmarSenha:'', cpf: '', dat_nas: '', num_tel: '', role: 'user' }; // dados do form
   
   const roleOptions = [
     { value: 'user', name: 'Usuário' },
@@ -105,7 +105,7 @@
 </script>
 
 <!-- Card do formulário -->
-<Card class="max-w-md mx-auto mt-10 p-0 overflow-hidden shadow-lg border border-primary-350 bg-primary-350 rounded-lg">
+<Card class="max-w-md mx-auto mt-30 p-0 overflow-hidden shadow-lg border border-primary-350 bg-primary-350 rounded-lg">
   <!-- Formulário principal -->
   <form class="flex flex-col gap-6 p-6" on:submit|preventDefault={handleSubmit}>
     <!-- Título -->
@@ -148,6 +148,74 @@
         <div class="mt-1 text-sm text-red-500">{errorOf('senha')}</div>
       {/if}
     </div>
+
+
+    <!-- Confirmar senha -->
+    {#if id === null}
+    <div>
+      <Label for="confirmarSenha">Confirmar Senha</Label>
+      <Input
+        id="confirmarSenha"
+        type="password"
+        bind:value={user.confirmarSenha}
+        placeholder="Confirme a senha"
+        class="mt-1 bg-tertiary-100 border-black"
+      />
+
+      {#if errorOf('confirmarSenha')}
+        <div class="mt-1 text-sm text-red-500">{errorOf('confirmarSenha')}</div>
+      {/if}
+    </div>
+    {/if}
+
+
+    <!-- campo cpf -->
+    <div>
+      <Label for="cpf">CPF</Label>
+      <Input
+      id="cpf"
+      bind:value={user.cpf}
+      placeholder="Exemplo: 000.000.000-00"      
+      required
+      class="mt-1 bg-tertiary-100 border-black"
+      />
+      {#if errorOf('cpf')}
+        <div class="mt-1 text-sm text-red-500">{errorOf('cpf')}</div>
+      {/if}
+    </div>
+
+    <!-- Campo nascimento -->
+  <div>
+    <Label for="dat_nas">Data de Nascimento</Label>
+    <Input
+      id="dat_nas"
+      type="date"
+      bind:value={user.dat_nas}
+      required
+      class="mt-1 bg-tertiary-100 border-black"
+    />
+    {#if errorOf('dat_nas')}
+      <div class="mt-1 text-sm text-red-500">{errorOf('dat_nas')}</div>
+    {/if}
+  </div>
+
+    <!-- Campo telefone -->
+    <div>
+    <Label for="num_tel">Telefone</Label>
+    <Input
+      id="num_tel"
+      bind:value={user.num_tel}
+      placeholder="Exemplo: (00)90000-0000"
+      required
+      class="mt-1 bg-tertiary-100 border-black"
+    />
+    {#if errorOf('num_tel')}
+      <div class="mt-1 text-sm text-red-500">{errorOf('num_tel')}</div>
+    {/if}
+  </div>
+
+
+    <!-- Campo role -->
     {#if id !== null && currentUser.role === 'admin'}
       <div class="">
         <Label for="role">Perfil</Label>
@@ -157,6 +225,7 @@
         {/if}
       </div>
     {/if}
+
     <!-- Botões de ação -->
     <div class="flex gap-4 justify-end mt-4">
       <!-- Botão cancelar/voltar -->

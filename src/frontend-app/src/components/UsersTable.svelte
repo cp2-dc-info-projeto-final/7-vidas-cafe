@@ -130,6 +130,9 @@ bind:value={filtro}
         <TableHeadCell class="text-primary-900 w-16 bg-primary-350 border-primary-350">ID</TableHeadCell>
         <TableHeadCell class="text-primary-900 w-32 bg-primary-350 border-primary-400">Login</TableHeadCell>
         <TableHeadCell class="text-primary-900 min-w-0 bg-primary-350 border-primary-400">Email</TableHeadCell>
+        <TableHeadCell class="text-primary-900 min-w-0 bg-primary-350 border-primary-400">CPF</TableHeadCell>
+        <TableHeadCell class="text-primary-900 min-w-0 bg-primary-350 border-primary-400">Celular</TableHeadCell>
+        <TableHeadCell class="text-primary-900 min-w-0 bg-primary-350 border-primary-400">Data Nascimento</TableHeadCell>
         <TableHeadCell class="text-primary-900 w-20 bg-primary-350 border-primary-400">Role</TableHeadCell>
         <TableHeadCell class="w-24 bg-primary-350 border-primary-400"></TableHeadCell> <!-- coluna para editar/remover -->
       </TableHead>
@@ -139,6 +142,9 @@ bind:value={filtro}
             <TableBodyCell class="text-primary-700 ">{user.id}</TableBodyCell>
             <TableBodyCell class="text-primary-700">{user.login}</TableBodyCell>
             <TableBodyCell class="truncate max-w-0 text-primary-700">{user.email}</TableBodyCell>
+            <TableBodyCell class="text-primary-700">{user.cpf}</TableBodyCell>
+            <TableBodyCell class="text-primary-700">{user.num_tel}</TableBodyCell>
+            <TableBodyCell class="text-primary-700">{new Date(user.dat_nas).toLocaleDateString('pt-BR')}</TableBodyCell>
             <TableBodyCell>
               <Badge color={user.role === 'admin' ? 'secondary' : 'yellow'} class="text-xs">
                 {user.role}

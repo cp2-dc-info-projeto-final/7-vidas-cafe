@@ -20,8 +20,8 @@ CREATE TABLE usuario (
     CONSTRAINT ck_usuario_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'), -- formato de email com expressão regular
     CONSTRAINT ck_usuario_senha_length CHECK (length(senha) >= 6), -- comprimento mínimo
     CONSTRAINT ck_usuario_role_valid CHECK (role IN ('admin', 'user')),-- tipos de usuário
-    CONSTRAINT ck_usuario_cpf_format CHECK (cpf ~* '^(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})$'), -- pra formataçao de cpf brasileiro
-    CONSTRAINT ck_usuario_num_tel_format CHECK (num_tel ~* '^\((1[1-9]|[2-9][1-9])\)(9[2-9]\d{3}|[2-5]\d{3})-\d{4}$')-- pare numero de telefone do formato brasileiro
+    CONSTRAINT ck_usuario_cpf_format CHECK (cpf ~ '^\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11}$'), -- pra formataçao de cpf brasileiro
+    CONSTRAINT ck_usuario_num_tel_format CHECK (num_tel ~ '^\((1[1-9]|[2-9][1-9])\)(9[2-9]\d{3}|[2-5]\d{3})-\d{4}$')-- pare numero de telefone do formato brasileiro
  
 );
 
