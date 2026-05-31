@@ -24,7 +24,7 @@ function sendError(res, status, message, errors = []) {
 // requer usuário autenticado como admin
 router.get('/', verifyToken, isAdmin, async function(req, res) {
   try {
-    const result = await pool.query('SELECT id, login, email, role FROM usuario ORDER BY id');
+    const result = await pool.query('SELECT id, login, email, cpf, dat_nas, num_tel, role FROM usuario ORDER BY id');
     return sendSuccess(res, 200, null, result.rows);
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
@@ -37,7 +37,7 @@ router.get('/me', verifyToken, async function(req, res) {
   try {
     // parâmetro obtido do token pelo middleware
     const id = req.user.id;
-    const result = await pool.query('SELECT id, login, email, role FROM usuario WHERE id = $1', [id]);
+    const result = await pool.query('SELECT id, login, email, cpf, dat_nas, num_tel, role FROM usuario WHERE id = $1', [id]);
 
     if (result.rows.length === 0) {
       return sendError(res, 404, 'Usuário não encontrado');
@@ -53,7 +53,7 @@ router.get('/me', verifyToken, async function(req, res) {
 router.get('/nome/:filtro', verifyToken, isAdmin, async function(req, res) {
   try {
     const { filtro } = req.params;
-    const result = await pool.query( 'SELECT id, login, email, role FROM usuario WHERE login ILIKE $1 ORDER BY id', ['%'+filtro+'%']);
+    const result = await pool.query( 'SELECT id, login, email, cpf, dat_nas, num_tel, role FROM usuario WHERE login ILIKE $1 ORDER BY id', ['%'+filtro+'%']);
     
     return sendSuccess(res, 200, null, result.rows);
    
@@ -70,7 +70,7 @@ router.get('/nome/:filtro', verifyToken, isAdmin, async function(req, res) {
 router.get('/:id', verifyToken, isAdmin, async function(req, res) {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT id, login, email, role FROM usuario WHERE id = $1', [id]);
+    const result = await pool.query('SELECT id, login, email, cpf, dat_nas, num_tel, role FROM usuario WHERE id = $1', [id]);
 
     if (result.rows.length === 0) {
       return sendError(res, 404, 'Usuário não encontrado');
@@ -86,16 +86,19 @@ router.get('/:id', verifyToken, isAdmin, async function(req, res) {
 /* POST - Criar novo usuário */
 router.post('/', async function(req, res) {
   try {
-    const { login, email, senha, role = 'user' } = req.body;
+    const { login, email, senha, cpf, dat_nas, num_tel, role = 'user' } = req.body;
     
     // Validação básica
-    if (!login || !email || !senha ) {
+    if (!login || !email || !senha || !cpf || !dat_nas || !num_tel  ) {
       const errors = [];
       if (!login) errors.push({ field: 'login', message: 'Login é obrigatório', code: 'REQUIRED' });
       if (!email) errors.push({ field: 'email', message: 'Email é obrigatório', code: 'REQUIRED' });
       if (!senha) errors.push({ field: 'senha', message: 'Senha é obrigatória', code: 'REQUIRED' });
+      if (!cpf) errors.push({ field: 'cpf', message: 'CPF é obrigatório', code: 'REQUIRED' });
+      if (!dat_nas) errors.push({ field: 'dat_nas', message: 'Data de nascimento é obrigatória', code: 'REQUIRED' });
+      if (!num_tel) errors.push({ field: 'num_tel', message: 'Telefone é obrigatório', code: 'REQUIRED' });
 
-      return sendError(res, 400, 'Login, email e senha são obrigatórios', errors);
+      return sendError(res, 400, 'Todos os campos sao obrigatórios', errors);
     }
     
     // Verificar se o login já existe
@@ -114,15 +117,31 @@ router.post('/', async function(req, res) {
       ]);
     }
 
+    // Verificar se CPF ja existe
+    const existingCpf = await pool.query(' SELECT id FROM usuario WHERE cpf = $1',[cpf])
+    if (existingCpf.rows.length > 0){
+      return sendError(res, 409, 'CPF já está em uso', [
+        {field: 'cpf', message: 'CPF já está em uso', code: 'CONFLICT'}
+      ]);
+    }
+
+    // Verificar se Telefone ja existe
+    const existingTele = await pool.query(' SELECT id FROM usuario WHERE num_tel = $1',[num_tel])
+    if (existingTele.rows.length > 0){
+      return sendError(res, 409, 'Telefone já está em uso', [
+        {field: 'num_tel', message: 'Telefone já está em uso', code: 'CONFLICT'}
+      ]);
+    }
     // Hash da senha
     const hashedPassword = await bcrypt.hash(senha, 12);
 
     const result = await pool.query(
-      'INSERT INTO usuario (login, email, senha, role) VALUES ($1, $2, $3, $4) RETURNING id, login, email, role',
-      [login, email, hashedPassword, role]
+      'INSERT INTO usuario (login, email, senha, cpf, dat_nas, num_tel, role) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, login, email, cpf, dat_nas, num_tel, role',
+      [login, email, hashedPassword, cpf, dat_nas, num_tel, role]
     );
-
+    await pool.query( 'INSERT INTO carrinho (usuario_id) VALUES ($1)', [result.rows[0].id]);
     return sendSuccess(res, 201, 'Usuário criado com sucesso', result.rows[0]);
+
   } catch (error) {
     console.error('Erro ao criar usuário:', error);
     // Verificar se é erro de constraint
@@ -201,16 +220,18 @@ router.post('/login', async function(req, res) {
 router.put('/:id', verifyToken, isAdmin, async function(req, res) {
   try {
     const { id } = req.params;
-    const { login, email, senha, role } = req.body;
+    const { login, email, senha, cpf, dat_nas, num_tel, role } = req.body;
     
     // Validação básica
-    if (!login || !email || !role) {
+    if (!login || !email || !cpf || !dat_nas || !num_tel || !role) {
       const errors = [];
       if (!login) errors.push({ field: 'login', message: 'Login é obrigatório', code: 'REQUIRED' });
       if (!email) errors.push({ field: 'email', message: 'Email é obrigatório', code: 'REQUIRED' });
+      if (!cpf) errors.push({ field: 'cpf', message: 'CPF é obrigatório', code: 'REQUIRED' });
+      if (!dat_nas) errors.push({ field: 'dat_nas', message: 'Data de nascimento é obrigatória', code: 'REQUIRED' });
+      if (!num_tel) errors.push({ field: 'num_tel', message: 'Telefone é obrigatório', code: 'REQUIRED' });
       if (!role) errors.push({ field: 'role', message: 'Role é obrigatório', code: 'REQUIRED' });
-
-      return sendError(res, 400, 'Login, email e role são obrigatórios', errors);
+      return sendError(res, 400, 'Todos os campos obrigatórios devem ser preenchidos', errors);
     }
     
     // Verificar se o usuário existe
@@ -234,18 +255,33 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
         { field: 'email', message: 'Email já está em uso por outro usuário', code: 'CONFLICT' }
       ]);
     }
+
+    //Verificar se o cpf ja esta em uso por outro usuário
+    const existingCpf = await pool.query('SELECT id FROM usuario WHERE cpf = $1 AND id != $2', [cpf, id]);
+    if (existingCpf.rows.length > 0) {
+      return sendError(res, 409, 'CPF já está em uso por outro usuário', [
+        { field: 'cpf', message: 'CPF já está em uso por outro usuário', code: 'CONFLICT' }
+      ]);
+    }
+
+    const existingTele = await pool.query('SELECT id FROM usuario WHERE num_tel = $1 AND id != $2', [num_tel, id]);
+    if (existingTele.rows.length > 0) {
+      return sendError(res, 409, 'Telefone já está em uso por outro usuário', [
+        { field: 'num_tel', message: 'Telefone já está em uso por outro usuário', code: 'CONFLICT' }
+      ]);
+    }
     
     let query, params;
     
     if (senha && senha.trim() !== '') {
       // Atualizar com nova senha
       const hashedPassword = await bcrypt.hash(senha, 12);
-      query = 'UPDATE usuario SET login = $1, email = $2, senha = $3, role = $4 WHERE id = $5 RETURNING id, login, email, role';
-      params = [login, email, hashedPassword, role, id];
+      query = 'UPDATE usuario SET login = $1, email = $2, senha = $3, cpf = $4, dat_nas = $5, num_tel = $6, role = $7 WHERE id = $8 RETURNING id, login, email, cpf, dat_nas, num_tel, role';
+      params = [login, email, hashedPassword, cpf, dat_nas, num_tel, role, id];
     } else {
       // Atualizar sem alterar senha
-      query = 'UPDATE usuario SET login = $1, email = $2, role = $3 WHERE id = $4 RETURNING id, login, email, role';
-      params = [login, email, role, id];
+      query = 'UPDATE usuario SET login = $1, email = $2, cpf = $3, dat_nas = $4, num_tel = $5, role = $6 WHERE id = $7 RETURNING id, login, email, cpf, dat_nas, num_tel, role';
+      params = [login, email, cpf, dat_nas, num_tel, role, id];
     }
     
     const result = await pool.query(query, params);
@@ -265,6 +301,8 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
 router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
   try {
     const { id } = req.params;
+    if (req.user.id == id) {return sendError(res,400,'Você não pode excluir sua própria conta');
+}
     
     // Verificar se o usuário existe
     const userExists = await pool.query('SELECT id FROM usuario WHERE id = $1', [id]);
