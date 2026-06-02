@@ -155,8 +155,7 @@ bind:value={filtro}
               <button
                 class="p-2 rounded border border-primary-500 hover:border-tertiary-50 transition bg-transparent"
                 title="Editar"
-                on:click={() => goto(`/users/edit/${user.id}`)}
-              >
+                on:click={() => goto(`/users/edit/${user.id}`)}>
                 <UserEditOutline class="w-5 h-5 text-primary-500" />
               </button>
               <!-- Botão remover -->

@@ -2,6 +2,9 @@ export interface User {
   id: number;
   login: string;
   email: string;
+  cpf: string;
+  dat_nas: string;
+  num_tel: string;
   role: string;
 }
 
@@ -10,5 +13,8 @@ export interface UserFormData {
   login: string;
   email: string;
   senha?: string;
+  cpf: string;
+  dat_nas: string;
+  num_tel: string;
   role: string;
 }
