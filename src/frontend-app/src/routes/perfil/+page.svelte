@@ -49,6 +49,7 @@
       <Badge color={user.role === 'admin' ? 'secondary' : 'yellow'} class="text-xs uppercase">
         {user.role}
       </Badge>
+      
     </div>
 
     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
