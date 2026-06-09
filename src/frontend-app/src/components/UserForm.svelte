@@ -33,7 +33,19 @@
         const res = await api.get(`/users/${id}`);
         const body = res.data as ApiResponse<User>;
         if (body.success && body.data) {
-          user = { ...body.data, senha: '' }; // não carrega senha na edição
+          
+          // MUDANÇA AQUI: Formata a data recebida para YYYY-MM-DD
+          let dataFormatada = '';
+          if (body.data.dat_nas) {
+            // Pega os primeiros 10 caracteres da string (que correspondem a YYYY-MM-DD)
+            dataFormatada = body.data.dat_nas.substring(0, 10);
+          }
+
+          user = { 
+            ...body.data, 
+            dat_nas: dataFormatada, // injeta a data limpa no formulário
+            senha: '' 
+          }; 
         } else {
           error = body.message;
         }
