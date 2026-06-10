@@ -123,7 +123,7 @@ bind:value={filtro}
   }
 </style>
   <!-- Tabela para telas médias/grandes -->
-  <div class="hidden xl:block">
+  <div class="hidden xl:block ">
     <!-- Tabela de usuários -->
     <Table class="w-full max-w-5xl mx-auto my-8 shadow-lg border-primary-350 bg-primary-350 rounded border border-separate overflow-hidden rounded-lg">
       <TableHead>
@@ -141,7 +141,7 @@ bind:value={filtro}
           <TableBodyRow class="bg-tertiary-200 border-primary-500">
             <TableBodyCell class="text-primary-700 ">{user.id}</TableBodyCell>
             <TableBodyCell class="text-primary-700">{user.login}</TableBodyCell>
-            <TableBodyCell class="truncate max-w-0 text-primary-700">{user.email}</TableBodyCell>
+            <TableBodyCell class="truncate max-w-64 text-primary-700">{user.email}</TableBodyCell>
             <TableBodyCell class="text-primary-700">{user.cpf}</TableBodyCell>
             <TableBodyCell class="text-primary-700">{user.num_tel}</TableBodyCell>
             <TableBodyCell class="text-primary-700">{new Date(user.dat_nas).toLocaleDateString('pt-BR')}</TableBodyCell>

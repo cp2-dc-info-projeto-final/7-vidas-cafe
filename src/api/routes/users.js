@@ -182,90 +182,157 @@ router.post('/login', async function(req, res) {
   }
 });
 
-/* PUT - Atualizar usuário (Admin altera tudo | Usuário altera apenas seus dados editáveis) */
+/* PUT - Atualizar usuário */
 router.put('/:id', verifyToken, async function(req, res) {
   try {
     const { id } = req.params;
-    let { login, email, senha, cpf, dat_nas, num_tel, role } = req.body;
-    
+    const { login, email, senha, cpf, dat_nas, num_tel, role } = req.body;
+
     const isOwner = req.user.id == id;
     const isAdminUser = req.user.role === 'admin';
 
-    // 1. Defesa de rota: Só entra quem for admin OU dono da conta
+    // Apenas admin ou dono da conta
     if (!isAdminUser && !isOwner) {
-      return sendError(res, 403, 'Você não tem permissão para alterar este usuário');
+      return sendError(
+        res,
+        403,
+        'Você não tem permissão para alterar este usuário'
+      );
     }
 
-    // 2. Busca o registro atual do banco
-    const userExists = await pool.query('SELECT id, role, cpf, dat_nas FROM usuario WHERE id = $1', [id]);
-    if (userExists.rows.length === 0) {
+    // Busca usuário atual
+    const userResult = await pool.query(
+      `SELECT
+        id,
+        login,
+        email,
+        cpf,
+        dat_nas,
+        num_tel,
+        role
+      FROM usuario
+      WHERE id = $1`,
+      [id]
+    );
+
+    if (userResult.rows.length === 0) {
       return sendError(res, 404, 'Usuário não encontrado');
     }
 
-    const userDataNoBanco = userExists.rows[0];
+    const atual = userResult.rows[0];
 
-    // 3. REGRA DE TRAVAMENTO: Se NÃO for admin, força os valores imutáveis vindos do banco
-    let finalRole = userDataNoBanco.role;
-    let finalCpf = cpf;
-    let finalDatNas = dat_nas;
+    // Mantém valores atuais caso não venham no body
+    const finalLogin = login ?? atual.login;
+    const finalEmail = email ?? atual.email;
+    const finalNumTel = num_tel ?? atual.num_tel;
 
+    let finalCpf = atual.cpf;
+    let finalDatNas = atual.dat_nas;
+    let finalRole = atual.role;
+
+    // Apenas admin pode alterar esses campos
     if (isAdminUser) {
-      finalRole = role || finalRole; // Admin pode mudar a role se quiser
-    } else {
-      // Se for usuário comum, ele não pode mudar CPF, Nascimento e nem se autopromover
-      finalCpf = userDataNoBanco.cpf;
-      finalDatNas = userDataNoBanco.dat_nas;
+      finalCpf = cpf ?? atual.cpf;
+      finalDatNas = dat_nas ?? atual.dat_nas;
+      finalRole = role ?? atual.role;
     }
 
-    // 4. Validação dos campos finais obrigatórios
-    if (!login || !email || !finalCpf || !finalDatNas || !num_tel) {
-      const errors = [];
-      if (!login) errors.push({ field: 'login', message: 'Login é obrigatório' });
-      if (!email) errors.push({ field: 'email', message: 'Email é obrigatório' });
-      if (!num_tel) errors.push({ field: 'num_tel', message: 'Telefone é obrigatório' });
-      return sendError(res, 400, 'Todos os campos obrigatórios devem ser preenchidos', errors);
-    }
-    
-    // 5. Validação de conflito de dados (ignora o próprio ID para não dar erro consigo mesmo)
-    const existingUser = await pool.query('SELECT id FROM usuario WHERE login = $1 AND id != $2', [login, id]);
+    // Login
+    const existingUser = await pool.query(
+      'SELECT id FROM usuario WHERE login = $1 AND id != $2',
+      [finalLogin, id]
+    );
+
     if (existingUser.rows.length > 0) {
-      return sendError(res, 409, 'Login já está em uso', [{ field: 'login', message: 'Login já em uso' }]);
+      return sendError(res, 409, 'Login já está em uso', [
+        { field: 'login', message: 'Login já está em uso', code: 'CONFLICT'}
+      ]);
     }
 
-    const existingEmail = await pool.query('SELECT id FROM usuario WHERE email = $1 AND id != $2', [email, id]);
+    // Email
+    const existingEmail = await pool.query(
+      'SELECT id FROM usuario WHERE email = $1 AND id != $2',
+      [finalEmail, id]
+    );
+
     if (existingEmail.rows.length > 0) {
-      return sendError(res, 409, 'Email já está em uso', [{ field: 'email', message: 'Email já em uso' }]);
+      return sendError(res, 409, 'Email já está em uso', [
+        {
+          field: 'email', message: 'Email já está em uso', code: 'CONFLICT'}
+      ]);
     }
 
-    const existingTele = await pool.query('SELECT id FROM usuario WHERE num_tel = $1 AND id != $2', [num_tel, id]);
+    // Telefone
+    const existingTele = await pool.query(
+      'SELECT id FROM usuario WHERE num_tel = $1 AND id != $2',
+      [finalNumTel, id]
+    );
+
     if (existingTele.rows.length > 0) {
-      return sendError(res, 409, 'Telefone já está em uso', [{ field: 'num_tel', message: 'Telefone já em uso' }]);
+      return sendError(res, 409, 'Telefone já está em uso', [
+        { field: 'num_tel', message: 'Telefone já está em uso', code: 'CONFLICT'}
+         ]
+      );
     }
-    
-    // 6. Define e executa a query correta com base no envio ou não de uma nova senha
-    let query, params;
-    
+
+    // CPF somente para admin
+    if (isAdminUser) {
+      const existingCpf = await pool.query(
+        'SELECT id FROM usuario WHERE cpf = $1 AND id != $2', [finalCpf, id]);
+
+      if (existingCpf.rows.length > 0) {
+        return sendError(res, 409, 'CPF já está em uso', [
+          {field: 'cpf', message: 'CPF já está em uso', code: 'CONFLICT'}
+        ]
+      );
+    }
+  }
+
+    let query;
+    let params;
+
     if (senha && senha.trim() !== '') {
       const hashedPassword = await bcrypt.hash(senha, 12);
-      query = 'UPDATE usuario SET login = $1, email = $2, senha = $3, cpf = $4, dat_nas = $5, num_tel = $6, role = $7 WHERE id = $8 RETURNING id, login, email, cpf, dat_nas, num_tel, role';
-      params = [login, email, hashedPassword, finalCpf, finalDatNas, num_tel, finalRole, id];
-    } else {
-      query = 'UPDATE usuario SET login = $1, email = $2, cpf = $3, dat_nas = $4, num_tel = $5, role = $6 WHERE id = $7 RETURNING id, login, email, cpf, dat_nas, num_tel, role';
-      params = [login, email, finalCpf, finalDatNas, num_tel, finalRole, id];
+
+      query = `
+        UPDATE usuario
+        SET login = $1,email = $2,senha = $3,cpf = $4, dat_nas = $5,num_tel = $6, role = $7
+        WHERE id = $8
+        RETURNING id, login, email, cpf, dat_nas, num_tel, role`;
+
+      params = [ finalLogin, finalEmail, hashedPassword, finalCpf, finalDatNas, finalNumTel, finalRole, id ];} 
+      else {
+      query = ` UPDATE usuario SET login = $1, email = $2, cpf = $3, dat_nas = $4, num_tel = $5, role = $6 WHERE id = $7 
+        RETURNING id, login, email, cpf, dat_nas, num_tel, role`;
+
+      params = [ finalLogin, finalEmail, finalCpf, finalDatNas, finalNumTel, finalRole, id];
     }
-    
+
     const result = await pool.query(query, params);
-    return sendSuccess(res, 200, 'Usuário atualizado com sucesso', result.rows[0]);
+
+    return sendSuccess(
+      res,
+      200,
+      'Usuário atualizado com sucesso',
+      result.rows[0]
+    );
+
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
+
     if (error.code === '23514') {
-      return sendError(res, 400, 'Dados inválidos. Verifique os campos e tente novamente.');
+      return sendError(
+        res,
+        400,
+        'Dados inválidos. Verifique os campos e tente novamente.'
+      );
     }
+
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
 
-/* DELETE - Remover usuário (Apenas Admin) */
+
 router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
   try {
     const { id } = req.params;
