@@ -10,6 +10,9 @@
   let loading = true;
   let error = '';
 
+  let confirmPassword = '';
+let showDeleteConfirmation = false;
+
   // Estados para controle de edição por campo
   let editingField: string | null = null;
   let editValue: string = '';
@@ -78,6 +81,8 @@
       [field]: editValue // Sobrescreve o campo que mudou
     };
 
+    
+
     try {
       // Ajuste a URL/Headers conforme a estrutura do seu projeto de front-end
       const response = await fetch(`http://localhost:3000/users/${user.id}`, {
@@ -105,6 +110,43 @@
       saveLoading = false;
     }
   }
+  async function deleteOwnAccount() {
+    if (!user) return;
+
+    if (!confirmPassword) {
+      error = 'Por favor, digite sua senha para confirmar.';
+      return;
+    }
+
+    saveLoading = true;
+    error = '';
+
+    try {
+      const response = await fetch(`http://localhost:3000/users/${user.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify({ password: confirmPassword }) // Enviando a senha pro back
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Erro ao excluir a conta.');
+      }
+
+      // Limpa os dados locais e desloga
+      localStorage.removeItem('token'); 
+      goto('/login');
+    } catch (e: any) {
+      console.error(e);
+      error = e.message || 'Falha ao excluir a conta.';
+    } finally {
+      saveLoading = false;
+    }
+  }
 </script>
 
 <Menu />
@@ -112,7 +154,7 @@
 {#if loading}
   <div class="my-8 text-center text-gray-500">Carregando informações do perfil...</div>
 {:else}
-  <div class="w-full max-w-2xl mx-auto my-10 bg-tertiary-100 border border-secondary-200 rounded-lg shadow-sm p-8 flex flex-col gap-6">
+  <div class="w-full max-w-2xl mx-auto my-10 bg-tertiary-100 border border-secondary-200 rounded-lg shadow-sm p-8 mt-30 flex flex-col gap-6">
     
     <div class="flex items-center justify-between border-b border-secondary-200 pb-4 mb-2">
       <h2 class="text-xl font-semibold text-primary-500">Informações do Perfil</h2>
@@ -219,7 +261,56 @@
           {/if}
         </div>
       </div>
-    {/if}
 
-  </div>
-{/if}
+      <div class="mt-6 pt-6 border-t border-primary-400 bg-tertiary-200 p-4 rounded-lg flex flex-col gap-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-sm font-bold text-red-700 uppercase tracking-wider">Zona de Perigo</h3>
+            <p class="text-xs text-red-600 mt-1">Ao excluir sua conta, todos os seus dados serão apagados permanentemente do nosso sistema.</p>
+          </div>
+          
+          {#if !showDeleteConfirmation}
+            <button 
+              on:click={() => { showDeleteConfirmation = true; error = ''; }} 
+              class="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-md text-sm font-semibold hover:bg-red-700 transition-colors shadow-sm"
+            >
+              Excluir minha conta
+            </button>
+          {/if}
+        </div>
+
+        {#if showDeleteConfirmation}
+          <div class="mt-2 p-3 bg-tertiary-300 border border-primary-500 rounded-md flex flex-col gap-3">
+            <label for="confirm-pass" class="text-xs font-semibold text-secondary-500">
+              Para prosseguir, digite sua senha atual:
+            </label>
+            <div class="flex flex-col sm:flex-row gap-2">
+              <input 
+                id="confirm-pass"
+                type="password" 
+                placeholder="Digite sua senha" 
+                bind:value={confirmPassword}
+                disabled={saveLoading}
+                class="flex-1 text-gray-900 bg-tertiary-100 border border-gray-300 rounded-md p-2 text-sm focus:ring-red-500 focus:border-red-500"
+              />
+              <div class="flex gap-2">
+                <button 
+                  on:click={deleteOwnAccount} 
+                  disabled={saveLoading || !confirmPassword}
+                  class="px-4 py-2 bg-secondary-300 text-white rounded text-xs font-bold hover:bg-red-500 disabled:opacity-50"
+                >
+                  {saveLoading ? 'Excluindo...' : 'Confirmar Exclusão'}
+                </button>
+                <button 
+                  on:click={() => { showDeleteConfirmation = false; confirmPassword = ''; }} 
+                  disabled={saveLoading}
+                  class="px-4 py-2 bg-secondary-300  text-gray-900 rounded text-xs font-semibold hover:bg-tertiary-200 "
+                >Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        {/if}
+      </div>
+
+    {/if} </div> {/if} 

@@ -31,7 +31,7 @@
 {#if checkingAccess}
   <div class="text-center p-8 pt-32 text-gray-500">Verificando acesso...</div>
 {:else if canView}
-  <div class="text-center w-full max-w-5xl pt-12">
+  <div class="text-center w-full max-w-full pt-12">
     <div class="flex items-center justify-between w-full mb-6 pt-32">
   <Heading
     tag="h2"

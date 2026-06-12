@@ -333,18 +333,48 @@ router.put('/:id', verifyToken, async function(req, res) {
 });
 
 
-router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
+/* DELETE - Deletar usuário com confirmação de senha */
+/* DELETE - Deletar usuário com confirmação de senha (SEM isAdmin na assinatura) */
+router.delete('/:id', verifyToken, async function(req, res) {
   try {
     const { id } = req.params;
-    if (req.user.id == id) {
-      return sendError(res, 400, 'Você não pode excluir sua própria conta');
+    const { password } = req.body; 
+
+    // Garante comparação de string idêntica (evita erros de int vs string)
+    const isOwner = String(req.user.id) === String(id);
+    const isAdminUser = req.user.role === 'admin';
+
+    // 1. Permissão básica (Se não for admin e nem o dono da conta, barra)
+    if (!isAdminUser && !isOwner) {
+      return sendError(res, 403, 'Acesso negado: privilégios insuficientes.');
     }
-    
-    const userExists = await pool.query('SELECT id FROM usuario WHERE id = $1', [id]);
-    if (userExists.rows.length === 0) {
+
+    // 2. Bloqueia admin de se excluir por aqui de propósito
+    if (isAdminUser && isOwner) {
+      return sendError(res, 400, 'Admins não podem excluir sua própria conta por aqui');
+    }
+
+    // 3. Busca o usuário no banco para pegar o hash da senha
+    const userResult = await pool.query('SELECT id, senha FROM usuario WHERE id = $1', [id]);
+    if (userResult.rows.length === 0) {
       return sendError(res, 404, 'Usuário não encontrado');
     }
-    
+
+    // 4. Se for o DONO deletando a conta, ele precisa passar a senha
+    if (isOwner) {
+      if (!password) {
+        return sendError(res, 400, 'A senha é obrigatória para confirmar a exclusão');
+      }
+
+      const userDb = userResult.rows[0];
+      const isMatch = await bcrypt.compare(password, userDb.senha);
+      
+      if (!isMatch) {
+        return sendError(res, 401, 'Senha incorreta. Não foi possível excluir a conta.');
+      }
+    }
+
+    // 5. Deleta o usuário do banco
     await pool.query('DELETE FROM usuario WHERE id = $1', [id]);
     return sendSuccess(res, 200, 'Usuário deletado com sucesso');
   } catch (error) {
@@ -352,5 +382,4 @@ router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
-
 module.exports = router;
