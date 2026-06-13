@@ -135,7 +135,7 @@
 
 - O cliente acessa o menu do seu perfil com as configurações da sua conta.
 
-- O cliente aperta o botão excluir conta.
+- O cliente aperta em "Excluir minha conta".
 
 - O sistema solicita a senha do cliente para proseguir com a exclusão.
   
@@ -145,19 +145,15 @@
   
 - O banco de dados retorna uma confirmação positiva.
   
-- O sistema pergunta se quer confirmar a exclusão.
-  
-- O cliente aperta o botão confirmar.
+- O cliente aperta o botão "Confirmar Exclusão".
   
 - O sistema apaga os dados do cliente no banco de dados.
   
-- O sistema apresenta mensagem de sucesso.
-  
-- O sistema realoca o cliente para a página de login e cadastro.
+- O sistema realoca o cliente para a página de login.
 
 #### Fluxo Alternativo A: Senha incorreta.
 
-- O usuário acessa o menu do seu perfil com as configurações da sua conta e aperta no botão "Excluir conta".
+- O usuário acessa o menu do seu perfil com as configurações da sua conta e aperta no botão "Excluir minha conta".
 
 - O sistema pede que o usuário insira senha para continuar.
 
@@ -187,13 +183,15 @@
 
 - O cliente acessa o menu do seu perfil com as configurações da sua conta.
 
-- O cliente aperta o botão "editar dados de cadastro da conta".
+- O cliente aperta o botão "editar" em alguma das informações disponiveis.
   
-- O sistema exibe os dados de cadastro do cliente.
+- O sistema exibe um campo individual para edição do campo.
 
-- O cliente edita dados do seu cadastro e aperta o botão confirmar.
+- O cliente edita o campo da sua informação e aperta o botão confirmar.
   
 - O sistema edita os dados do cliente no banco de dados.
+
+- O sistema exibe a nova informação.
 
 #### Fluxo Alternativo A: Cancelar edição
 
