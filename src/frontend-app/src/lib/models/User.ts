@@ -13,6 +13,7 @@ export interface UserFormData {
   login: string;
   email: string;
   senha?: string;
+  confirmarSenha?:string
   cpf: string;
   dat_nas: string;
   num_tel: string;

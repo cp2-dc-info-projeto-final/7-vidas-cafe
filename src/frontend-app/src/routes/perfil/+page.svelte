@@ -2,7 +2,7 @@
   import { Heading, Badge } from 'flowbite-svelte';
   import Menu from '../../components/Menu.svelte';
   import { goto } from "$app/navigation";
-  import { getCurrentUser, getToken, type User } from "$lib/auth"; 
+  import { getCurrentUser, getToken, removeToken, type User } from "$lib/auth"; 
   import { onMount } from 'svelte';
 
   let user: User | null = null;
@@ -15,6 +15,12 @@
   let editingField: string | null = null;
   let editValue: string = '';
   let saveLoading = false;
+
+  // Calcula a data máxima permitida (hoje menos 18 anos) para travar o calendário nativo
+  const hoje = new Date();
+  const dataLimite18Anos = new Date(hoje.getFullYear() - 18, hoje.getMonth(), hoje.getDate())
+    .toISOString()
+    .split('T')[0];
 
   onMount(async () => {
     await loadUserData();
@@ -46,6 +52,7 @@
 
   function startEdit(field: string, initialValue: any) {
     editingField = field;
+    error = ''; // Limpa erros antigos ao iniciar nova edição
     if (field === 'dat_nas' && initialValue) {
       editValue = new Date(initialValue).toISOString().split('T')[0];
     } else {
@@ -56,6 +63,7 @@
   function cancelEdit() {
     editingField = null;
     editValue = '';
+    error = '';
   }
 
   async function saveField(field: string) {
@@ -63,14 +71,89 @@
     saveLoading = true;
     error = '';
 
+    const valorLimpo = editValue.trim();
+
+    // 1. Validação Geral de campos vazios
+    if (!valorLimpo) {
+      error = 'Este campo é obrigatório e não pode ficar vazio.';
+      saveLoading = false;
+      return;
+    }
+
+    // 2. Validação isolada por campo (Apenas valida o campo que está sendo alterado AGORA)
+    if (field === 'email') {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail|hotmail|outlook|yahoo|icloud|live)\.(com|com\.br)$/i;
+      if (!emailRegex.test(valorLimpo)) {
+        error = 'Por favor, insira um e-mail válido dos provedores aceitos (Ex: nome@gmail.com, nome@outlook.com).';
+        saveLoading = false;
+        return;
+      }
+    }
+
+    if (field === 'login' && valorLimpo.length < 3) {
+      error = 'O nome de usuário deve conter pelo menos 3 caracteres.';
+      saveLoading = false;
+      return;
+    }
+
+    if (field === 'dat_nas') {
+      const dataSelecionada = new Date(valorLimpo);
+      const dataMinima = new Date('1900-01-01');
+      const dataAtual = new Date();
+
+      if (dataSelecionada < dataMinima) {
+        error = 'A data de nascimento não pode ser anterior a 01/01/1900.';
+        saveLoading = false;
+        return;
+      }
+
+      let idade = dataAtual.getFullYear() - dataSelecionada.getFullYear();
+      const mes = dataAtual.getMonth() - dataSelecionada.getMonth();
+      if (mes < 0 || (mes === 0 && dataAtual.getDate() < dataSelecionada.getDate())) {
+        idade--;
+      }
+
+      if (idade < 18) {
+        error = 'Cadastro permitido apenas para maiores de 18 anos.';
+        saveLoading = false;
+        return;
+      }
+    }
+
+    if (field === 'cpf') {
+      const cpfRegex = /^(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})$/;
+      if (!cpfRegex.test(valorLimpo)) {
+        error = 'Formato de CPF inválido. Use o padrão puro (12345678900) ou formatado (123.456.789-00).';
+        saveLoading = false;
+        return;
+      }
+    }
+
+    if (field === 'num_tel') {
+      const telRegex = /^\((1[1-9]|[2-9][1-9])\)(9[2-9]\d{3}|[2-5]\d{3})-\d{4}$/;
+      if (!telRegex.test(valorLimpo)) {
+        const digitos = valorLimpo.replace(/\D/g, '');
+        
+        if (digitos.length < 10 || digitos.length > 11) {
+          error = 'Telefone incompleto ou longo demais. Deve ter 10 dígitos (fixo) ou 11 dígitos (celular) com o DDD.';
+        } else if (digitos.length === 11 && digitos[2] !== '9') {
+          error = 'Todo número de celular com 9 dígitos deve obrigatoriamente começar com o número 9 após o DDD. Ex: (21)9XXXX-XXXX';
+        } else {
+          error = 'Formato de telefone incorreto. Use o padrão estruturado: (21)92345-6789.';
+        }
+        saveLoading = false;
+        return;
+      }
+    }
+
+    // 3. Monta o payload garantindo que os campos não alterados mantenham seus valores originais
     const updatedData = {
-      login: user.login,
-      email: user.email,
-      cpf: user.cpf,
-      dat_nas: user.dat_nas,
-      num_tel: user.num_tel,
-      role: user.role,
-      [field]: editValue 
+      login: field === 'login' ? valorLimpo : user.login,
+      email: field === 'email' ? valorLimpo : user.email,
+      cpf: field === 'cpf' ? valorLimpo : user.cpf,
+      dat_nas: field === 'dat_nas' ? valorLimpo : user.dat_nas,
+      num_tel: field === 'num_tel' ? valorLimpo : user.num_tel,
+      role: user.role
     };
 
     try {
@@ -86,6 +169,10 @@
       const result = await response.json();
 
       if (!response.ok) {
+        // Mapeia e joga na tela o erro específico retornado pelo array do backend refinado
+        if (result.errors && result.errors.length > 0) {
+          throw new Error(result.errors[0].message);
+        }
         throw new Error(result.message || 'Erro ao atualizar dados.');
       }
 
@@ -101,7 +188,6 @@
 
   async function deleteOwnAccount() {
     if (!user) return;
-
     if (!confirmPassword) {
       error = 'Por favor, digite sua senha para confirmar.';
       return;
@@ -126,7 +212,7 @@
         throw new Error(result.message || 'Erro ao excluir a conta.');
       }
 
-      localStorage.removeItem('token'); 
+      removeToken(); 
       goto('/login');
     } catch (e: any) {
       console.error(e);
@@ -203,7 +289,7 @@
           </div>
           <div class="w-full sm:w-3/4 flex flex-col sm:flex-row gap-2">
             {#if editingField === 'cpf'}
-              <input type="text" bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
+              <input type="text" bind:value={editValue} placeholder="123.456.789-00" disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
               <div class="flex gap-2 w-full sm:w-auto shrink-0">
                 <button on:click={() => saveField('cpf')} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Salvar</button>
                 <button on:click={cancelEdit} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Sair</button>
@@ -225,7 +311,7 @@
           </div>
           <div class="w-full sm:w-3/4 flex flex-col sm:flex-row gap-2">
             {#if editingField === 'dat_nas'}
-              <input type="date" bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
+              <input type="date" min="1900-01-01" max={dataLimite18Anos} bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
               <div class="flex gap-2 w-full sm:w-auto shrink-0">
                 <button on:click={() => saveField('dat_nas')} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Salvar</button>
                 <button on:click={cancelEdit} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Sair</button>
@@ -247,7 +333,7 @@
           </div>
           <div class="w-full sm:w-3/4 flex flex-col sm:flex-row gap-2">
             {#if editingField === 'num_tel'}
-              <input type="text" bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
+              <input type="text" placeholder="(21)92345-6789" bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
               <div class="flex gap-2 w-full sm:w-auto shrink-0">
                 <button on:click={() => saveField('num_tel')} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Salvar</button>
                 <button on:click={cancelEdit} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Sair</button>
@@ -265,50 +351,21 @@
           <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <h3 class="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Zona de Perigo</h3>
-              <p class="text-[11px] text-neutral-400 mt-1 font-light tracking-wide leading-relaxed">Ao excluir sua conta, todos os seus dados serão apagados permanentemente do nosso sistema.</p>
+              <p class="text-[11px] text-neutral-400 mt-1 font-light tracking-wide leading-relaxed">Ao excluir sua conta, todos os seus dados serão apagados permanentemente.</p>
             </div>
-            
             {#if !showDeleteConfirmation}
-              <button 
-                on:click={() => { showDeleteConfirmation = true; error = ''; }} 
-                class="w-full md:w-auto shrink-0 px-4 py-2.5 bg-red-950/40 hover:bg-red-900/30 border border-red-900/50 text-red-400 rounded-none text-[10px] font-bold uppercase tracking-widest transition-all duration-300"
-              >
-                Excluir conta
-              </button>
+              <button on:click={() => { showDeleteConfirmation = true; error = ''; }} class="w-full md:w-auto shrink-0 px-4 py-2.5 bg-red-950/40 hover:bg-red-900/30 border border-red-900/50 text-red-400 rounded-none text-[10px] font-bold uppercase tracking-widest transition-all duration-300">Excluir conta</button>
             {/if}
           </div>
 
           {#if showDeleteConfirmation}
             <div class="mt-2 p-3 sm:p-4 bg-neutral-950/80 border border-red-900/30 rounded-none flex flex-col gap-3">
-              <label for="confirm-pass" class="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                Para confirmar a exclusão, digite sua senha:
-              </label>
+              <label for="confirm-pass" class="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Para confirmar a exclusão, digite sua senha:</label>
               <div class="flex flex-col sm:flex-row gap-2">
-                <input 
-                  id="confirm-pass"
-                  type="password" 
-                  placeholder="Sua senha atual" 
-                  bind:value={confirmPassword}
-                  disabled={saveLoading}
-                  class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-red-500"
-                />
+                <input id="confirm-pass" type="password" placeholder="Sua senha atual" bind:value={confirmPassword} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-red-500" />
                 <div class="flex gap-2 w-full sm:w-auto shrink-0">
-                  <button 
-                    type="button"
-                    on:click={deleteOwnAccount} 
-                    disabled={saveLoading || !confirmPassword}
-                    class="flex-1 sm:flex-none px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
-                  >
-                    {saveLoading ? 'Excluindo...' : 'Confirmar'}
-                  </button>
-                  <button 
-                    type="button"
-                    on:click={() => { showDeleteConfirmation = false; confirmPassword = ''; }} 
-                    disabled={saveLoading}
-                    class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors"
-                  >
-                    Cancelar
-                  </button>
+                  <button type="button" on:click={deleteOwnAccount} disabled={saveLoading || !confirmPassword} class="flex-1 sm:flex-none px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50">{saveLoading ? 'Excluindo...' : 'Confirmar'}</button>
+                  <button type="button" on:click={() => { showDeleteConfirmation = false; confirmPassword = ''; }} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Cancelar</button>
                 </div>
               </div>
             </div>

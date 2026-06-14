@@ -13,7 +13,7 @@
 
   <Menu />
   
-  <div class="w-full max-w-5xl mx-auto px-6 md:px-12 flex-grow pb-24">
+  <div class="w-full max-w-7xl mx-auto px-6 md:px-12 flex-grow pb-24">
     {@render children()}
   </div>
 

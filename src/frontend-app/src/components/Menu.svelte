@@ -80,7 +80,7 @@
         <Heading class="text-xl sm:text-2xl font-black tracking-[0.22em] text-white uppercase font-serif leading-none">
           7 Vidas Café
         </Heading>
-        <span class="text-[11px] font-bold tracking-[0.35em] text-amber-500 uppercase mt-1">Café & Felinos</span>
+        <span class="text-[11px] font-bold tracking-[0.35em] text-amber-500 uppercase mt-1">Café & Gatos</span>
       </div>
     </NavBrand>
     
@@ -104,9 +104,9 @@
             </NavLi>
           {/if}
           
-          <NavLi href="/perfil" nonActiveClass="inline-block text-xs font-bold uppercase tracking-[0.18em] border border-amber-600 px-4.5 py-2.5 text-amber-500 hover:bg-amber-600 hover:text-neutral-950 transition-all duration-300 rounded-none">
-            {user.login}
-          </NavLi>
+          <NavLi href="/perfil" nonActiveClass="text-[15px] font-bold uppercase tracking-[0.18em] px-3.5 py-2 text-amber-500 hover:text-amber-400 transition-all duration-300 rounded-none relative after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-[1px] after:bg-amber-400 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">
+  {user.login}
+</NavLi>
 
           <NavLi>
             <div class="flex items-center">

@@ -1,42 +1,41 @@
 <script lang="ts">
   // Tabela de usuários
-  import { Table, TableHead, TableHeadCell, TableBody, TableBodyRow, TableBodyCell, Card, Badge, input } from 'flowbite-svelte'; // UI
-  import ConfirmModal from './ConfirmModal.svelte'; // modal de confirmação
-  import { UserEditOutline, TrashBinOutline } from 'flowbite-svelte-icons'; // ícones
-  import { goto } from '$app/navigation'; // navegação
-  import api from '$lib/api'; // API backend
+  import { Table, TableHead, TableHeadCell, TableBody, TableBodyRow, TableBodyCell, Card, Badge } from 'flowbite-svelte'; 
+  import ConfirmModal from './ConfirmModal.svelte'; 
+  import { UserEditOutline, TrashBinOutline } from 'flowbite-svelte-icons'; 
+  import { goto } from '$app/navigation'; 
+  import api from '$lib/api'; 
   import type { ApiResponse } from '$lib/api';
-  import { onMount } from 'svelte'; // ciclo de vida
+  import { onMount } from 'svelte'; 
   import type { User } from '$lib/models/User';
 
-  let users: User[] = []; // lista de usuários
+  let users: User[] = []; 
   let loading = true;
   let error = '';
-  let deletingId: number | null = null; // id em deleção
-  let confirmOpen = false; // modal aberto?
-  let confirmTargetId: number | null = null; // id alvo do modal
+  let deletingId: number | null = null; 
+  let confirmOpen = false; 
+  let confirmTargetId: number | null = null; 
   let filtro = '';
 
-  // Abre modal de confirmação
   function openConfirm(id: number) {
     confirmTargetId = id;
     confirmOpen = true;
   }
-  // Fecha modal
+
   function closeConfirm() {
     confirmOpen = false;
     confirmTargetId = null;
+    deletingId = null; 
   }
 
-  // Confirma remoção
   function handleConfirm() {
     if (confirmTargetId !== null) {
       handleDelete(confirmTargetId);
     }
-    closeConfirm();
+    confirmOpen = false;
+    confirmTargetId = null;
   }
 
-  // Cancela remoção
   function handleCancel() {
     closeConfirm();
   }
@@ -48,7 +47,7 @@
       const res = await api.delete(`/users/${id}`);
       const body = res.data as ApiResponse<null>;
       if (!body.success) {
-        error = body.message;
+        error = body.message; // O erro do user.js (backend) será exibido aqui
         return;
       }
       users = users.filter(user => user.id !== id);
@@ -81,19 +80,15 @@
 
   $: filtro, buscarUsuarios();
 
-  async function buscarUsuarios()
-  {
-    if(filtro !== '')
-    {
+  async function buscarUsuarios() {
+    if(filtro !== '') {
       try {
-        const res = await api.get(`/users/nome/${encodeURIComponent(filtro)}`);""
+        const res = await api.get(`/users/nome/${encodeURIComponent(filtro)}`);
         users = res.data.data ?? [];
       } catch (e: any) {
         console.error('Erro ao buscar usuários:', e);
       }
-    }
-    else
-    {
+    } else {
         const res = await api.get('/users');
         users = res.data.data ?? [];
     }
@@ -103,9 +98,9 @@
 {#if loading}
   <div class="my-8 text-center text-neutral-400 font-medium uppercase tracking-widest animate-pulse">Carregando usuários...</div>
 {:else if error}
-  <div class="my-8 text-center text-red-500 font-semibold text-sm tracking-wide">{error}</div>
+  <div class="my-8 text-center text-red-500 font-semibold text-sm tracking-wide max-w-xl mx-auto bg-red-950/10 p-3 border border-red-900/35">{error}</div>
 {:else}
-  <div class="max-w-5xl mx-auto px-4 mt-8 mb-4">
+  <div class="max-w-7xl mx-auto mt-8 mb-4">
     <input
       type="text"
       placeholder="Pesquisar Usuário"
@@ -122,8 +117,8 @@
     }
   </style>
 
-  <div class="hidden xl:block px-4">
-    <Table class="w-full max-w-5xl mx-auto my-8 shadow-2xl border-primary-350 bg-primary-350/80 backdrop-blur-lg rounded-none border border-separate overflow-hidden">
+  <div class="hidden xl:block max-w-7xl">
+    <Table class="w-full max-w-7xl mx-auto my-8 shadow-2xl border-primary-350 bg-primary-350/80 backdrop-blur-lg rounded-none border border-separate overflow-hidden">
       <TableHead class="border-b border-neutral-800/20 bg-transparent">
         <TableHeadCell class="text-primary-900 w-16 bg-transparent text-xs font-bold uppercase tracking-wider py-4">ID</TableHeadCell>
         <TableHeadCell class="text-primary-900 w-32 bg-transparent text-xs font-bold uppercase tracking-wider py-4">Login</TableHeadCell>
@@ -202,10 +197,34 @@
               </button>
             </div>
           </div>
-          <div class="px-4 pb-4 pt-3 flex flex-col gap-2 text-left bg-transparent">
+
+          <div class="px-4 pb-4 pt-3 flex flex-col gap-2.5 text-left bg-transparent">
             <div class="flex items-center gap-2.5 text-left">
-              <svg class="w-4 h-4 text-primary-700 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 12A4 4 0 1 0 8 12a4 4 0 0 0 8 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 14v7m-7-7v7m14-7v7"/></svg>
+              <svg class="w-4 h-4 text-primary-700 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              </svg>
               <span class="text-primary-900 text-sm tracking-wide truncate">{user.email}</span>
+            </div>
+
+            <div class="flex items-center gap-2.5 text-left">
+              <svg class="w-4 h-4 text-primary-700 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.333 0 4 .667 4 2v1H5v-1c0-1.333 2.667-2 4-2z"/>
+              </svg>
+              <span class="text-primary-900 text-sm tracking-wide"><strong class="text-[10px] uppercase font-bold tracking-wider opacity-75 mr-1">CPF:</strong> {user.cpf}</span>
+            </div>
+
+            <div class="flex items-center gap-2.5 text-left">
+              <svg class="w-4 h-4 text-primary-700 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+              </svg>
+              <span class="text-primary-900 text-sm tracking-wide">{user.num_tel || 'Não informado'}</span>
+            </div>
+
+            <div class="flex items-center gap-2.5 text-left">
+              <svg class="w-4 h-4 text-primary-700 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span class="text-primary-900 text-sm tracking-wide">{new Date(user.dat_nas).toLocaleDateString('pt-BR')}</span>
             </div>
           </div>
         </Card>

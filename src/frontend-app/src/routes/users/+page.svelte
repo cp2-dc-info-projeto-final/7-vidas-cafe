@@ -31,7 +31,7 @@
 {#if checkingAccess}
   <div class="text-center p-8 pt-32 text-gray-500">Verificando acesso...</div>
 {:else if canView}
-  <div class="text-center w-full max-w-full pt-12">
+  <div class="text-center w-full max-w-7xl pt-12">
     <div class="flex items-center justify-between w-full mb-6 pt-32">
   <Heading
     tag="h2"
@@ -42,7 +42,7 @@
     on:click={() => goto('/users/new')}
   >
     <UserAddOutline class="w-5 h-5" /> Adicionar </button>
-</div>
+    </div>
 
     <UsersTable />
   </div>

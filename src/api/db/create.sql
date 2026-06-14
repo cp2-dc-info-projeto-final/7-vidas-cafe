@@ -125,5 +125,5 @@ SET datestyle = 'ISO, DMY';
 
 INSERT INTO usuario (login, email, senha, cpf, dat_nas, num_tel, role) VALUES
 -- senha efelantinho
-('cafe', 'setevidascafe@email.com', '$2a$12$/kVJBiwy/1q5cbSbNa77neiIdMBN4hQSajrH4ccS4vaiGfizj81bq', '123.456.789-00', '29/02/2000', '(21)92345-6789', 'admin'),
-('zoroastra', 'zoroastra@email.com', '$2a$12$f2c.uHGHS4drfaz6HR870OLamkarD57kI.gkr4//Vbbp0vN9IrFfG','123.466.789-00', '29/03/2000', '(21)92345-6780', 'user');
+('cafe', 'setevidascafe@gmail.com', '$2a$12$/kVJBiwy/1q5cbSbNa77neiIdMBN4hQSajrH4ccS4vaiGfizj81bq', '123.456.789-00', '29/02/2000', '(21)92345-6789', 'admin'),
+('zoroastra', 'zoroastra@gmail.com', '$2a$12$f2c.uHGHS4drfaz6HR870OLamkarD57kI.gkr4//Vbbp0vN9IrFfG','123.466.789-00', '29/03/2000', '(21)92345-6780', 'user');
