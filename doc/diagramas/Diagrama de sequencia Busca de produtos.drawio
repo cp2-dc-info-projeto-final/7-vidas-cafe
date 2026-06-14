@@ -1,0 +1,89 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Página-1" id="56Rfx12D6GQMhdbYsr8O">
+    <mxGraphModel dx="1174" dy="721" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-48" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};participant=umlActor;" value="" vertex="1">
+          <mxGeometry height="250" width="21" x="110" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-214" parent="WP1aJ04n8GbtG8nvKHAh-48" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="150" width="21" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-49" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="FrontEnd" vertex="1">
+          <mxGeometry height="250" width="100" x="270" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-215" parent="WP1aJ04n8GbtG8nvKHAh-49" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="130" width="21" x="39.5" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-50" parent="1" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=1;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="BackEnd" vertex="1">
+          <mxGeometry height="250" width="100" x="470" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-194" parent="WP1aJ04n8GbtG8nvKHAh-50" style="html=1;points=[[0,0,0,0,5],[0,1,0,0,-5],[1,0,0,0,5],[1,1,0,0,-5]];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;curved&quot;:0,&quot;rounded&quot;:0};" value="" vertex="1">
+          <mxGeometry height="80" width="21" x="39.5" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-90" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Busca de&amp;nbsp;&lt;div&gt;Produtos&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="290" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-216" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint x="131" y="160" as="sourcePoint" />
+            <mxPoint x="311" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-217" connectable="0" parent="WP1aJ04n8GbtG8nvKHAh-216" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Escreve o nome&lt;div&gt;de alguma refeição&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.0808" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-218" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint x="330" y="180" as="sourcePoint" />
+            <mxPoint x="510" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-219" connectable="0" parent="WP1aJ04n8GbtG8nvKHAh-218" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Requisita a refeição&lt;div&gt;com o nome digitado&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.2641" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-220" edge="1" parent="1" style="html=1;align=left;spacingLeft=2;endArrow=block;rounded=0;edgeStyle=orthogonalEdgeStyle;curved=0;rounded=0;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="230" />
+            </Array>
+            <mxPoint x="530" y="200" as="sourcePoint" />
+            <mxPoint x="530" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-221" connectable="0" parent="WP1aJ04n8GbtG8nvKHAh-220" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Banco faz a&amp;nbsp;&lt;div&gt;procura&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.3333" y="3" as="geometry">
+            <mxPoint x="17" y="-10" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-222" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint x="510" y="240" as="sourcePoint" />
+            <mxPoint x="330" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-223" connectable="0" parent="WP1aJ04n8GbtG8nvKHAh-222" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Retorna a comida&lt;div&gt;desejada&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.3116" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-224" edge="1" parent="1" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" value="">
+          <mxGeometry relative="1" width="80" as="geometry">
+            <mxPoint x="311" y="270" as="sourcePoint" />
+            <mxPoint x="131" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="WP1aJ04n8GbtG8nvKHAh-225" connectable="0" parent="WP1aJ04n8GbtG8nvKHAh-224" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Mostra a refeição&lt;div&gt;desejada&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.1739" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

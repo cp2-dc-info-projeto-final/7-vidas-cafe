@@ -1,0 +1,14 @@
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "7 Vidas Café",
+            "database": "sete_vidas_cafe",
+            "username": "setevidascafe"
+        }
+    ]
+}

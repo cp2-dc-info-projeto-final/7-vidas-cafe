@@ -154,7 +154,7 @@ let showDeleteConfirmation = false;
 {#if loading}
   <div class="my-8 text-center text-gray-500">Carregando informações do perfil...</div>
 {:else}
-  <div class="w-full max-w-2xl mx-auto my-10 bg-tertiary-100 border border-secondary-200 rounded-lg shadow-sm p-8 mt-30 flex flex-col gap-6">
+  <div class="w-full max-w-2xl mx-auto my-10 bg-tertiary-100 border border-secondary-200 rounded-lg shadow-sm p-8 mt-45 flex flex-col gap-6">
     
     <div class="flex items-center justify-between border-b border-secondary-200 pb-4 mb-2">
       <h2 class="text-xl font-semibold text-primary-500">Informações do Perfil</h2>
