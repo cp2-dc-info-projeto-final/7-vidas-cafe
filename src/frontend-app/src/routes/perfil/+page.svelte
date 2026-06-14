@@ -2,7 +2,6 @@
   import { Heading, Badge } from 'flowbite-svelte';
   import Menu from '../../components/Menu.svelte';
   import { goto } from "$app/navigation";
-  // Certifique-se de que a sua api ou lib de auth tenha uma função para atualizar os dados, ou use o fetch diretamente.
   import { getCurrentUser, getToken, type User } from "$lib/auth"; 
   import { onMount } from 'svelte';
 
@@ -11,9 +10,8 @@
   let error = '';
 
   let confirmPassword = '';
-let showDeleteConfirmation = false;
+  let showDeleteConfirmation = false;
 
-  // Estados para controle de edição por campo
   let editingField: string | null = null;
   let editValue: string = '';
   let saveLoading = false;
@@ -46,10 +44,8 @@ let showDeleteConfirmation = false;
     }
   }
 
-  // Ativa o modo de edição para um campo específico
   function startEdit(field: string, initialValue: any) {
     editingField = field;
-    // Se for data, tenta formatar para o padrão YYYY-MM-DD que o <input type="date"> exige
     if (field === 'dat_nas' && initialValue) {
       editValue = new Date(initialValue).toISOString().split('T')[0];
     } else {
@@ -57,20 +53,16 @@ let showDeleteConfirmation = false;
     }
   }
 
-  // Cancela a edição atual
   function cancelEdit() {
     editingField = null;
     editValue = '';
   }
 
-  // Envia a atualização para o Backend
   async function saveField(field: string) {
     if (!user) return;
     saveLoading = true;
     error = '';
 
-    // Monta o payload mantendo os dados atuais e substituindo apenas o editado
-    // O seu backend exige esses campos estruturados no req.body
     const updatedData = {
       login: user.login,
       email: user.email,
@@ -78,20 +70,17 @@ let showDeleteConfirmation = false;
       dat_nas: user.dat_nas,
       num_tel: user.num_tel,
       role: user.role,
-      [field]: editValue // Sobrescreve o campo que mudou
+      [field]: editValue 
     };
 
-    
-
     try {
-      // Ajuste a URL/Headers conforme a estrutura do seu projeto de front-end
       const response = await fetch(`http://localhost:3000/users/${user.id}`, {
-       method: 'PUT',
-       headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${getToken()}`
-      },
-      body: JSON.stringify(updatedData)
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getToken()}`
+        },
+        body: JSON.stringify(updatedData)
       });
 
       const result = await response.json();
@@ -100,7 +89,6 @@ let showDeleteConfirmation = false;
         throw new Error(result.message || 'Erro ao atualizar dados.');
       }
 
-      // Se deu certo, recarrega os dados atualizados no front-end
       await loadUserData();
       editingField = null;
     } catch (e: any) {
@@ -110,6 +98,7 @@ let showDeleteConfirmation = false;
       saveLoading = false;
     }
   }
+
   async function deleteOwnAccount() {
     if (!user) return;
 
@@ -128,7 +117,7 @@ let showDeleteConfirmation = false;
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`
         },
-        body: JSON.stringify({ password: confirmPassword }) // Enviando a senha pro back
+        body: JSON.stringify({ password: confirmPassword }) 
       });
 
       const result = await response.json();
@@ -137,7 +126,6 @@ let showDeleteConfirmation = false;
         throw new Error(result.message || 'Erro ao excluir a conta.');
       }
 
-      // Limpa os dados locais e desloga
       localStorage.removeItem('token'); 
       goto('/login');
     } catch (e: any) {
@@ -152,165 +140,189 @@ let showDeleteConfirmation = false;
 <Menu />
 
 {#if loading}
-  <div class="my-8 text-center text-gray-500">Carregando informações do perfil...</div>
+  <div class="my-32 text-center text-neutral-400 font-medium uppercase tracking-widest animate-pulse">Carregando informações do perfil...</div>
 {:else}
-  <div class="w-full max-w-2xl mx-auto my-10 bg-tertiary-100 border border-secondary-200 rounded-lg shadow-sm p-8 mt-45 flex flex-col gap-6">
-    
-    <div class="flex items-center justify-between border-b border-secondary-200 pb-4 mb-2">
-      <h2 class="text-xl font-semibold text-primary-500">Informações do Perfil</h2>
-      <Badge color={user?.role === 'admin' ? 'secondary' : 'yellow'} class="text-xs uppercase">
-        {user?.role}
-      </Badge>
-    </div>
-
-    {#if error}
-      <div class="text-sm text-red-500 bg-red-50 p-2.5 rounded border border-red-200">{error}</div>
-    {/if}
-
-    {#if user}
-      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
-        <div class="w-full sm:w-1/4 sm:text-right font-semibold text-primary-500 text-sm sm:text-base">
-          Nome de Usuário
-        </div>
-        <div class="w-full sm:w-3/4 flex gap-2">
-          {#if editingField === 'login'}
-            <input type="text" bind:value={editValue} disabled={saveLoading} class="flex-1 text-tertiary-900 bg-tertiary-300 border border-primary-500 rounded-md p-2 text-sm focus:outline-none" />
-            <button on:click={() => saveField('login')} disabled={saveLoading} class="px-3 py-1 bg-tertiary-400 text-white rounded text-xs font-semibold hover:bg-primary-600 disabled:opacity-50">Salvar</button>
-            <button on:click={cancelEdit} disabled={saveLoading} class="px-3 py-1 bg-tertiary-700 text-white rounded text-xs font-semibold hover:bg-secondary-500 disabled:opacity-50">Cancelar</button>
-          {:else}
-            <div class="flex-1 text-secondary-600 bg-tertiary-200 border border-secondary-200 rounded-md p-2.5 text-sm font-medium">
-              {user.login}
-            </div>
-            <button on:click={() => startEdit('login', user.login)} class="px-3 py-1 bg-primary-500 text-white rounded text-xs font-semibold hover:bg-primary-600 transition-colors">Editar</button>
-          {/if}
-        </div>
+  <div class="mt-30 w-full max-w-2xl mx-auto px-4 pt-24 pb-16 relative z-30">
+    <div class="bg-primary-350/80 backdrop-blur-lg border border-primary-350 rounded-none shadow-2xl p-5 sm:p-8 flex flex-col gap-6">
+      
+      <div class="flex items-center justify-between border-b border-neutral-800/40 pb-4 mb-2 gap-2">
+        <h2 class="text-lg sm:text-xl font-black tracking-[0.15em] text-secondary-600 uppercase font-serif">Informações do Perfil</h2>
+        <Badge class="bg-neutral-950 text-amber-500 border border-neutral-800 rounded-none text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 shrink-0">
+          {user?.role}
+        </Badge>
       </div>
 
-      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
-        <div class="w-full sm:w-1/4 sm:text-right font-semibold text-primary-500 text-sm sm:text-base">
-          E-mail
-        </div>
-        <div class="w-full sm:w-3/4 flex gap-2">
-          {#if editingField === 'email'}
-            <input type="email" bind:value={editValue} disabled={saveLoading} class="flex-1 text-tertiary-900 bg-tertiary-300 border border-primary-500 rounded-md p-2 text-sm focus:outline-none" />
-            <button on:click={() => saveField('email')} disabled={saveLoading} class="px-3 py-1 bg-tertiary-400 text-white rounded text-xs font-semibold hover:bg-primary-600 disabled:opacity-50">Salvar</button>
-            <button on:click={cancelEdit} disabled={saveLoading} class="px-3 py-1 bg-tertiary-700 text-white rounded text-xs font-semibold hover:bg-secondary-500 disabled:opacity-50">Cancelar</button>
-          {:else}
-            <div class="flex-1 text-secondary-600 bg-tertiary-200 border border-secondary-200 rounded-md p-2.5 text-sm">
-              {user.email}
-            </div>
-            <button on:click={() => startEdit('email', user.email)} class="px-3 py-1 bg-primary-500 text-white rounded text-xs font-semibold hover:bg-primary-600 transition-colors">Editar</button>
-          {/if}
-        </div>
-      </div>
+      {#if error}
+        <div class="text-xs font-semibold tracking-wide text-red-400 bg-red-950/30 p-3 rounded-none border border-red-900/40">{error}</div>
+      {/if}
 
-      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
-        <div class="w-full sm:w-1/4 sm:text-right font-semibold text-primary-500 text-sm sm:text-base">
-          CPF
-        </div>
-        <div class="w-full sm:w-3/4 flex gap-2">
-          {#if editingField === 'cpf'}
-            <input type="text" bind:value={editValue} disabled={saveLoading} class="flex-1 text-tertiary-900 bg-tertiary-300 border border-primary-500 rounded-md p-2 text-sm focus:outline-none" />
-            <button on:click={() => saveField('cpf')} disabled={saveLoading} class="px-3 py-1 bg-tertiary-400 text-white rounded text-xs font-semibold hover:bg-primary-600 disabled:opacity-50">Salvar</button>
-            <button on:click={cancelEdit} disabled={saveLoading} class="px-3 py-1 bg-tertiary-700 text-white rounded text-xs font-semibold hover:bg-secondary-500 disabled:opacity-50">Cancelar</button>
-          {:else}
-            <div class="flex-1 text-secondary-600 bg-tertiary-200 border border-secondary-200 rounded-md p-2.5 text-sm">
-              {user.cpf}
-            </div>
-            {#if user.role === 'admin'}
-              <button on:click={() => startEdit('cpf', user.cpf)} class="px-3 py-1 bg-primary-500 text-white rounded text-xs font-semibold hover:bg-primary-600 transition-colors">Editar</button>
-            {/if}
-          {/if}
-        </div>
-      </div>
-
-      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
-        <div class="w-full sm:w-1/4 sm:text-right font-semibold text-primary-500 text-sm sm:text-base">
-          Nascimento
-        </div>
-        <div class="w-full sm:w-3/4 flex gap-2">
-          {#if editingField === 'dat_nas'}
-            <input type="date" bind:value={editValue} disabled={saveLoading} class="flex-1 text-tertiary-900 bg-tertiary-300 border border-primary-500 rounded-md p-2 text-sm focus:outline-none" />
-            <button on:click={() => saveField('dat_nas')} disabled={saveLoading} class="px-3 py-1 bg-tertiary-400 text-white rounded text-xs font-semibold hover:bg-primary-600 disabled:opacity-50">Salvar</button>
-            <button on:click={cancelEdit} disabled={saveLoading} class="px-3 py-1 bg-tertiary-700 text-white rounded text-xs font-semibold hover:bg-secondary-500 disabled:opacity-50">Cancelar</button>
-          {:else}
-            <div class="flex-1 text-secondary-600 bg-tertiary-200 border border-secondary-200 rounded-md p-2.5 text-sm">
-              {user.dat_nas ? new Date(user.dat_nas).toLocaleDateString('pt-BR') : 'Não informada'}
-            </div>
-            {#if user.role === 'admin'}
-              <button on:click={() => startEdit('dat_nas', user.dat_nas)} class="px-3 py-1 bg-primary-500 text-white rounded text-xs font-semibold hover:bg-primary-600 transition-colors">Editar</button>
-            {/if}
-          {/if}
-        </div>
-      </div>
-
-      <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-6">
-        <div class="w-full sm:w-1/4 sm:text-right font-semibold text-primary-500 text-sm sm:text-base">
-          Telefone
-        </div>
-        <div class="w-full sm:w-3/4 flex gap-2">
-          {#if editingField === 'num_tel'}
-            <input type="text" bind:value={editValue} disabled={saveLoading} class="flex-1 text-tertiary-900 bg-tertiary-300 border border-primary-500 rounded-md p-2 text-sm focus:outline-none" />
-            <button on:click={() => saveField('num_tel')} disabled={saveLoading} class="px-3 py-1 bg-tertiary-400 text-white rounded text-xs font-semibold hover:bg-primary-600 disabled:opacity-50">Salvar</button>
-            <button on:click={cancelEdit} disabled={saveLoading} class="px-3 py-1 bg-tertiary-700 text-white rounded text-xs font-semibold hover:bg-secondary-500 disabled:opacity-50">Cancelar</button>
-          {:else}
-            <div class="flex-1 text-secondary-600 bg-tertiary-200 border border-secondary-200 rounded-md p-2.5 text-sm">
-              {user.num_tel || 'Não informado'}
-            </div>
-            <button on:click={() => startEdit('num_tel', user.num_tel)} class="px-3 py-1 bg-primary-500 text-white rounded text-xs font-semibold hover:bg-primary-600 transition-colors">Editar</button>
-          {/if}
-        </div>
-      </div>
-
-      <div class="mt-6 pt-6 border-t border-primary-400 bg-tertiary-200 p-4 rounded-lg flex flex-col gap-4">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h3 class="text-sm font-bold text-red-700 uppercase tracking-wider">Zona de Perigo</h3>
-            <p class="text-xs text-red-600 mt-1">Ao excluir sua conta, todos os seus dados serão apagados permanentemente do nosso sistema.</p>
+      {#if user}
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
+          <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
+            Usuário
           </div>
-          
-          {#if !showDeleteConfirmation}
-            <button 
-              on:click={() => { showDeleteConfirmation = true; error = ''; }} 
-              class="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-md text-sm font-semibold hover:bg-red-700 transition-colors shadow-sm"
-            >
-              Excluir minha conta
-            </button>
-          {/if}
+          <div class="w-full sm:w-3/4 flex flex-col sm:flex-row gap-2">
+            {#if editingField === 'login'}
+              <input type="text" bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
+              <div class="flex gap-2 w-full sm:w-auto shrink-0">
+                <button on:click={() => saveField('login')} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Salvar</button>
+                <button on:click={cancelEdit} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Sair</button>
+              </div>
+            {:else}
+              <div class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs font-medium min-h-[34px] flex items-center">
+                {user.login}
+              </div>
+              <button on:click={() => startEdit('login', user.login)} class="w-full sm:w-auto shrink-0 px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Editar</button>
+            {/if}
+          </div>
         </div>
 
-        {#if showDeleteConfirmation}
-          <div class="mt-2 p-3 bg-tertiary-300 border border-primary-500 rounded-md flex flex-col gap-3">
-            <label for="confirm-pass" class="text-xs font-semibold text-secondary-500">
-              Para prosseguir, digite sua senha atual:
-            </label>
-            <div class="flex flex-col sm:flex-row gap-2">
-              <input 
-                id="confirm-pass"
-                type="password" 
-                placeholder="Digite sua senha" 
-                bind:value={confirmPassword}
-                disabled={saveLoading}
-                class="flex-1 text-gray-900 bg-tertiary-100 border border-gray-300 rounded-md p-2 text-sm focus:ring-red-500 focus:border-red-500"
-              />
-              <div class="flex gap-2">
-                <button 
-                  on:click={deleteOwnAccount} 
-                  disabled={saveLoading || !confirmPassword}
-                  class="px-4 py-2 bg-secondary-300 text-white rounded text-xs font-bold hover:bg-red-500 disabled:opacity-50"
-                >
-                  {saveLoading ? 'Excluindo...' : 'Confirmar Exclusão'}
-                </button>
-                <button 
-                  on:click={() => { showDeleteConfirmation = false; confirmPassword = ''; }} 
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
+          <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
+            E-mail
+          </div>
+          <div class="w-full sm:w-3/4 flex flex-col sm:flex-row gap-2">
+            {#if editingField === 'email'}
+              <input type="email" bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
+              <div class="flex gap-2 w-full sm:w-auto shrink-0">
+                <button on:click={() => saveField('email')} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Salvar</button>
+                <button on:click={cancelEdit} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Sair</button>
+              </div>
+            {:else}
+              <div class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs min-h-[34px] flex items-center break-all">
+                {user.email}
+              </div>
+              <button on:click={() => startEdit('email', user.email)} class="w-full sm:w-auto shrink-0 px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Editar</button>
+            {/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
+          <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
+            CPF
+          </div>
+          <div class="w-full sm:w-3/4 flex flex-col sm:flex-row gap-2">
+            {#if editingField === 'cpf'}
+              <input type="text" bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
+              <div class="flex gap-2 w-full sm:w-auto shrink-0">
+                <button on:click={() => saveField('cpf')} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Salvar</button>
+                <button on:click={cancelEdit} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Sair</button>
+              </div>
+            {:else}
+              <div class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs min-h-[34px] flex items-center">
+                {user.cpf}
+              </div>
+              {#if user.role === 'admin'}
+                <button on:click={() => startEdit('cpf', user.cpf)} class="w-full sm:w-auto shrink-0 px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Editar</button>
+              {/if}
+            {/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
+          <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
+            Nascimento
+          </div>
+          <div class="w-full sm:w-3/4 flex flex-col sm:flex-row gap-2">
+            {#if editingField === 'dat_nas'}
+              <input type="date" bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
+              <div class="flex gap-2 w-full sm:w-auto shrink-0">
+                <button on:click={() => saveField('dat_nas')} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Salvar</button>
+                <button on:click={cancelEdit} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Sair</button>
+              </div>
+            {:else}
+              <div class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs min-h-[34px] flex items-center">
+                {user.dat_nas ? new Date(user.dat_nas).toLocaleDateString('pt-BR') : 'Não informada'}
+              </div>
+              {#if user.role === 'admin'}
+                <button on:click={() => startEdit('dat_nas', user.dat_nas)} class="w-full sm:w-auto shrink-0 px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Editar</button>
+              {/if}
+            {/if}
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
+          <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
+            Telefone
+          </div>
+          <div class="w-full sm:w-3/4 flex flex-col sm:flex-row gap-2">
+            {#if editingField === 'num_tel'}
+              <input type="text" bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
+              <div class="flex gap-2 w-full sm:w-auto shrink-0">
+                <button on:click={() => saveField('num_tel')} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Salvar</button>
+                <button on:click={cancelEdit} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Sair</button>
+              </div>
+            {:else}
+              <div class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs min-h-[34px] flex items-center">
+                {user.num_tel || 'Não informado'}
+              </div>
+              <button on:click={() => startEdit('num_tel', user.num_tel)} class="w-full sm:w-auto shrink-0 px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Editar</button>
+            {/if}
+          </div>
+        </div>
+
+        <div class="mt-3 pt-6 border-t border-neutral-800/40 bg-neutral-950/40 p-4 sm:p-5 rounded-none flex flex-col gap-4">
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <h3 class="text-xs font-black text-red-500 uppercase tracking-[0.2em]">Zona de Perigo</h3>
+              <p class="text-[11px] text-neutral-400 mt-1 font-light tracking-wide leading-relaxed">Ao excluir sua conta, todos os seus dados serão apagados permanentemente do nosso sistema.</p>
+            </div>
+            
+            {#if !showDeleteConfirmation}
+              <button 
+                on:click={() => { showDeleteConfirmation = true; error = ''; }} 
+                class="w-full md:w-auto shrink-0 px-4 py-2.5 bg-red-950/40 hover:bg-red-900/30 border border-red-900/50 text-red-400 rounded-none text-[10px] font-bold uppercase tracking-widest transition-all duration-300"
+              >
+                Excluir conta
+              </button>
+            {/if}
+          </div>
+
+          {#if showDeleteConfirmation}
+            <div class="mt-2 p-3 sm:p-4 bg-neutral-950/80 border border-red-900/30 rounded-none flex flex-col gap-3">
+              <label for="confirm-pass" class="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                Para confirmar a exclusão, digite sua senha:
+              </label>
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input 
+                  id="confirm-pass"
+                  type="password" 
+                  placeholder="Sua senha atual" 
+                  bind:value={confirmPassword}
                   disabled={saveLoading}
-                  class="px-4 py-2 bg-secondary-300  text-gray-900 rounded text-xs font-semibold hover:bg-tertiary-200 "
-                >Cancelar
-                </button>
+                  class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-red-500"
+                />
+                <div class="flex gap-2 w-full sm:w-auto shrink-0">
+                  <button 
+                    type="button"
+                    on:click={deleteOwnAccount} 
+                    disabled={saveLoading || !confirmPassword}
+                    class="flex-1 sm:flex-none px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors disabled:opacity-50"
+                  >
+                    {saveLoading ? 'Excluindo...' : 'Confirmar'}
+                  </button>
+                  <button 
+                    type="button"
+                    on:click={() => { showDeleteConfirmation = false; confirmPassword = ''; }} 
+                    disabled={saveLoading}
+                    class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        {/if}
-      </div>
+          {/if}
+        </div>
 
-    {/if} </div> {/if} 
+      {/if} 
+    </div> 
+  </div> 
+{/if}
+
+<style>
+  :global(input::placeholder) {
+    color: #C47B54 !important; 
+    opacity: 0.7 !important; 
+  }
+</style>

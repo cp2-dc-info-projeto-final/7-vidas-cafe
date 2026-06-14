@@ -4,6 +4,7 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+
 @theme {
   /* Tons de Marron */
   --color-primary-50: #F5F2EF;

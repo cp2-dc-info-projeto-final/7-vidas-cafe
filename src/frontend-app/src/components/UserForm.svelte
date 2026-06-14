@@ -34,16 +34,15 @@
         const body = res.data as ApiResponse<User>;
         if (body.success && body.data) {
           
-          // MUDANÇA AQUI: Formata a data recebida para YYYY-MM-DD
+          // Formata a data recebida para YYYY-MM-DD
           let dataFormatada = '';
           if (body.data.dat_nas) {
-            // Pega os primeiros 10 caracteres da string (que correspondem a YYYY-MM-DD)
             dataFormatada = body.data.dat_nas.substring(0, 10);
           }
 
           user = { 
             ...body.data, 
-            dat_nas: dataFormatada, // injeta a data limpa no formulário
+            dat_nas: dataFormatada, 
             senha: '' 
           }; 
         } else {
@@ -79,7 +78,6 @@
     error = '';
     try {
       const userData = { ...user };
-      // Remove senha vazia na edição para não sobrescrever indevidamente
       if (id !== null && !userData.senha) {
         delete userData.senha;
       }
@@ -110,146 +108,155 @@
       loading = false;
     }
   }
-
-  function handleCancel() {
-    goto('/users');
-  }
 </script>
 
-<!-- Card do formulário -->
-<Card class="max-w-md mx-auto mt-30 p-0 overflow-hidden shadow-lg border border-primary-350 bg-primary-350 rounded-lg">
-  <!-- Formulário principal -->
-  <form class="flex flex-col gap-6 p-6" on:submit|preventDefault={handleSubmit}>
-    <!-- Título -->
-    <Heading tag="h3" class="mb-2 text-center" style = color:#82451A;>
-      {id === null ? 'Cadastrar Usuário' : 'Editar Usuário'}
-    </Heading>
-    <!-- Mensagem de erro -->
+<div class="fixed inset-0 bg-neutral-950/20 backdrop-blur-md z-20 pointer-events-none"></div>
+
+<Card class="relative z-30 max-w-sm mx-auto mt-40 mb-12 p-0 overflow-hidden shadow-2xl border border-primary-350 bg-primary-350/90 rounded-none">
+  <form class="flex flex-col gap-3.5 p-5" on:submit|preventDefault={handleSubmit}>
+    
+    <div class="text-center mb-1 flex flex-col items-center gap-2">      
+      <Heading tag="h4" class="text-lg font-black tracking-[0.15em] uppercase font-serif text-secondary-600">
+        {id === null ? 'Cadastrar Usuário' : 'Editar Usuário'}
+      </Heading>
+      <div class="w-10 h-[1px] bg-neutral-800/20 mt-0.5"></div>
+    </div>
+
     {#if error}
-      <div class="text-red-500 text-center">{error}</div>
+      <div class="p-2.5 bg-red-950/20 border border-red-900/40 text-red-400 text-xs tracking-wide text-center rounded-none">{error}</div>
     {/if}
-    <!-- Campo login -->
+
     <div>
-      <Label for="login">Nome de Usuário</Label>
-      <Input id="login" bind:value={user.login} placeholder="Digite o Nome do usuário" required class="mt-1 bg-tertiary-100 border-black" />
+      <Label for="login" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Nome de Usuário</Label>
+      <Input id="login" bind:value={user.login} placeholder="Digite o Nome do usuário" required class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0" />
       {#if errorOf('login')}
-        <div class="mt-1 text-sm text-red-500">{errorOf('login')}</div>
+        <div class="mt-0.5 text-[11px] text-red-400 tracking-wide">{errorOf('login')}</div>
       {/if}
     </div>
-    <!-- Campo email -->
+
     <div>
-      <Label for="email">Email</Label>
-      <Input id="email" type="email" bind:value={user.email} placeholder="Digite o e-mail" required class="mt-1 bg-tertiary-100 border-black" />
+      <Label for="email" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Email</Label>
+      <Input id="email" type="email" bind:value={user.email} placeholder="Digite o e-mail" required class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0" />
       {#if errorOf('email')}
-        <div class="mt-1 text-sm text-red-500">{errorOf('email')}</div>
+        <div class="mt-0.5 text-[11px] text-red-400 tracking-wide">{errorOf('email')}</div>
       {/if}
     </div>
-    <!-- Campo senha -->
+
     <div>
-      <Label for="senha">Senha {id !== null ? '(deixe vazio para manter atual)' : ''}</Label>
+      <Label for="senha" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">
+        Senha {id !== null ? '(opcional)' : ''}
+      </Label>
       <Input 
         id="senha" 
         type="password" 
         bind:value={user.senha} 
-        placeholder={id === null ? 'Digite a senha (mínimo 6 caracteres)' : 'Nova senha (opcional)'} 
+        placeholder={id === null ? 'Mínimo 6 caracteres' : 'Deixe vazio para manter'} 
         required={id === null}
         minlength={6}
-        class="mt-1 bg-tertiary-100 border-black" 
+        class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0" 
       />
       {#if errorOf('senha')}
-        <div class="mt-1 text-sm text-red-500">{errorOf('senha')}</div>
+        <div class="mt-0.5 text-[11px] text-red-400 tracking-wide">{errorOf('senha')}</div>
       {/if}
     </div>
 
-
-    <!-- Confirmar senha -->
     {#if id === null}
     <div>
-      <Label for="confirmarSenha">Confirmar Senha</Label>
+      <Label for="confirmarSenha" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Confirmar Senha</Label>
       <Input
         id="confirmarSenha"
         type="password"
         bind:value={user.confirmarSenha}
         placeholder="Confirme a senha"
-        class="mt-1 bg-tertiary-100 border-black"
+        class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0"
       />
-
       {#if errorOf('confirmarSenha')}
-        <div class="mt-1 text-sm text-red-500">{errorOf('confirmarSenha')}</div>
+        <div class="mt-0.5 text-[11px] text-red-400 tracking-wide">{errorOf('confirmarSenha')}</div>
       {/if}
     </div>
     {/if}
 
-
-    <!-- campo cpf -->
     <div>
-      <Label for="cpf">CPF</Label>
+      <Label for="cpf" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">CPF</Label>
       <Input
-      id="cpf"
-      bind:value={user.cpf}
-      placeholder="Exemplo: 000.000.000-00"      
-      required
-      class="mt-1 bg-tertiary-100 border-black"
+        id="cpf"
+        bind:value={user.cpf}
+        placeholder="000.000.000-00"      
+        required
+        class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0"
       />
       {#if errorOf('cpf')}
-        <div class="mt-1 text-sm text-red-500">{errorOf('cpf')}</div>
+        <div class="mt-0.5 text-[11px] text-red-400 tracking-wide">{errorOf('cpf')}</div>
       {/if}
     </div>
 
-    <!-- Campo nascimento -->
-  <div>
-    <Label for="dat_nas">Data de Nascimento</Label>
-    <Input
-      id="dat_nas"
-      type="date"
-      bind:value={user.dat_nas}
-      required
-      class="mt-1 bg-tertiary-100 border-black"
-    />
-    {#if errorOf('dat_nas')}
-      <div class="mt-1 text-sm text-red-500">{errorOf('dat_nas')}</div>
-    {/if}
-  </div>
-
-    <!-- Campo telefone -->
     <div>
-    <Label for="num_tel">Telefone</Label>
-    <Input
-      id="num_tel"
-      bind:value={user.num_tel}
-      placeholder="Exemplo: (00)90000-0000"
-      required
-      class="mt-1 bg-tertiary-100 border-black"
-    />
-    {#if errorOf('num_tel')}
-      <div class="mt-1 text-sm text-red-500">{errorOf('num_tel')}</div>
-    {/if}
-  </div>
+      <Label for="dat_nas" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Data de Nascimento</Label>
+      <Input
+        id="dat_nas"
+        type="date"
+        bind:value={user.dat_nas}
+        required
+        class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0"
+      />
+      {#if errorOf('dat_nas')}
+        <div class="mt-0.5 text-[11px] text-red-400 tracking-wide">{errorOf('dat_nas')}</div>
+      {/if}
+    </div>
 
+    <div>
+      <Label for="num_tel" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Telefone</Label>
+      <Input
+        id="num_tel"
+        bind:value={user.num_tel}
+        placeholder="(00) 90000-0000"
+        required
+        class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0"
+      />
+      {#if errorOf('num_tel')}
+        <div class="mt-0.5 text-[11px] text-red-400 tracking-wide">{errorOf('num_tel')}</div>
+      {/if}
+    </div>
 
-    <!-- Campo role -->
     {#if id !== null && currentUser.role === 'admin'}
-      <div class="">
-        <Label for="role">Perfil</Label>
-        <Select id="role" bind:value={user.role} items={roleOptions} class="mt-1" style= "background-color:#F4DBC3; border-color: black;"/>
+      <div>
+        <Label for="role" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Perfil de Acesso</Label>
+        <Select 
+          id="role" 
+          bind:value={user.role} 
+          items={roleOptions} 
+          class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0"
+        />
         {#if errorOf('role')}
-          <div class="mt-1 text-sm text-red-500">{errorOf('role')}</div>
+          <div class="mt-0.5 text-[11px] text-red-400 tracking-wide">{errorOf('role')}</div>
         {/if}
       </div>
     {/if}
 
-    <!-- Botões de ação -->
-    <div class="flex gap-4 justify-end mt-4">
-      <!-- Botão cancelar/voltar -->
-      <Button  class="bg-primary-600" type="button" onclick={handleCancel} disabled={loading}>
-        <ArrowLeftOutline class="inline w-5 h-5 mr-2 align-text-bottom" />
+    <div class="flex gap-2.5 justify-end mt-2">
+      <a 
+        href="/users"
+        class="inline-flex items-center justify-center bg-transparent border border-primary-500 hover:border-neutral-800 hover:bg-neutral-800/10 text-primary-900 font-bold uppercase tracking-widest text-[10px] px-3 py-2 rounded-none transition-all duration-300 no-underline select-none"
+      >
+        <ArrowLeftOutline class="inline w-3 h-3 mr-1" />
         {id === null ? 'Voltar' : 'Cancelar'}
-      </Button>
-      <!-- Botão salvar -->
-      <Button type="submit" class="bg-primary-600" disabled={loading}>
-        <FloppyDiskAltOutline class="inline w-5 h-5 mr-2 align-text-bottom" />
+      </a>
+      
+      <Button 
+        type="submit" 
+        disabled={loading}
+        class="bg-transparent border border-amber-600 hover:bg-amber-600 text-amber-700 hover:text-neutral-950 font-bold uppercase tracking-widest text-[10px] px-3 py-2 rounded-none transition-all duration-300"
+      >
+        <FloppyDiskAltOutline class="inline w-3 h-3 mr-1 align-text-bottom" />
         {id === null ? 'Cadastrar' : 'Salvar'}
       </Button>
     </div>
   </form>
 </Card>
+
+<style>
+  :global(input::placeholder) {
+    color: #C47B54 !important; 
+    opacity: 0.7 !important; 
+  }
+</style>
