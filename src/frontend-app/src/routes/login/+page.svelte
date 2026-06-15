@@ -70,7 +70,7 @@
         <div>
           <Label for="password" class="mb-1 text-[10px] font-bold uppercase tracking-widest text-primary-900 block">Senha</Label>
           <Input
-            class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0"
+            class="w-full bg-tertiary-100  border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0"
             id="password"
             type="password"
             bind:value={password}
@@ -80,14 +80,14 @@
         </div>
 
         {#if error}
-          <div class="p-2.5 bg-red-950/20 border border-red-900/40 text-red-400 text-xs tracking-wide text-center rounded-none">
+          <div class="p-2.5 bg-red-100 border border-red-900/40 text-red-600 text-xs tracking-wide text-center rounded-none">
             {error}
           </div>
         {/if}
 
         <Button 
           type="submit"
-          class="w-full bg-transparent border border-amber-600 hover:bg-amber-600 text-amber-700 hover:text-neutral-950 font-bold uppercase tracking-widest text-[10px] py-3 rounded-none transition-all duration-300" 
+          class="w-full bg-tertiary-200 border  border-amber-700 hover:bg-amber-600 text-amber-800 hover:text-neutral-950 font-bold uppercase tracking-widest text-[10px] py-3 rounded-none transition-all duration-300" 
           disabled={loading}
         >
           {loading ? 'Entrando...' : 'Entrar'}

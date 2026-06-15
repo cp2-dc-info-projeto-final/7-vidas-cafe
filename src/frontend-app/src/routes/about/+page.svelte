@@ -78,7 +78,6 @@
   </section>
 
   <section class="border border-neutral-900 bg-tertiary-900 backdrop-blur-sm p-8 md:p-12 text-center relative overflow-hidden">
-    <div class="absolute top-0 right-0 p-4 text-neutral-900/40 select-none text-7xl font-serif">🐾</div>
     
     <Heading tag="h3" class="text-lg font-bold tracking-[0.25em] text-secondary-200 uppercase mb-4">
       Mais que um Café, um Lar Temporário
