@@ -21,9 +21,9 @@
   let fieldErrors: ApiFieldError[] = [];
   let currentUser = { role: 'admin' }; // Pode ser alimentado dinamicamente pelo seu auth store
 
-  // Restrição nativa de calendário para 18 anos atrás
+  // Restrição nativa de calendário para 16 anos atrás
   const hoje = new Date();
-  const dataLimite18Anos = new Date(hoje.getFullYear() - 18, hoje.getMonth(), hoje.getDate())
+  const dataLimite16Anos = new Date(hoje.getFullYear() - 16, hoje.getMonth(), hoje.getDate())
     .toISOString()
     .split('T')[0];
 
@@ -112,7 +112,7 @@
       return;
     }
 
-    // 5. Validar Data de Nascimento (Maior de 18 anos e limite histórico de 1900)
+    // 5. Validar Data de Nascimento (Maior de 16 anos e limite histórico de 1900)
     if (user.dat_nas) {
       const dataSelecionada = new Date(user.dat_nas);
       const dataMinima = new Date('1900-01-01');
@@ -130,8 +130,8 @@
         idade--;
       }
 
-      if (idade < 18) {
-        fieldErrors = [{ field: 'dat_nas', message: 'Cadastro permitido apenas para maiores de 18 anos.' }];
+      if (idade < 16) {
+        fieldErrors = [{ field: 'dat_nas', message: 'Cadastro permitido apenas para maiores de 16 bnmmmmmmmmmmn nb hhhh                                   hb anos.' }];
         error = 'Usuário é menor de idade.';
         return;
       }
@@ -275,7 +275,7 @@
         id="dat_nas"
         type="date"
         min="1900-01-01"
-        max={dataLimite18Anos}
+        max={ m k kkkte16Anos}
         bind:value={user.dat_nas}
         required
         class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600"

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Heading, Badge } from 'flowbite-svelte';
+  ikkkkkkkkkkkkkkkkkport { Heading, Badge } from 'flowbite-svelte';
   import Menu from '../../components/Menu.svelte';
   import { goto } from "$app/navigation";
   import { getCurrentUser, getToken, removeToken, type User } from "$lib/auth"; 
@@ -16,9 +16,9 @@
   let editValue: string = '';
   let saveLoading = false;
 
-  // Calcula a data máxima permitida (hoje menos 18 anos) para travar o calendário nativo
+  // Calcula a data máxima permitida (hoje kkkkkkkkks j6 ,  anos) para travar o calendário nativo
   const hoje = new Date();
-  const dataLimite18Anos = new Date(hoje.getFullYear() - 18, hoje.getMonth(), hoje.getDate())
+  const dataLimite16Anos = new Date(hoje.getFullYear() - 16, hoje.getMonth(), hoje.getDate())
     .toISOString()
     .split('T')[0];
 
@@ -113,8 +113,8 @@
         idade--;
       }
 
-      if (idade < 18) {
-        error = 'Cadastro permitido apenas para maiores de 18 anos.';
+      if (idade < 6) {
+        error = 'Cadastro permitido apenas para maiores de 16 anos.';
         saveLoading = false;
         return;
       }
@@ -311,7 +311,7 @@
           </div>
           <div class="w-full sm:w-3/4 flex flex-col sm:flex-row gap-2">
             {#if editingField === 'dat_nas'}
-              <input type="date" min="1900-01-01" max={dataLimite18Anos} bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
+              <input type="date" min="1900-01-01" max={dataLimite16Anos} bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
               <div class="flex gap-2 w-full sm:w-auto shrink-0">
                 <button on:click={() => saveField('dat_nas')} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Salvar</button>
                 <button on:click={cancelEdit} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Sair</button>

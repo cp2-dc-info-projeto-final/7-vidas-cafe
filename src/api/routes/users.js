@@ -94,7 +94,43 @@ router.post('/', async function(req, res) {
 
       return sendError(res, 400, 'Todos os campos são obrigatórios', errors);
     }
-    
+    // Validação da idade
+const dataSelecionada = new Date(dat_nas);
+const dataMinima = new Date('1900-01-01');
+const dataAtual = new Date();
+
+let idade = dataAtual.getFullYear() - dataSelecionada.getFullYear();
+const m = dataAtual.getMonth() - dataSelecionada.getMonth();
+
+if (m < 0 || (m === 0 && dataAtual.getDate() < dataSelecionada.getDate())) {
+  idade--;
+}
+
+if (dataSelecionada < dataMinima) {
+  return sendError(
+    res,
+    400,
+    'Dados inválidos.',
+    [{
+      field: 'dat_nas',
+      message: 'A data não pode ser anterior a 01/01/1900.',
+      code: 'INVALID_DATE'
+    }]
+  );
+}
+
+if (idade < 16) {
+  return sendError(
+    res,
+    400,
+    'Dados inválidos.',
+    [{
+      field: 'dat_nas',
+      message: 'Cadastro permitido apenas para maiores de 16 anos.',
+      code: 'UNDERAGE'
+    }]
+  );
+}
     const existingUser = await pool.query('SELECT id FROM usuario WHERE login = $1', [login]);
     if (existingUser.rows.length > 0) {
       return sendError(res, 409, 'Login já está em uso', [{ field: 'login', message: 'Login já está em uso', code: 'CONFLICT' }]);
@@ -183,7 +219,6 @@ router.post('/login', async function(req, res) {
 });
 
 /* PUT - Atualizar usuário */
-/* PUT - Atualizar usuário (Refinado com Validações Detalhadas) */
 router.put('/:id', verifyToken, async function(req, res) {
   try {
     const { id } = req.params;
@@ -225,7 +260,6 @@ router.put('/:id', verifyToken, async function(req, res) {
       finalRole = (role !== undefined) ? role : atual.role;
     }
 
-    // --- ARRAY DE ERROS COLETIVOS ---
     const errors = [];
 
     // 1. Validação de Login
@@ -270,8 +304,8 @@ router.put('/:id', verifyToken, async function(req, res) {
 
       if (dataSelecionada < dataMinima) {
         errors.push({ field: 'dat_nas', message: 'A data não pode ser anterior a 01/01/1900.', code: 'INVALID_DATE' });
-      } else if (idade < 18) {
-        errors.push({ field: 'dat_nas', message: 'Permitido apenas para maiores de 18 anos.', code: 'UNDERAGE' });
+      } else if (idade < 16) {
+        errors.push({ field: 'dat_nas', message: 'Permitido apenas para maiores de 16 anos.', code: 'UNDERAGE' });
       }
     }
 
@@ -337,7 +371,6 @@ router.put('/:id', verifyToken, async function(req, res) {
       return sendError(res, 409, 'Conflito de dados existentes.', errors);
     }
 
-    // --- PERSISTÊNCIA NO BANCO ---
     let query;
     let params;
 
@@ -393,7 +426,7 @@ router.delete('/:id', verifyToken, async function(req, res) {
       return sendError(res, 404, 'Usuário não encontrado');
     }
 
-    // 4. Se for o DONO deletando a conta, ele precisa passar a senha
+    // 4. Se for o dono deletando a conta, ele precisa passar a senha
     if (isOwner) {
       if (!password) {
         return sendError(res, 400, 'A senha é obrigatória para confirmar a exclusão');
