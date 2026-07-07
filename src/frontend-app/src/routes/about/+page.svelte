@@ -6,8 +6,8 @@
   const fundadores = [
     { nome: "Moidixmoitie", foto: "images/cule.jpeg" },
     { nome: "Brznada", foto: "images/cucio.png" },
-    { nome: "Sora", foto: "images/cututu.jpeg" },
-    { nome: "Nickmaqueavelico", foto: "images/cunick.jpeg" }
+    { nome: "Nickmaqueavelico", foto: "images/cunick.jpeg" },
+    { nome: "Sora", foto: "images/cututu.jpeg" }
   ];
 </script>
 

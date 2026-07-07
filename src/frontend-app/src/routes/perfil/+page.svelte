@@ -1,5 +1,5 @@
 <script lang="ts">
-  ikkkkkkkkkkkkkkkkkport { Heading, Badge } from 'flowbite-svelte';
+  import { Heading, Badge } from 'flowbite-svelte';
   import Menu from '../../components/Menu.svelte';
   import { goto } from "$app/navigation";
   import { getCurrentUser, getToken, removeToken, type User } from "$lib/auth"; 

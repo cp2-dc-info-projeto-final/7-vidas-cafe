@@ -275,7 +275,7 @@
         id="dat_nas"
         type="date"
         min="1900-01-01"
-        max={ m k kkkte16Anos}
+        max={ dataLimite16Anos}
         bind:value={user.dat_nas}
         required
         class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600"
@@ -336,8 +336,21 @@
 </Card>
 
 <style>
+  /* Mantém o estilo dos placeholders normais (texto) */
   :global(input::placeholder) {
-    color: #C47B54 !important; 
-    opacity: 0.7 !important; 
+    color: #9b4b06 !important; 
+    opacity: 1 !important; 
+  }
+
+  /* Captura o texto padrão (vazio) do campo de data e muda a cor */
+  :global(input[type="date"]:invalid),
+  :global(input[type="date"]::-webkit-datetime-edit) {
+    color: #9b4b06 !important;
+    opacity: 1 !important;
+  }
+
+  /* Extra: garante que os traços e textos (dd/mm/aaaa) nos navegadores baseados em Chromium fiquem na cor certa */
+  :global(input[type="date"]::-webkit-datetime-edit-fields-wrapper) {
+    color: #9b4b06 !important;
   }
 </style>

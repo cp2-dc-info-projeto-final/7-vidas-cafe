@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card, Button, Input, Label, Alert } from "flowbite-svelte";
+  import { Card, Button, Input, Label } from "flowbite-svelte";
   import { goto } from "$app/navigation";
   import { login as authLogin } from "$lib/auth";
   
@@ -58,7 +58,7 @@
         <div>
           <Label for="login" class="mb-1 text-[10px] font-bold uppercase tracking-widest text-primary-900 block">Nome de Usuário</Label>
           <Input
-            class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0"
+            class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0 custom-placeholder"
             id="login"
             type="text"
             bind:value={login}
@@ -70,7 +70,7 @@
         <div>
           <Label for="password" class="mb-1 text-[10px] font-bold uppercase tracking-widest text-primary-900 block">Senha</Label>
           <Input
-            class="w-full bg-tertiary-100  border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0"
+            class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0 custom-placeholder"
             id="password"
             type="password"
             bind:value={password}
@@ -87,7 +87,7 @@
 
         <Button 
           type="submit"
-          class="w-full bg-tertiary-200 border  border-amber-700 hover:bg-amber-600 text-amber-800 hover:text-neutral-950 font-bold uppercase tracking-widest text-[10px] py-3 rounded-none transition-all duration-300" 
+          class="w-full bg-tertiary-200 border border-amber-700 hover:bg-amber-600 text-amber-800 hover:text-neutral-950 font-bold uppercase tracking-widest text-[10px] py-3 rounded-none transition-all duration-300" 
           disabled={loading}
         >
           {loading ? 'Entrando...' : 'Entrar'}
@@ -104,8 +104,9 @@
 </div>
 
 <style>
-  :global(input::placeholder) {
-    color: #C47B54 !important; 
-    opacity: 0.7 !important; 
+  /* Escopa o placeholder em uma classe específica para não herdar efeitos de hover de outros elementos */
+  :global(.custom-placeholder::placeholder) {
+    color: #9b4b06 !important; 
+    opacity: 1 !important;
   }
 </style>
