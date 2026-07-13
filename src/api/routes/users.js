@@ -22,7 +22,7 @@ function sendError(res, status, message, errors = []) {
 }
 
 /* =========================================================================
-   SESSÃO 1: ROTAS DE USUÁRIOS (SUA IMPLEMENTAÇÃO INTEGRAL)
+   SESSÃO 1: ROTAS DE USUÁRIOS
    ========================================================================= */
 
 /* GET - Buscar todos os usuários (Apenas Admin) */
@@ -165,10 +165,11 @@ router.post('/login', async function(req, res) {
   try {
     const { login, password } = req.body;
 
+  
     const result = await pool.query(`
       SELECT id, login, email, senha, role
       FROM usuario 
-      WHERE login = $1
+      WHERE login = $1 OR email = $1
     `, [login]);
 
     if (result.rows.length === 0) {
@@ -206,11 +207,14 @@ router.post('/login', async function(req, res) {
   }
 });
 
-/* PUT - Atualizar usuário */
+/* PUT - Atualizar usuário (Ajustado para permitir que o dono altere CPF e Data de Nascimento) */
 router.put('/:id', verifyToken, async function(req, res) {
   try {
     const { id } = req.params;
-    const { login, email, senha, cpf, dat_nas, num_tel, role } = req.body;
+    const { login, email, password, senha, cpf, dat_nas, num_tel, role } = req.body;
+
+    // Aceita tanto req.body.password quanto req.body.senha (visto que o front envia como password)
+    const novaSenha = password || senha;
 
     const isOwner = req.user.id == id;
     const isAdminUser = req.user.role === 'admin';
@@ -233,14 +237,14 @@ router.put('/:id', verifyToken, async function(req, res) {
     const finalLogin = (login !== undefined) ? login.trim() : atual.login;
     const finalEmail = (email !== undefined) ? email.trim() : atual.email;
     const finalNumTel = (num_tel !== undefined) ? num_tel.trim() : atual.num_tel;
-
-    let finalCpf = atual.cpf;
-    let finalDatNas = atual.dat_nas;
+    
+    // Agora usuários comuns/donos também alteram CPF e Nascimento
+    const finalCpf = (cpf !== undefined) ? cpf.trim() : atual.cpf;
+    const finalDatNas = (dat_nas !== undefined) ? dat_nas : atual.dat_nas;
+    
+    // Apenas Administradores podem promover cargos/roles
     let finalRole = atual.role;
-
     if (isAdminUser) {
-      finalCpf = (cpf !== undefined) ? cpf.trim() : atual.cpf;
-      finalDatNas = (dat_nas !== undefined) ? dat_nas : atual.dat_nas;
       finalRole = (role !== undefined) ? role : atual.role;
     }
 
@@ -261,18 +265,18 @@ router.put('/:id', verifyToken, async function(req, res) {
       }
     }
 
-    if (isAdminUser && !finalCpf) {
+    if (!finalCpf) {
       errors.push({ field: 'cpf', message: 'O CPF é obrigatório.', code: 'REQUIRED' });
-    } else if (isAdminUser) {
+    } else {
       const cpfRegex = /^(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})$/;
       if (!cpfRegex.test(finalCpf)) {
         errors.push({ field: 'cpf', message: 'Formato de CPF inválido. Use Puro (12345678900) ou Formatado (123.456.789-00).', code: 'INVALID_FORMAT' });
       }
     }
 
-    if (isAdminUser && !finalDatNas) {
+    if (!finalDatNas) {
       errors.push({ field: 'dat_nas', message: 'A data de nascimento é obrigatória.', code: 'REQUIRED' });
-    } else if (isAdminUser) {
+    } else {
       const dataSelecionada = new Date(finalDatNas);
       const dataMinima = new Date('1900-01-01');
       const dataAtual = new Date();
@@ -305,8 +309,8 @@ router.put('/:id', verifyToken, async function(req, res) {
       }
     }
 
-    if (senha !== undefined && senha.trim() !== '') {
-      if (senha.length < 6) {
+    if (novaSenha !== undefined && novaSenha.trim() !== '') {
+      if (novaSenha.length < 6) {
         errors.push({ field: 'senha', message: 'A nova senha deve ter pelo menos 6 caracteres.', code: 'INVALID_LENGTH' });
       }
     }
@@ -330,11 +334,9 @@ router.put('/:id', verifyToken, async function(req, res) {
       errors.push({ field: 'num_tel', message: 'Este telefone já está em uso.', code: 'CONFLICT' });
     }
 
-    if (isAdminUser) {
-      const existingCpf = await pool.query('SELECT id FROM usuario WHERE cpf = $1 AND id != $2', [finalCpf, id]);
-      if (existingCpf.rows.length > 0) {
-        errors.push({ field: 'cpf', message: 'Este CPF já está em uso.', code: 'CONFLICT' });
-      }
+    const existingCpf = await pool.query('SELECT id FROM usuario WHERE cpf = $1 AND id != $2', [finalCpf, id]);
+    if (existingCpf.rows.length > 0) {
+      errors.push({ field: 'cpf', message: 'Este CPF já está em uso.', code: 'CONFLICT' });
     }
 
     if (errors.length > 0) {
@@ -344,8 +346,8 @@ router.put('/:id', verifyToken, async function(req, res) {
     let query;
     let params;
 
-    if (senha && senha.trim() !== '') {
-      const hashedPassword = await bcrypt.hash(senha, 12);
+    if (novaSenha && novaSenha.trim() !== '') {
+      const hashedPassword = await bcrypt.hash(novaSenha, 12);
       query = `
         UPDATE usuario
         SET login = $1, email = $2, senha = $3, cpf = $4, dat_nas = $5, num_tel = $6, role = $7
@@ -415,13 +417,12 @@ router.delete('/:id', verifyToken, async function(req, res) {
 
 
 /* =========================================================================
-   SESSÃO 2: ROTAS DOS GATOS (INTEGRADAS E COMPATÍVEIS COM O SEU SCHEMA)
+   SESSÃO 2: ROTAS DOS GATOS
    ========================================================================= */
 
 /* GET - Buscar todos os gatos */
 router.get('/gatos/todos', async function(req, res) {
   try {
-    // Alinhado perfeitamente com as colunas da sua tabela 'gatos'
     const result = await pool.query('SELECT id, nome, idade, raca, castracao, personalidade, adocao, tutor, imagem FROM gatos ORDER BY id');
     return sendSuccess(res, 200, null, result.rows);
   } catch (error) {
@@ -454,7 +455,7 @@ router.post('/gatos/adicionar', verifyToken, isAdmin, async function(req, res) {
     const result = await pool.query(
       `INSERT INTO gatos (nome, idade, raca, castracao, personalidade, adocao, tutor, imagem) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-       RETURNING id, nome, idade, raca, castracao, personalidade, adocao, tutor, imagem`,
+       RETURNING id, nome, idade, raca, castracao, personalidad, adocao, tutor, imagem`,
       [nome, parseInt(idade), raca, castracao, personalidade, adocao, tutor, imagem]
     );
 
@@ -480,7 +481,10 @@ router.put('/gatos/:id', verifyToken, isAdmin, async function(req, res) {
     const finalIdade = (idade !== undefined) ? parseInt(idade) : atual.idade;
     const finalRaca = (raca !== undefined) ? raca.trim() : atual.raca;
     const finalCastracao = (castracao !== undefined) ? castracao : atual.castracao;
-    const finalPersonalidade = (personalidade !== undefined) ? personality.trim() : atual.personalidade;
+    
+    // CORREÇÃO DO BUG: Modificado 'personality.trim()' para 'personalidade.trim()'
+    const finalPersonalidade = (personalidade !== undefined) ? personalidade.trim() : atual.personalidade;
+    
     const finalAdocao = (adocao !== undefined) ? adocao : atual.adocao;
     const finalTutor = (tutor !== undefined) ? tutor : atual.tutor;
     const finalImagem = (imagem !== undefined) ? imagem : atual.imagem;
@@ -495,7 +499,7 @@ router.put('/gatos/:id', verifyToken, isAdmin, async function(req, res) {
       [finalNome, finalIdade, finalRaca, finalCastracao, finalPersonalidade, finalAdocao, finalTutor, finalImagem, id]
     );
 
-    return sendSuccess(res, 200, 'Gato atualizado com sucesso', result.rows[0]);
+    return sendSuccess(res, 200, 'Gato updated successfully', result.rows[0]);
   } catch (error) {
     console.error('Erro ao atualizar gato:', error);
     return sendError(res, 500, 'Erro interno do servidor');

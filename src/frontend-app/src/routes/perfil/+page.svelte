@@ -11,12 +11,14 @@
 
   let confirmPassword = '';
   let showDeleteConfirmation = false;
+  
+  // Controle do modal de alteração de senha
+  let showPasswordModal = false;
 
   let editingField: string | null = null;
   let editValue: string = '';
   let saveLoading = false;
 
-  // Calcula a data máxima permitida (hoje kkkkkkkkks j6 ,  anos) para travar o calendário nativo
   const hoje = new Date();
   const dataLimite16Anos = new Date(hoje.getFullYear() - 16, hoje.getMonth(), hoje.getDate())
     .toISOString()
@@ -52,9 +54,11 @@
 
   function startEdit(field: string, initialValue: any) {
     editingField = field;
-    error = ''; // Limpa erros antigos ao iniciar nova edição
+    error = '';
     if (field === 'dat_nas' && initialValue) {
       editValue = new Date(initialValue).toISOString().split('T')[0];
+    } else if (field === 'password') {
+      editValue = ''; 
     } else {
       editValue = initialValue || '';
     }
@@ -64,23 +68,24 @@
     editingField = null;
     editValue = '';
     error = '';
+    showPasswordModal = false;
   }
 
-  async function saveField(field: string) {
+  // Modificado para aceitar um parâmetro que força a gravação pós-confirmação
+  async function saveField(field: string, bypassModal = false) {
     if (!user) return;
     saveLoading = true;
     error = '';
 
     const valorLimpo = editValue.trim();
 
-    // 1. Validação Geral de campos vazios
     if (!valorLimpo) {
       error = 'Este campo é obrigatório e não pode ficar vazio.';
       saveLoading = false;
       return;
     }
 
-    // 2. Validação isolada por campo (Apenas valida o campo que está sendo alterado AGORA)
+    // Validações...
     if (field === 'email') {
       const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail|hotmail|outlook|yahoo|icloud|live)\.(com|com\.br)$/i;
       if (!emailRegex.test(valorLimpo)) {
@@ -94,6 +99,19 @@
       error = 'O nome de usuário deve conter pelo menos 3 caracteres.';
       saveLoading = false;
       return;
+    }
+
+    if (field === 'password' && valorLimpo.length < 6) {
+      error = 'A nova senha deve conter pelo menos 6 caracteres.';
+      saveLoading = false;
+      return;
+    }
+
+    // Intercepta aqui: Se for senha e ainda não foi confirmado no modal, abre o modal
+    if (field === 'password' && !bypassModal) {
+      saveLoading = false;
+      showPasswordModal = true;
+      return; // Para a execução e espera o usuário clicar em "Confirmar" no modal
     }
 
     if (field === 'dat_nas') {
@@ -113,7 +131,7 @@
         idade--;
       }
 
-      if (idade < 6) {
+      if (idade < 16) {
         error = 'Cadastro permitido apenas para maiores de 16 anos.';
         saveLoading = false;
         return;
@@ -146,8 +164,7 @@
       }
     }
 
-    // 3. Monta o payload garantindo que os campos não alterados mantenham seus valores originais
-    const updatedData = {
+    const updatedData: any = {
       login: field === 'login' ? valorLimpo : user.login,
       email: field === 'email' ? valorLimpo : user.email,
       cpf: field === 'cpf' ? valorLimpo : user.cpf,
@@ -155,6 +172,10 @@
       num_tel: field === 'num_tel' ? valorLimpo : user.num_tel,
       role: user.role
     };
+
+    if (field === 'password') {
+      updatedData.password = valorLimpo;
+    }
 
     try {
       const response = await fetch(`http://localhost:3000/users/${user.id}`, {
@@ -169,7 +190,6 @@
       const result = await response.json();
 
       if (!response.ok) {
-        // Mapeia e joga na tela o erro específico retornado pelo array do backend refinado
         if (result.errors && result.errors.length > 0) {
           throw new Error(result.errors[0].message);
         }
@@ -178,12 +198,18 @@
 
       await loadUserData();
       editingField = null;
+      showPasswordModal = false; // Fecha o modal após o sucesso
     } catch (e: any) {
       console.error(e);
       error = e.message || 'Falha ao salvar alteração.';
     } finally {
       saveLoading = false;
     }
+  }
+
+  // Função chamada pelo botão de dentro do Modal
+  function confirmSavePassword() {
+    saveField('password', true);
   }
 
   async function deleteOwnAccount() {
@@ -243,6 +269,7 @@
       {/if}
 
       {#if user}
+        <!-- USUÁRIO -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
           <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
             Usuário
@@ -263,6 +290,7 @@
           </div>
         </div>
 
+        <!-- E-MAIL -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
           <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
             E-mail
@@ -283,6 +311,28 @@
           </div>
         </div>
 
+        <!-- ALTERAR SENHA -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
+          <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
+            Senha
+          </div>
+          <div class="w-full sm:w-3/4 flex flex-col sm:flex-row gap-2">
+            {#if editingField === 'password'}
+              <input type="password" placeholder="Digite a nova senha" bind:value={editValue} disabled={saveLoading} class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs focus:outline-none focus:border-amber-600" />
+              <div class="flex gap-2 w-full sm:w-auto shrink-0">
+                <button on:click={() => saveField('password')} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Salvar</button>
+                <button on:click={cancelEdit} disabled={saveLoading} class="flex-1 sm:flex-none px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Sair</button>
+              </div>
+            {:else}
+              <div class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs min-h-[34px] flex items-center select-none text-neutral-400">
+                ********
+              </div>
+              <button on:click={() => startEdit('password', '')} class="w-full sm:w-auto shrink-0 px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Editar</button>
+            {/if}
+          </div>
+        </div>
+
+        <!-- CPF -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
           <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
             CPF
@@ -298,13 +348,12 @@
               <div class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs min-h-[34px] flex items-center">
                 {user.cpf}
               </div>
-              {#if user.role === 'admin'}
-                <button on:click={() => startEdit('cpf', user.cpf)} class="w-full sm:w-auto shrink-0 px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Editar</button>
-              {/if}
+              <button on:click={() => startEdit('cpf', user.cpf)} class="w-full sm:w-auto shrink-0 px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Editar</button>
             {/if}
           </div>
         </div>
 
+        <!-- NASCIMENTO -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
           <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
             Nascimento
@@ -320,13 +369,12 @@
               <div class="w-full text-neutral-900 bg-tertiary-100 border border-black rounded-none p-2 text-xs min-h-[34px] flex items-center">
                 {user.dat_nas ? new Date(user.dat_nas).toLocaleDateString('pt-BR') : 'Não informada'}
               </div>
-              {#if user.role === 'admin'}
-                <button on:click={() => startEdit('dat_nas', user.dat_nas)} class="w-full sm:w-auto shrink-0 px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Editar</button>
-              {/if}
+              <button on:click={() => startEdit('dat_nas', user.dat_nas)} class="w-full sm:w-auto shrink-0 px-4 py-2 bg-transparent border border-amber-600 text-amber-700 hover:bg-amber-600 hover:text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">Editar</button>
             {/if}
           </div>
         </div>
 
+        <!-- TELEFONE -->
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-6">
           <div class="w-full sm:w-1/4 sm:text-right text-[10px] font-bold uppercase tracking-widest text-primary-900">
             Telefone
@@ -347,6 +395,7 @@
           </div>
         </div>
 
+        <!-- ZONA DE PERIGO -->
         <div class="mt-3 pt-6 border-t border-neutral-800/40 bg-neutral-950/40 p-4 sm:p-5 rounded-none flex flex-col gap-4">
           <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
@@ -375,6 +424,37 @@
       {/if} 
     </div> 
   </div> 
+{/if}
+
+<!-- MODAL DE CONFIRMAÇÃO DE SENHA (Adicionado respeitando a sua identidade visual brutalista/escura) -->
+{#if showPasswordModal}
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-950/80 backdrop-blur-sm">
+    <div class="w-full max-w-md bg-neutral-900 border border-amber-600/50 p-6 shadow-2xl flex flex-col gap-4">
+      <div>
+        <h3 class="text-sm font-black text-amber-500 uppercase tracking-[0.15em]">Confirmar Alteração</h3>
+        <p class="text-xs text-neutral-300 mt-2 font-light tracking-wide leading-relaxed">
+          Você tem certeza de que deseja alterar sua senha de acesso? Você será mantido conectado, mas sua senha antiga deixará de funcionar imediatamente.
+        </p>
+      </div>
+      
+      <div class="flex gap-3 justify-end mt-2">
+        <button 
+          type="button" 
+          on:click={cancelEdit} 
+          disabled={saveLoading} 
+          class="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">
+          Cancelar
+        </button>
+        <button 
+          type="button" 
+          on:click={confirmSavePassword} 
+          disabled={saveLoading} 
+          class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-neutral-950 rounded-none text-[10px] font-bold uppercase tracking-wider transition-colors">
+          {saveLoading ? 'Alterando...' : 'Confirmar Alteração'}
+        </button>
+      </div>
+    </div>
+  </div>
 {/if}
 
 <style>

@@ -4,6 +4,7 @@
   import { logout, getCurrentUser, getToken, type User, login } from "$lib/auth";
   import { goto } from "$app/navigation";
   import { ArrowRightToBracketOutline } from "flowbite-svelte-icons";
+  import { CartOutline } from "flowbite-svelte-icons";
   import { page } from "$app/stores";
   
   let user: User | null = null;
@@ -99,18 +100,34 @@
       <NavLi href="/gatos" nonActiveClass="text-[15px] font-bold uppercase tracking-[0.18em] px-3.5 py-2 text-neutral-200 hover:text-amber-500 transition-all duration-300 rounded-none relative after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-[1px] after:bg-amber-500 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">
         Gatos
       </NavLi>
+
+      <NavLi href="/Cardapi" nonActiveClass="text-[15px] font-bold uppercase tracking-[0.18em] px-3.5 py-2 text-neutral-200 hover:text-amber-500 transition-all duration-300 rounded-none relative after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-[1px] after:bg-amber-500 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">
+        Cardápio
+      </NavLi>
       
       {#if hasToken}
         {#if user}
+          
+          
           {#if user.role === 'admin'} 
             <NavLi href="/users" nonActiveClass="text-[15px] font-bold uppercase tracking-[0.18em] px-3.5 py-2 text-amber-500 hover:text-amber-400 transition-all duration-300 rounded-none">
               Usuários
             </NavLi>
           {/if}
+
+          <NavLi nonActiveClass="flex items-center justify-center py-2 md:py-0">
+            <button 
+              on:click={() => goto('/carrinho')}
+              class="text-neutral-200 hover:text-amber-500 transition-all duration-300 rounded-none flex items-center justify-center focus:outline-none h-full"
+              aria-label="Carrinho de compras"
+            >
+              <CartOutline class="w-7 h-7 mt-1" />
+            </button>
+          </NavLi>
           
           <NavLi href="/perfil" nonActiveClass="text-[15px] font-bold uppercase tracking-[0.18em] px-3.5 py-2 text-amber-500 hover:text-amber-400 transition-all duration-300 rounded-none relative after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-[1px] after:bg-amber-400 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">
-  {user.login}
-</NavLi>
+            {user.login}
+          </NavLi>
 
           <NavLi>
             <div class="flex items-center">

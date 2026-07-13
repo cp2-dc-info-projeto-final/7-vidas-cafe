@@ -56,13 +56,14 @@
       <form on:submit|preventDefault={handleLogin} class="space-y-6">
         
         <div>
-          <Label for="login" class="mb-1 text-[10px] font-bold uppercase tracking-widest text-primary-900 block">Nome de Usuário</Label>
+          <!-- Modificado o texto da Label para indicar Usuário ou Email -->
+          <Label for="login" class="mb-1 text-[10px] font-bold uppercase tracking-widest text-primary-900 block">Usuário ou E-mail</Label>
           <Input
             class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0 custom-placeholder"
             id="login"
             type="text"
             bind:value={login}
-            placeholder="Digite seu nome de usuário"
+            placeholder="Digite seu usuário ou e-mail"
             required
           />
         </div>
