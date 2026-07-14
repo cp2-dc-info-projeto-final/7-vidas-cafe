@@ -26,10 +26,6 @@
     let gatos: Gato[] = [];
     let modoOpcoes = false; 
   
-    // Estados de autenticação locais emparelhados com o seu Menu
-    let token = "";
-    let user: Usuario | null = null;
-    let hasToken = false;
   
     // Modais de Controle de Fluxo
     let exibirModalForm = false;
@@ -45,86 +41,114 @@
     let formAdocao = false;
     let motivoExclusaoSelecionado = "";
   
-    // Recupera os dados ao montar o componente
-    onMount(async () => {
-      if (typeof localStorage !== 'undefined') {
-        token = localStorage.getItem('token') || "";
-        hasToken = !!token;
-        
-        // Simulação da recuperação do user (geralmente você puxaria do seu AuthStore ou decodificaria o JWT)
-        // Substitua pelo seu método global caso use writable stores do Svelte!
-        const userRaw = localStorage.getItem('user');
-        if (userRaw) {
-          user = JSON.parse(userRaw);
-        }
-      }
-      await carregarGatos();
-    });
+    // 1. IMPORTAÇÕES DA TUA ARQUITETURA DE AUTENTICAÇÃO
+  import { getCurrentUser, getToken, type User } from "$lib/auth";
+  import { page } from "$app/stores";
+
+  // 2. DECLARAÇÃO DOS ESTADOS DE AUTENTICAÇÃO IDENTICOS À NAVBAR
+  let user: User | null = null;
+  let hasToken = false;
+  let loadingUser = false;
+  let authRequestId = 0;
+
+  // 3. A FUNÇÃO DE ATUALIZAÇÃO BASEADA NO TEU CÓDIGO FONTE
+  async function updateAuthStatus() {
+    hasToken = getToken() !== null;
+    if (!hasToken) { user = null; loadingUser = false; return; }
+    if (user || loadingUser) return;
+
+    loadingUser = true;
+    const requestId = ++authRequestId;
+
+    try {
+      const userData = await getCurrentUser();
+      if (requestId !== authRequestId) return;
+      user = userData;
+      hasToken = userData !== null;
+    } catch {
+      if (requestId !== authRequestId) return;
+      user = null;
+      hasToken = false;
+    } finally {
+      if (requestId === authRequestId) loadingUser = false;
+    }
+  }
+
+  // 4. REATIVIDADE DE ROTA E O ONMOUNT COMPLEMENTADOS
+  $: if ($page.url.pathname) { void updateAuthStatus(); }
+
+  onMount(async () => {
+    void updateAuthStatus(); // Garante o preenchimento correto do hasToken e user assim que monta
+    await carregarGatos();
+  });
   
     // Requisições assíncronas ao Backend Unificado
     async function carregarGatos() {
-      const res = await fetch('/api/gatos');
-      const json = await res.json();
-      if (json.success) gatos = json.data;
+    const res = await fetch('/gatos');
+    console.log(res);
+    const json = await res.json();
+    if (json.success) gatos = json.data;
+  }
+
+  function abrirAdicionar() {
+    gatoSelecionado = null;
+    formNome = ""; formRaca = ""; formIdade = 0; formCastracao = false; formPersonalidade = ""; formAdocao = false;
+    exibirModalForm = true;
+  }
+
+  function abrirEditar(gato: Gato) {
+    gatoSelecionado = gato;
+    formNome = gato.nome;
+    formRaca = gato.raca;
+    formIdade = gato.idade;
+    formCastracao = gato.castracao;
+    formPersonalidade = gato.personalidade;
+    formAdocao = gato.adocao;
+    exibirModalForm = true;
+  }
+
+  function dispararJanelaExclusao(gato: Gato) {
+    gatoSelecionado = gato;
+    motivoExclusaoSelecionado = "";
+    exibirModalExcluir = true; 
+  }
+
+  async function salvarGato() {
+    const payload = { nome: formNome, raca: formRaca, idade: formIdade, castracao: formCastracao, personalidade: formPersonalidade, adocao: formAdocao };
+    const url = gatoSelecionado ? `/gatos/${gatoSelecionado.id}` : '/gatos';
+    const method = gatoSelecionado ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+    if (json.success) {
+      exibirModalForm = false;
+      carregarGatos();
     }
-  
-    function abrirAdicionar() {
+  }
+
+  async function efetuarExclusaoFinal() {
+    if (!gatoSelecionado || !motivoExclusaoSelecionado) return;
+
+    const res = await fetch(`/gatos/${gatoSelecionado.id}`, {
+      method: 'DELETE',
+     
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` },
+      body: JSON.stringify({ motivo: motivoExclusaoSelecionado })
+    });
+
+    const json = await res.json();
+    if (json.success) {
+      exibirModalExcluir = false;
       gatoSelecionado = null;
-      formNome = ""; formRaca = ""; formIdade = 0; formCastracao = false; formPersonalidade = ""; formAdocao = false;
-      exibirModalForm = true;
+      carregarGatos();
     }
-  
-    function abrirEditar(gato: Gato) {
-      gatoSelecionado = gato;
-      formNome = gato.nome;
-      formRaca = gato.raca;
-      formIdade = gato.idade;
-      formCastracao = gato.castracao;
-      formPersonalidade = gato.personalidade;
-      formAdocao = gato.adocao;
-      exibirModalForm = true;
-    }
-  
-    function dispararJanelaExclusao(gato: Gato) {
-      gatoSelecionado = gato;
-      motivoExclusaoSelecionado = "";
-      exibirModalExcluir = true; 
-    }
-  
-    async function salvarGato() {
-      const payload = { nome: formNome, raca: formRaca, idade: formIdade, castracao: formCastracao, personalidade: formPersonalidade, adocao: formAdocao };
-      const url = gatoSelecionado ? `/api/gatos/${gatoSelecionado.id}` : '/api/gatos';
-      const method = gatoSelecionado ? 'PUT' : 'POST';
-  
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
-  
-      const json = await res.json();
-      if (json.success) {
-        exibirModalForm = false;
-        carregarGatos();
-      }
-    }
-  
-    async function efetuarExclusaoFinal() {
-      if (!gatoSelecionado || !motivoExclusaoSelecionado) return;
-  
-      const res = await fetch(`/api/gatos/${gatoSelecionado.id}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ motivo: motivoExclusaoSelecionado })
-      });
-  
-      const json = await res.json();
-      if (json.success) {
-        exibirModalExcluir = false;
-        gatoSelecionado = null;
-        carregarGatos();
-      }
-    }
+  }
   </script>
   
   <Menu />

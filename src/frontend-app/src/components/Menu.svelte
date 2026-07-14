@@ -101,7 +101,7 @@
         Gatos
       </NavLi>
 
-      <NavLi href="/Cardapi" nonActiveClass="text-[15px] font-bold uppercase tracking-[0.18em] px-3.5 py-2 text-neutral-200 hover:text-amber-500 transition-all duration-300 rounded-none relative after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-[1px] after:bg-amber-500 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">
+      <NavLi href="/Cardapio" nonActiveClass="text-[15px] font-bold uppercase tracking-[0.18em] px-3.5 py-2 text-neutral-200 hover:text-amber-500 transition-all duration-300 rounded-none relative after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-[1px] after:bg-amber-500 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">
         Cardápio
       </NavLi>
       

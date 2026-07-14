@@ -21,10 +21,6 @@ function sendError(res, status, message, errors = []) {
   });
 }
 
-/* =========================================================================
-   SESSÃO 1: ROTAS DE USUÁRIOS
-   ========================================================================= */
-
 /* GET - Buscar todos os usuários (Apenas Admin) */
 router.get('/', verifyToken, isAdmin, async function(req, res) {
   try {
@@ -53,7 +49,7 @@ router.get('/me', verifyToken, async function(req, res) {
   }
 });
 
-/* GET - Buscar usuários por nome/filtra (Apenas Admin) */
+/* GET - Buscar usuários por nome/filtra*/
 router.get('/nome/:filtro', verifyToken, isAdmin, async function(req, res) {
   try {
     const { filtro } = req.params;
@@ -66,7 +62,7 @@ router.get('/nome/:filtro', verifyToken, isAdmin, async function(req, res) {
   }
 });
 
-/* GET parametrizado - Buscar usuário por ID (Apenas Admin) */
+/* GET parametrizado - Buscar usuário por ID*/
 router.get('/:id', verifyToken, isAdmin, async function(req, res) {
   try {
     const { id } = req.params;
@@ -80,6 +76,46 @@ router.get('/:id', verifyToken, isAdmin, async function(req, res) {
   } catch (error) {
     console.error('Erro ao buscar usuário:', error);
     return sendError(res, 500, 'Erro interno do servidor');
+  }
+});
+
+/* GET ou criar automaticamente - Buscar o carrinho do usuário logado */
+router.get('/carrinho', verifyToken, async function(req, res) {
+  try {
+    const usuarioId = req.user.id;
+
+    // 1. Tenta buscar o carrinho existente
+    let carrinhoResult = await pool.query(
+      'SELECT id, usuario_id, quantidade, preco_total FROM carrinho WHERE usuario_id = $1',
+      [usuarioId]
+    );
+
+    if (carrinhoResult.rows.length === 0) {
+      carrinhoResult = await pool.query(
+        'INSERT INTO carrinho (usuario_id, quantidade, preco_total) VALUES ($1, 0, 0.00) RETURNING id, usuario_id, quantidade, preco_total',
+        [usuarioId]
+      );
+    }
+
+    const carrinho = carrinhoResult.rows[0];
+
+    const itensResult = await pool.query(`
+      SELECT ic.id, ic.cardapio_id, ic.quantidade, ic.preco_unitario, ic.subtotal,
+             c.nome, c.categoria, c.tamanho, c.imagem
+      FROM itens_carrinho ic
+      INNER JOIN cardapio c ON ic.cardapio_id = c.id
+      WHERE ic.carrinho_id = $1
+      ORDER BY ic.id
+    `, [carrinho.id]);
+
+    return sendSuccess(res, 200, 'Carrinho carregado com sucesso', {
+      carrinho: carrinho,
+      itens: itensResult.rows
+    });
+
+  } catch (error) {
+    console.error('Erro ao buscar/criar carrinho:', error);
+    return sendError(res, 500, 'Erro interno ao processar carrinho');
   }
 });
 
@@ -416,115 +452,6 @@ router.delete('/:id', verifyToken, async function(req, res) {
 });
 
 
-/* =========================================================================
-   SESSÃO 2: ROTAS DOS GATOS
-   ========================================================================= */
 
-/* GET - Buscar todos os gatos */
-router.get('/gatos/todos', async function(req, res) {
-  try {
-    const result = await pool.query('SELECT id, nome, idade, raca, castracao, personalidade, adocao, tutor, imagem FROM gatos ORDER BY id');
-    return sendSuccess(res, 200, null, result.rows);
-  } catch (error) {
-    console.error('Erro ao buscar gatos:', error);
-    return sendError(res, 500, 'Erro interno do servidor');
-  }
-});
-
-/* POST - Adicionar gato (Apenas Admin) */
-router.post('/gatos/adicionar', verifyToken, isAdmin, async function(req, res) {
-  try {
-    const { nome, idade, raca, castracao, personalidade, adocao, tutor = null, imagem = null } = req.body;
-
-    if (!nome || idade === undefined || !raca || castracao === undefined || !personalidade || adocao === undefined) {
-      const errors = [];
-      if (!nome) errors.push({ field: 'nome', message: 'Nome é obrigatório', code: 'REQUIRED' });
-      if (idade === undefined) errors.push({ field: 'idade', message: 'Idade é obrigatória', code: 'REQUIRED' });
-      if (!raca) errors.push({ field: 'raca', message: 'Raça é obrigatória', code: 'REQUIRED' });
-      if (castracao === undefined) errors.push({ field: 'castracao', message: 'Status de castração é obrigatório', code: 'REQUIRED' });
-      if (!personalidade) errors.push({ field: 'personalidade', message: 'Personalidade é obrigatória', code: 'REQUIRED' });
-      if (adocao === undefined) errors.push({ field: 'adocao', message: 'Status de adoção é obrigatório', code: 'REQUIRED' });
-
-      return sendError(res, 400, 'Todos os campos do felino são obrigatórios', errors);
-    }
-
-    if (parseInt(idade) < 0) {
-      return sendError(res, 400, 'Dados inválidos.', [{ field: 'idade', message: 'A idade não pode ser menor que zero.', code: 'INVALID_VALUE' }]);
-    }
-
-    const result = await pool.query(
-      `INSERT INTO gatos (nome, idade, raca, castracao, personalidade, adocao, tutor, imagem) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-       RETURNING id, nome, idade, raca, castracao, personalidad, adocao, tutor, imagem`,
-      [nome, parseInt(idade), raca, castracao, personalidade, adocao, tutor, imagem]
-    );
-
-    return sendSuccess(res, 201, 'Gato adicionado com sucesso', result.rows[0]);
-  } catch (error) {
-    console.error('Erro ao inserir gato:', error);
-    return sendError(res, 500, 'Erro interno do servidor');
-  }
-});
-
-/* PUT - Editar gato (Apenas Admin) */
-router.put('/gatos/:id', verifyToken, isAdmin, async function(req, res) {
-  try {
-    const { id } = req.params;
-    const { nome, idade, raca, castracao, personalidade, adocao, tutor, imagem } = req.body;
-
-    const gatoResult = await pool.query('SELECT * FROM gatos WHERE id = $1', [id]);
-    if (gatoResult.rows.length === 0) return sendError(res, 404, 'Gato não encontrado');
-
-    const atual = gatoResult.rows[0];
-
-    const finalNome = (nome !== undefined) ? nome.trim() : atual.nome;
-    const finalIdade = (idade !== undefined) ? parseInt(idade) : atual.idade;
-    const finalRaca = (raca !== undefined) ? raca.trim() : atual.raca;
-    const finalCastracao = (castracao !== undefined) ? castracao : atual.castracao;
-    
-    // CORREÇÃO DO BUG: Modificado 'personality.trim()' para 'personalidade.trim()'
-    const finalPersonalidade = (personalidade !== undefined) ? personalidade.trim() : atual.personalidade;
-    
-    const finalAdocao = (adocao !== undefined) ? adocao : atual.adocao;
-    const finalTutor = (tutor !== undefined) ? tutor : atual.tutor;
-    const finalImagem = (imagem !== undefined) ? imagem : atual.imagem;
-
-    if (finalIdade < 0) return sendError(res, 400, 'A idade do gato não pode ser negativa.');
-
-    const result = await pool.query(
-      `UPDATE gatos 
-       SET nome = $1, idade = $2, raca = $3, castracao = $4, personalidade = $5, adocao = $6, tutor = $7, imagem = $8
-       WHERE id = $9 
-       RETURNING id, nome, idade, raca, castracao, personalidade, adocao, tutor, imagem`,
-      [finalNome, finalIdade, finalRaca, finalCastracao, finalPersonalidade, finalAdocao, finalTutor, finalImagem, id]
-    );
-
-    return sendSuccess(res, 200, 'Gato updated successfully', result.rows[0]);
-  } catch (error) {
-    console.error('Erro ao atualizar gato:', error);
-    return sendError(res, 500, 'Erro interno do servidor');
-  }
-});
-
-/* DELETE - Remover gato (Apenas Admin) */
-router.delete('/gatos/:id', verifyToken, isAdmin, async function(req, res) {
-  try {
-    const { id } = req.params;
-    const { motivo } = req.body;
-
-    if (!motivo) return sendError(res, 400, 'É necessário informar o motivo da exclusão.');
-
-    const gatoResult = await pool.query('SELECT id FROM gatos WHERE id = $1', [id]);
-    if (gatoResult.rows.length === 0) return sendError(res, 404, 'Gato não encontrado');
-
-    await pool.query('DELETE FROM gatos WHERE id = $1', [id]);
-    console.log(`[AUDITORIA] Gato ID ${id} deletado. Motivo: ${motivo}`);
-
-    return sendSuccess(res, 200, `Gato removido com sucesso (${motivo}).`);
-  } catch (error) {
-    console.error('Erro ao deletar gato:', error);
-    return sendError(res, 500, 'Erro interno do servidor');
-  }
-});
 
 module.exports = router;
