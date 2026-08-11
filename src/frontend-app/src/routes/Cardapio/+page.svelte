@@ -9,7 +9,7 @@
   
     <section class="text-center mb-20">
       <Heading tag="h1" class="text-4xl md:text-6xl font-black tracking-[0.2em] text-white uppercase font-serif">
-        Cardápio
+        Cardápiii
       </Heading>
       <div class="w-20 h-[2px] bg-amber-600 mx-auto mt-6"></div>
     </section>
