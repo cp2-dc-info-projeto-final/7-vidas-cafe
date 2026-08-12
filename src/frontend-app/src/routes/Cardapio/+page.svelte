@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card, Badge, Modal, Label, Input, Textarea, Button } from 'flowbite-svelte';
+  import { Badge, Modal, Label, Input, Textarea } from 'flowbite-svelte';
   import ConfirmModal from '../../components/ConfirmModal.svelte';
   import { EditOutline, TrashBinOutline, PlusOutline } from 'flowbite-svelte-icons';
   import api from '$lib/api';
@@ -31,6 +31,10 @@
   let filtro = '';
   let currentUser: UserAuth | null = null;
 
+  // Estado do Modal de Detalhes
+  let modalDetailsOpen = false;
+  let selectedItem: MenuItem | null = null;
+
   // Estado do Modal de Cadastro / Edição
   let modalFormOpen = false;
   let isEditing = false;
@@ -44,7 +48,14 @@
   let formError = '';
   let formSubmitting = false;
 
-  $: isAdmin = currentUser?.role === 'admin';
+  // Reatividade para verificação de Admin (Trata maiúsculas/minúsculas)
+  $: isAdmin = currentUser?.role?.toLowerCase() === 'admin' || 
+              (currentUser as any)?.type?.toLowerCase() === 'admin';
+
+  function openDetailsModal(item: MenuItem) {
+    selectedItem = item;
+    modalDetailsOpen = true;
+  }
 
   function openConfirm(id: number) {
     confirmTargetId = id;
@@ -80,6 +91,9 @@
         return;
       }
       items = items.filter((item) => item.id !== id);
+      if (selectedItem?.id === id) {
+        modalDetailsOpen = false;
+      }
     } catch (e: any) {
       console.error('Erro ao deletar item do cardápio:', e);
       const body = e.response?.data as ApiResponse<null> | undefined;
@@ -89,7 +103,6 @@
     }
   }
 
-  // Abrir modal para NOVO ITEM
   function openAddModal() {
     isEditing = false;
     formId = null;
@@ -103,7 +116,6 @@
     modalFormOpen = true;
   }
 
-  // Abrir modal para EDITAR ITEM
   function openEditModal(item: MenuItem) {
     isEditing = true;
     formId = item.id;
@@ -117,7 +129,6 @@
     modalFormOpen = true;
   }
 
-  // Salvar (Criar ou Atualizar)
   async function handleSubmit() {
     formError = '';
     formSubmitting = true;
@@ -138,6 +149,9 @@
         if (body.success && body.data) {
           items = items.map((i) => (i.id === formId ? body.data : i));
           modalFormOpen = false;
+          if (selectedItem?.id === formId) {
+            selectedItem = body.data;
+          }
         } else {
           formError = body.message || 'Erro ao atualizar item.';
         }
@@ -161,22 +175,43 @@
   }
 
   onMount(async () => {
-    try {
+    loading = true;
+
+    // 1. Usa exatamente a mesma chave que seu api.ts usa: 'auth_token' no sessionStorage
+    const token = typeof window !== 'undefined' ? sessionStorage.getItem('auth_token') : null;
+
+    // Só faz a requisição se REALMENTE houver um token salvo
+    if (token) {
       try {
         const userRes = await api.get('/users/me');
-        if (userRes.data?.success) {
-          currentUser = userRes.data.data;
+        const resData = userRes.data;
+
+        if (resData?.data) {
+          currentUser = resData.data;
+        } else if (resData?.user) {
+          currentUser = resData.user;
+        } else {
+          currentUser = resData;
         }
       } catch (err) {
-        console.warn('Usuário não autenticado ou falha ao buscar perfil:', err);
+        console.warn('Sessão expirada ou token inválido:', err);
+        currentUser = null;
       }
+    } else {
+      currentUser = null; // Visitante sem token
+    }
 
+    // 2. Busca os itens do cardápio (Funciona para TODOS sem disparar 401)
+    try {
       const res = await api.get('/cardapio');
       const body = res.data as ApiResponse<MenuItem[]>;
-      if (body.success) {
+      
+      if (body?.success) {
         items = body.data ?? [];
+      } else if (Array.isArray(res.data)) {
+        items = res.data;
       } else {
-        error = body.message;
+        error = body?.message || 'Erro ao carregar o cardápio.';
       }
     } catch (e: any) {
       console.error('Erro ao carregar cardápio:', e);
@@ -208,6 +243,13 @@
   }
 </script>
 
+<style>
+  input::placeholder {
+    color: #C47B54;
+    opacity: 1;
+  }
+</style>
+
 <Menu />
 
 <main class="mx-auto md:pt-40 text-neutral-100">
@@ -221,7 +263,7 @@
         {error}
       </div>
     {:else}
-      <!-- Topo: Campo de Pesquisa e Botão Novo Item (Admin) -->
+      <!-- Topo: Campo de Pesquisa e Botão Novo Item (Visível só para Admin) -->
       <div class="w-[98%] mx-auto py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
         <input
           type="text"
@@ -233,7 +275,8 @@
 
         {#if isAdmin}
           <button
-            class="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-neutral-950 font-bold px-5 py-3 rounded-none uppercase tracking-wider text-xs transition-colors duration-300 border border-black"
+            type="button"
+            class="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-neutral-950 font-bold px-5 py-3 rounded-none uppercase tracking-wider text-xs transition-colors duration-300 border border-black cursor-pointer"
             on:click={openAddModal}
           >
             <PlusOutline class="w-5 h-5 text-neutral-950" />
@@ -242,23 +285,23 @@
         {/if}
       </div>
 
-      <style>
-        input::placeholder {
-          color: #C47B54;
-          opacity: 1;
-        }
-      </style>
-
-      <!-- Lista / Grid do Cardápio -->
+      <!-- Grid do Cardápio -->
       <div class="w-[98%] mx-auto pb-12">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
           {#each items as item}
-            <Card class="w-full max-w-none p-0 overflow-hidden shadow-2xl border bg-primary-350/80 backdrop-blur-lg border-primary-400 rounded-none flex flex-col justify-between">
+            <!-- Card Clicável para Detalhes -->
+            <div 
+              class="w-full max-w-none p-0 overflow-hidden shadow-2xl border bg-primary-350/80 backdrop-blur-lg border-primary-400 rounded-none flex flex-col justify-between cursor-pointer hover:border-amber-600 transition-all duration-200 group"
+              on:click={() => openDetailsModal(item)}
+              on:keydown={(e) => e.key === 'Enter' && openDetailsModal(item)}
+              role="button"
+              tabindex="0"
+            >
               <div>
-                <!-- Imagem Pequena / Destaque no Topo -->
-                <div class="relative w-full h-40 bg-tertiary-200/40 border-b border-primary-400/50 overflow-hidden flex items-center justify-center">
+                <!-- Imagem do Produto -->
+                <div class="relative w-full h-44 bg-tertiary-200/40 border-b border-primary-400/50 overflow-hidden flex items-center justify-center">
                   {#if item.imagem}
-                    <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover" />
+                    <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   {:else}
                     <div class="text-primary-900/40 font-mono text-xs uppercase tracking-widest">
                       Sem Imagem
@@ -272,48 +315,50 @@
                   {/if}
                 </div>
 
-                <!-- Nome do Item & Botões de Ação Admin -->
+                <!-- Cabeçalho do Card (Título + Botões do Admin) -->
                 <div class="px-5 pt-4 pb-2 flex items-start justify-between bg-tertiary-200/60 border-b border-primary-400/30">
-                  <h3 class="text-lg font-bold text-primary-700 text-left leading-tight">
+                  <h3 class="text-lg font-bold text-primary-700 text-left leading-tight group-hover:text-amber-500 transition-colors">
                     {item.nome}
                   </h3>
 
                   {#if isAdmin}
                     <div class="flex gap-1.5 shrink-0 ml-2">
                       <button
-                        class="p-1.5 rounded-none border border-primary-500 hover:border-amber-600 hover:bg-amber-600 group transition-all duration-300"
+                        type="button"
+                        class="p-1.5 rounded-none border border-primary-500 hover:border-amber-600 hover:bg-amber-600 group/btn transition-all duration-300"
                         title="Editar Item"
-                        on:click={() => openEditModal(item)}
+                        on:click|stopPropagation={() => openEditModal(item)}
                       >
-                        <EditOutline class="w-4 h-4 text-primary-900 group-hover:text-neutral-950" />
+                        <EditOutline class="w-4 h-4 text-primary-900 group-hover/btn:text-neutral-950" />
                       </button>
                       <button
+                        type="button"
                         title="Remover Item"
-                        class="p-1.5 rounded-none border border-primary-500 hover:border-red-500 hover:bg-red-600 group transition-all duration-300"
-                        on:click={() => openConfirm(item.id)}
+                        class="p-1.5 rounded-none border border-primary-500 hover:border-red-500 hover:bg-red-600 group/btn transition-all duration-300"
+                        on:click|stopPropagation={() => openConfirm(item.id)}
                         disabled={deletingId === item.id || loading}
                       >
-                        <TrashBinOutline class="w-4 h-4 text-red-400 group-hover:text-white" />
+                        <TrashBinOutline class="w-4 h-4 text-red-400 group-hover/btn:text-white" />
                       </button>
                     </div>
                   {/if}
                 </div>
 
-                <!-- Resumo do Item -->
+                <!-- Resumo -->
                 <div class="px-5 py-3 text-left">
-                  <p class="text-primary-950 text-xs font-medium leading-relaxed">
+                  <p class="text-primary-950 text-xs font-medium leading-relaxed line-clamp-2">
                     {item.resumo}
                   </p>
                 </div>
               </div>
 
-              <!-- Canto Inferior Direito: Preço -->
+              <!-- Preço -->
               <div class="px-5 pb-4 pt-2 flex justify-end items-center mt-auto">
                 <span class="text-xl font-black text-amber-500 tracking-tight">
                   {formatarPreco(item.preco)}
                 </span>
               </div>
-            </Card>
+            </div>
           {/each}
         </div>
       </div>
@@ -321,8 +366,76 @@
   </div>
 </main>
 
-<!-- Modal de Adicionar / Editar Item -->
-<Modal bind:open={modalFormOpen} title={isEditing ? 'Editar Item do Cardápio' : 'Adicionar Novo Item'} size="md" autoclose={false} class="bg-neutral-950/50" headerClass="text-amber-500 font-bold border-b border-neutral-700">
+<!-- Modal de Detalhes do Produto -->
+{#if selectedItem}
+  <Modal 
+    bind:open={modalDetailsOpen} 
+    title={selectedItem.nome} 
+    size="md" 
+    autoclose={false} 
+    class="bg-neutral-950/90 border border-neutral-800 shadow-2xl backdrop-blur-xl" 
+    headerClass="text-amber-500 font-bold uppercase tracking-wider border-b border-neutral-800"
+  >
+    <div class="space-y-4 text-left">
+      {#if selectedItem.imagem}
+        <div class="w-full h-56 bg-neutral-900 border border-neutral-800 overflow-hidden flex items-center justify-center">
+          <img src={selectedItem.imagem} alt={selectedItem.nome} class="w-full h-full object-cover" />
+        </div>
+      {/if}
+
+      <div class="flex items-center justify-between border-b border-neutral-800 pb-3">
+        {#if selectedItem.categoria}
+          <Badge class="bg-amber-600/20 text-amber-500 border border-amber-600/40 rounded-none text-xs font-bold uppercase px-3 py-1">
+            {selectedItem.categoria}
+          </Badge>
+        {/if}
+        <span class="text-2xl font-black text-amber-500">
+          {formatarPreco(selectedItem.preco)}
+        </span>
+      </div>
+
+      <div>
+        <h4 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">Resumo</h4>
+        <p class="text-neutral-200 text-sm italic bg-neutral-900/50 p-2.5 border-l-2 border-amber-600">
+          {selectedItem.resumo}
+        </p>
+      </div>
+
+      <div>
+        <h4 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">Descrição Completa</h4>
+        <p class="text-neutral-300 text-sm leading-relaxed whitespace-pre-line bg-neutral-900/30 p-3 border border-neutral-800">
+          {selectedItem.descricao}
+        </p>
+      </div>
+    </div>
+
+    <div class="flex justify-between items-center pt-4 border-t border-neutral-800 mt-6">
+      <button
+        type="button"
+        class="bg-neutral-800 hover:bg-neutral-700 text-neutral-200 font-bold px-4 py-2 text-xs uppercase border border-neutral-600 cursor-pointer transition-colors"
+        on:click={() => (modalDetailsOpen = false)}
+      >
+        Fechar
+      </button>
+
+      {#if isAdmin}
+        <button
+          type="button"
+          class="bg-amber-600 hover:bg-amber-700 text-neutral-950 font-bold px-4 py-2 text-xs uppercase border border-black cursor-pointer transition-colors"
+          on:click={() => {
+            modalDetailsOpen = false;
+            if (selectedItem) openEditModal(selectedItem);
+          }}
+        >
+          Editar Produto
+        </button>
+      {/if}
+    </div>
+  </Modal>
+{/if}
+
+<!-- Modal de Adicionar / Editar Item (Admin) -->
+<Modal bind:open={modalFormOpen} title={isEditing ? 'Editar Item do Cardápio' : 'Adicionar Novo Item'} size="md" autoclose={false} class="bg-neutral-950/90 border border-neutral-800" headerClass="text-amber-500 font-bold border-b border-neutral-700">
   <form on:submit|preventDefault={handleSubmit} class="space-y-4">
     {#if formError}
       <div class="p-3 bg-red-900/30 border border-red-500 text-red-400 text-xs rounded">
@@ -331,48 +444,48 @@
     {/if}
 
     <div>
-      <Label for="nome" class="text-xs font-bold uppercase tracking-wide text-tertiary-500">Nome do Item *</Label>
+      <Label for="nome" class="text-xs font-bold uppercase tracking-wide text-amber-500">Nome do Item *</Label>
       <Input id="nome" type="text" placeholder="Ex: Pizza Margherita" bind:value={formNome} required />
     </div>
 
-    <div class="grid grid-cols-2 gap-4 ">
+    <div class="grid grid-cols-2 gap-4">
       <div>
-        <Label for="preco" class="text-xs font-bold uppercase tracking-wide text-tertiary-500">Preço (R$) *</Label>
+        <Label for="preco" class="text-xs font-bold uppercase tracking-wide text-amber-500">Preço (R$) *</Label>
         <Input id="preco" type="number" step="0.01" min="0" placeholder="45.00" bind:value={formPreco} required />
       </div>
       <div>
-        <Label for="categoria" class="text-xs font-bold uppercase tracking-wide text-tertiary-500">Categoria *</Label>
+        <Label for="categoria" class="text-xs font-bold uppercase tracking-wide text-amber-500">Categoria *</Label>
         <Input id="categoria" type="text" placeholder="Ex: Pizzas, Bebidas" bind:value={formCategoria} required />
       </div>
     </div>
 
     <div>
-      <Label for="resumo" class="text-xs font-bold uppercase tracking-wide text-tertiary-500">Resumo *</Label>
+      <Label for="resumo" class="text-xs font-bold uppercase tracking-wide text-amber-500">Resumo *</Label>
       <Input id="resumo" type="text" placeholder="Breve descrição em poucas palavras" bind:value={formResumo} required />
     </div>
 
     <div>
-      <Label for="descricao" class="text-xs font-bold uppercase tracking-wide text-tertiary-500">Descrição Completa *</Label>
+      <Label for="descricao" class="text-xs font-bold uppercase tracking-wide text-amber-500">Descrição Completa *</Label>
       <Textarea id="descricao" rows="3" placeholder="Detalhes dos ingredientes, preparo, etc." bind:value={formDescricao} required />
     </div>
 
     <div>
-      <Label for="imagem" class="text-xs font-bold uppercase tracking-wide text-tertiary-500">URL da Imagem (Opcional)</Label>
+      <Label for="imagem" class="text-xs font-bold uppercase tracking-wide text-amber-500">URL da Imagem (Opcional)</Label>
       <Input id="imagem" type="url" placeholder="https://exemplo.com/imagem.jpg" bind:value={formImagem} />
     </div>
 
-    <div class="flex justify-end gap-3 pt-4 border-t border-primary-400/30">
+    <div class="flex justify-end gap-3 pt-4 border-t border-neutral-800">
       <button
         type="button"
-        class="bg-tertiary-400 hover:bg-tertiary-500 text-neutral-950 font-bold px-4 py-2 text-xs uppercase tracking-wider transition-colors duration-200 border border-black"
+        class="bg-neutral-700 hover:bg-neutral-600 text-neutral-100 font-bold px-4 py-2 text-xs uppercase tracking-wider transition-colors duration-200 border border-black cursor-pointer"
         on:click={() => (modalFormOpen = false)}
       >
         Cancelar
       </button>
-    
+
       <button
         type="submit"
-        class="bg-amber-600 hover:bg-amber-700 text-neutral-950 font-bold px-4 py-2 text-xs uppercase tracking-wider transition-colors duration-200 border border-black disabled:opacity-50"
+        class="bg-amber-600 hover:bg-amber-700 text-neutral-950 font-bold px-4 py-2 text-xs uppercase tracking-wider transition-colors duration-200 border border-black cursor-pointer disabled:opacity-50"
         disabled={formSubmitting}
       >
         {formSubmitting ? 'Salvando...' : isEditing ? 'Atualizar' : 'Cadastrar'}
