@@ -23,6 +23,11 @@
   }
 
   let items: MenuItem[] = [];
+  
+  // Categorias fixas estritas
+  const categoriasList = ['Bebidas', 'Doces', 'Salgados'];
+  let categoriaSelecionada = '';
+
   let loading = true;
   let error = '';
   let deletingId: number | null = null;
@@ -30,25 +35,26 @@
   let confirmTargetId: number | null = null;
   let filtro = '';
   let currentUser: UserAuth | null = null;
+  let mobileMenuOpen = false; // Estado do menu hambúrguer
 
   // Estado do Modal de Detalhes
   let modalDetailsOpen = false;
   let selectedItem: MenuItem | null = null;
 
-  // Estado do Modal de Cadastro / Edição
+  // Estado do Modal de Cadastro / Edição de Produto
   let modalFormOpen = false;
   let isEditing = false;
   let formId: number | null = null;
   let formNome = '';
   let formPreco: number | string = '';
-  let formCategoria = '';
+  let formCategoria = 'Salgados';
   let formResumo = '';
   let formDescricao = '';
   let formImagem = '';
   let formError = '';
   let formSubmitting = false;
 
-  // Reatividade para verificação de Admin (Trata maiúsculas/minúsculas)
+  // Reatividade para verificação de Admin
   $: isAdmin = currentUser?.role?.toLowerCase() === 'admin' || 
               (currentUser as any)?.type?.toLowerCase() === 'admin';
 
@@ -108,7 +114,7 @@
     formId = null;
     formNome = '';
     formPreco = '';
-    formCategoria = '';
+    formCategoria = categoriaSelecionada || 'Salgados';
     formResumo = '';
     formDescricao = '';
     formImagem = '';
@@ -121,7 +127,7 @@
     formId = item.id;
     formNome = item.nome;
     formPreco = item.preco;
-    formCategoria = item.categoria;
+    formCategoria = item.categoria || 'Salgados';
     formResumo = item.resumo;
     formDescricao = item.descricao;
     formImagem = item.imagem || '';
@@ -152,6 +158,7 @@
           if (selectedItem?.id === formId) {
             selectedItem = body.data;
           }
+          await buscarCardapio();
         } else {
           formError = body.message || 'Erro ao atualizar item.';
         }
@@ -161,6 +168,7 @@
         if (body.success && body.data) {
           items = [body.data, ...items];
           modalFormOpen = false;
+          await buscarCardapio();
         } else {
           formError = body.message || 'Erro ao cadastrar item.';
         }
@@ -176,16 +184,12 @@
 
   onMount(async () => {
     loading = true;
-
-    // 1. Usa exatamente a mesma chave que seu api.ts usa: 'auth_token' no sessionStorage
     const token = typeof window !== 'undefined' ? sessionStorage.getItem('auth_token') : null;
 
-    // Só faz a requisição se REALMENTE houver um token salvo
     if (token) {
       try {
         const userRes = await api.get('/users/me');
         const resData = userRes.data;
-
         if (resData?.data) {
           currentUser = resData.data;
         } else if (resData?.user) {
@@ -194,18 +198,15 @@
           currentUser = resData;
         }
       } catch (err) {
-        console.warn('Sessão expirada ou token inválido:', err);
         currentUser = null;
       }
     } else {
-      currentUser = null; // Visitante sem token
+      currentUser = null;
     }
 
-    // 2. Busca os itens do cardápio (Funciona para TODOS sem disparar 401)
     try {
       const res = await api.get('/cardapio');
       const body = res.data as ApiResponse<MenuItem[]>;
-      
       if (body?.success) {
         items = body.data ?? [];
       } else if (Array.isArray(res.data)) {
@@ -214,7 +215,6 @@
         error = body?.message || 'Erro ao carregar o cardápio.';
       }
     } catch (e: any) {
-      console.error('Erro ao carregar cardápio:', e);
       const body = e.response?.data as ApiResponse<MenuItem[]> | undefined;
       error = body?.message || 'Erro ao carregar cardápio.';
     } finally {
@@ -222,17 +222,22 @@
     }
   });
 
-  $: filtro, buscarCardapio();
+  $: filtro, categoriaSelecionada, buscarCardapio();
 
   async function buscarCardapio() {
     try {
+      let endpoint = '/cardapio';
       if (filtro.trim() !== '') {
-        const res = await api.get(`/cardapio/busca/${encodeURIComponent(filtro.trim())}`);
-        items = res.data.data ?? [];
-      } else {
-        const res = await api.get('/cardapio');
-        items = res.data.data ?? [];
+        endpoint = `/cardapio/busca/${encodeURIComponent(filtro.trim())}`;
       }
+      const res = await api.get(endpoint);
+      let dados = res.data.data ?? res.data ?? [];
+
+      if (categoriaSelecionada && categoriaSelecionada.trim() !== '') {
+        dados = dados.filter((i: MenuItem) => i.categoria?.toLowerCase() === categoriaSelecionada.toLowerCase());
+      }
+
+      items = dados;
     } catch (e: any) {
       console.error('Erro ao buscar no cardápio:', e);
     }
@@ -263,8 +268,53 @@
         {error}
       </div>
     {:else}
-      <!-- Topo: Campo de Pesquisa e Botão Novo Item (Visível só para Admin) -->
-      <div class="w-[98%] mx-auto py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <!-- Menu de Categorias Exclusivo em Hambúrguer (Responsivo) -->
+      <div class="w-[98%] mx-auto mb-4 bg-tertiary-200/40 border border-primary-400/40 p-3 relative">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-amber-500">
+            Categoria: <strong class="text-primary-900">{categoriaSelecionada || 'Todas'}</strong>
+          </span>
+          <button
+            type="button"
+            class="p-2 bg-primary-350 border border-primary-500 text-primary-900 hover:text-amber-600 flex items-center gap-2 cursor-pointer"
+            on:click={() => (mobileMenuOpen = !mobileMenuOpen)}
+          >
+            <span class="text-xs font-bold uppercase">Menu Categorias</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              {#if mobileMenuOpen}
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              {:else}
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+              {/if}
+            </svg>
+          </button>
+        </div>
+
+        {#if mobileMenuOpen}
+          <div class="absolute top-full left-0 w-full mt-1 bg-tertiary-200 border border-primary-400/60 shadow-2xl z-50 flex flex-col p-2 gap-1.5 backdrop-blur-xl">
+            <button
+              type="button"
+              class={`px-4 py-3 text-xs font-bold uppercase tracking-wider text-left transition-all cursor-pointer border ${!categoriaSelecionada ? 'bg-amber-600 text-neutral-950 border-amber-600' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-amber-600'}`}
+              on:click={() => { categoriaSelecionada = ''; mobileMenuOpen = false; }}
+            >
+              Todas as Categorias
+            </button>
+
+            {#each categoriasList as cat}
+              <button
+                type="button"
+                class={`px-4 py-3 text-xs font-bold uppercase tracking-wider text-left transition-all cursor-pointer border ${categoriaSelecionada === cat ? 'bg-amber-600 text-neutral-950 border-amber-600' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-amber-600'}`}
+                on:click={() => { categoriaSelecionada = cat; mobileMenuOpen = false; }}
+              >
+                {cat}
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+
+      <!-- Topo: Campo de Pesquisa e Botão Novo Item -->
+      <div class="w-[98%] mx-auto py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <input
           type="text"
           placeholder="Pesquisar no Cardápio"
@@ -289,7 +339,6 @@
       <div class="w-[98%] mx-auto pb-12">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
           {#each items as item}
-            <!-- Card Clicável para Detalhes -->
             <div 
               class="w-full max-w-none p-0 overflow-hidden shadow-2xl border bg-primary-350/80 backdrop-blur-lg border-primary-400 rounded-none flex flex-col justify-between cursor-pointer hover:border-amber-600 transition-all duration-200 group"
               on:click={() => openDetailsModal(item)}
@@ -298,7 +347,6 @@
               tabindex="0"
             >
               <div>
-                <!-- Imagem do Produto -->
                 <div class="relative w-full h-44 bg-tertiary-200/40 border-b border-primary-400/50 overflow-hidden flex items-center justify-center">
                   {#if item.imagem}
                     <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -315,7 +363,6 @@
                   {/if}
                 </div>
 
-                <!-- Cabeçalho do Card (Título + Botões do Admin) -->
                 <div class="px-5 pt-4 pb-2 flex items-start justify-between bg-tertiary-200/60 border-b border-primary-400/30">
                   <h3 class="text-lg font-bold text-primary-700 text-left leading-tight group-hover:text-amber-500 transition-colors">
                     {item.nome}
@@ -344,15 +391,14 @@
                   {/if}
                 </div>
 
-                <!-- Resumo -->
                 <div class="px-5 py-3 text-left">
-                  <p class="text-primary-950 text-xs font-medium leading-relaxed line-clamp-2">
+                  <!-- Aumentado para line-clamp-3 para caber um texto maior e mais descritivo -->
+                  <p class="text-primary-950 text-xs font-medium leading-relaxed line-clamp-3">
                     {item.resumo}
                   </p>
                 </div>
               </div>
 
-              <!-- Preço -->
               <div class="px-5 pb-4 pt-2 flex justify-end items-center mt-auto">
                 <span class="text-xl font-black text-amber-500 tracking-tight">
                   {formatarPreco(item.preco)}
@@ -434,7 +480,7 @@
   </Modal>
 {/if}
 
-<!-- Modal de Adicionar / Editar Item (Admin) -->
+<!-- Modal de Adicionar / Editar Item -->
 <Modal bind:open={modalFormOpen} title={isEditing ? 'Editar Item do Cardápio' : 'Adicionar Novo Item'} size="md" autoclose={false} class="bg-neutral-950/90 border border-neutral-800" headerClass="text-amber-500 font-bold border-b border-neutral-700">
   <form on:submit|preventDefault={handleSubmit} class="space-y-4">
     {#if formError}
@@ -445,7 +491,7 @@
 
     <div>
       <Label for="nome" class="text-xs font-bold uppercase tracking-wide text-amber-500">Nome do Item *</Label>
-      <Input id="nome" type="text" placeholder="Ex: Pizza Margherita" bind:value={formNome} required />
+      <Input id="nome" type="text" placeholder="Ex: Coxinha" bind:value={formNome} required />
     </div>
 
     <div class="grid grid-cols-2 gap-4">
@@ -455,13 +501,22 @@
       </div>
       <div>
         <Label for="categoria" class="text-xs font-bold uppercase tracking-wide text-amber-500">Categoria *</Label>
-        <Input id="categoria" type="text" placeholder="Ex: Pizzas, Bebidas" bind:value={formCategoria} required />
+        <select 
+          id="categoria" 
+          bind:value={formCategoria} 
+          class="w-full bg-tertiary-100 border border-black text-neutral-900 text-sm p-2.5 rounded-none focus:outline-none focus:border-amber-600"
+          required
+        >
+          {#each categoriasList as cat}
+            <option value={cat}>{cat}</option>
+          {/each}
+        </select>
       </div>
     </div>
 
     <div>
       <Label for="resumo" class="text-xs font-bold uppercase tracking-wide text-amber-500">Resumo *</Label>
-      <Input id="resumo" type="text" placeholder="Breve descrição em poucas palavras" bind:value={formResumo} required />
+      <Input id="resumo" type="text" placeholder="Descrição um pouco mais detalhada do item..." bind:value={formResumo} required />
     </div>
 
     <div>
