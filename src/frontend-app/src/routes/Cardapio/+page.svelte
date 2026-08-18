@@ -257,8 +257,8 @@
 
 <Menu />
 
-<main class="mx-auto md:pt-40 text-neutral-100">
-  <div class="mx-auto">
+<main class="mx-auto pt-36 md:pt-48 text-neutral-100">
+    <div class="mx-auto">
     {#if loading}
       <div class="my-8 text-center text-neutral-400 font-medium uppercase tracking-widest animate-pulse">
         Carregando cardápio...
@@ -268,51 +268,32 @@
         {error}
       </div>
     {:else}
-      <!-- Menu de Categorias Exclusivo em Hambúrguer (Responsivo) -->
-      <div class="w-[98%] mx-auto mb-4 bg-tertiary-200/40 border border-primary-400/40 p-3 relative">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-amber-500">
-            Categoria: <strong class="text-primary-900">{categoriaSelecionada || 'Todas'}</strong>
-          </span>
-          <button
-            type="button"
-            class="p-2 bg-primary-350 border border-primary-500 text-primary-900 hover:text-amber-600 flex items-center gap-2 cursor-pointer"
-            on:click={() => (mobileMenuOpen = !mobileMenuOpen)}
-          >
-            <span class="text-xs font-bold uppercase">Menu Categorias</span>
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              {#if mobileMenuOpen}
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-              {:else}
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-              {/if}
-            </svg>
-          </button>
-        </div>
+      <!-- Barra de Categorias Fixa (Substituindo o hambúrguer) -->
+<div class="w-[98%] mx-auto mb-4 bg-tertiary-200/40 border border-primary-400/40 p-3">
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="text-xs font-bold uppercase tracking-wider text-amber-500 mr-2">
+      Categorias:
+    </span>
+    
+    <button
+      type="button"
+      class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${!categoriaSelecionada ? 'bg-amber-600 text-neutral-950 border-amber-600' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-amber-600'}`}
+      on:click={() => { categoriaSelecionada = ''; }}
+    >
+      Todas
+    </button>
 
-        {#if mobileMenuOpen}
-          <div class="absolute top-full left-0 w-full mt-1 bg-tertiary-200 border border-primary-400/60 shadow-2xl z-50 flex flex-col p-2 gap-1.5 backdrop-blur-xl">
-            <button
-              type="button"
-              class={`px-4 py-3 text-xs font-bold uppercase tracking-wider text-left transition-all cursor-pointer border ${!categoriaSelecionada ? 'bg-amber-600 text-neutral-950 border-amber-600' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-amber-600'}`}
-              on:click={() => { categoriaSelecionada = ''; mobileMenuOpen = false; }}
-            >
-              Todas as Categorias
-            </button>
-
-            {#each categoriasList as cat}
-              <button
-                type="button"
-                class={`px-4 py-3 text-xs font-bold uppercase tracking-wider text-left transition-all cursor-pointer border ${categoriaSelecionada === cat ? 'bg-amber-600 text-neutral-950 border-amber-600' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-amber-600'}`}
-                on:click={() => { categoriaSelecionada = cat; mobileMenuOpen = false; }}
-              >
-                {cat}
-              </button>
-            {/each}
-          </div>
-        {/if}
-      </div>
-
+    {#each categoriasList as cat}
+      <button
+        type="button"
+        class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${categoriaSelecionada === cat ? 'bg-amber-600 text-neutral-950 border-amber-600' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-amber-600'}`}
+        on:click={() => { categoriaSelecionada = cat; }}
+      >
+        {cat}
+      </button>
+    {/each}
+  </div>
+</div>
       <!-- Topo: Campo de Pesquisa e Botão Novo Item -->
       <div class="w-[98%] mx-auto py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <input
@@ -336,78 +317,76 @@
       </div>
 
       <!-- Grid do Cardápio -->
-      <div class="w-[98%] mx-auto pb-12">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
-          {#each items as item}
-            <div 
-              class="w-full max-w-none p-0 overflow-hidden shadow-2xl border bg-primary-350/80 backdrop-blur-lg border-primary-400 rounded-none flex flex-col justify-between cursor-pointer hover:border-amber-600 transition-all duration-200 group"
-              on:click={() => openDetailsModal(item)}
-              on:keydown={(e) => e.key === 'Enter' && openDetailsModal(item)}
-              role="button"
-              tabindex="0"
-            >
-              <div>
-                <div class="relative w-full h-44 bg-tertiary-200/40 border-b border-primary-400/50 overflow-hidden flex items-center justify-center">
-                  {#if item.imagem}
-                    <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  {:else}
-                    <div class="text-primary-900/40 font-mono text-xs uppercase tracking-widest">
-                      Sem Imagem
-                    </div>
-                  {/if}
-
-                  {#if item.categoria}
-                    <Badge class="absolute top-2 left-2 bg-neutral-950 text-amber-500 border border-neutral-800/60 rounded-none text-[10px] font-bold uppercase tracking-widest px-2 py-0.5">
-                      {item.categoria}
-                    </Badge>
-                  {/if}
-                </div>
-
-                <div class="px-5 pt-4 pb-2 flex items-start justify-between bg-tertiary-200/60 border-b border-primary-400/30">
-                  <h3 class="text-lg font-bold text-primary-700 text-left leading-tight group-hover:text-amber-500 transition-colors">
-                    {item.nome}
-                  </h3>
-
-                  {#if isAdmin}
-                    <div class="flex gap-1.5 shrink-0 ml-2">
-                      <button
-                        type="button"
-                        class="p-1.5 rounded-none border border-primary-500 hover:border-amber-600 hover:bg-amber-600 group/btn transition-all duration-300"
-                        title="Editar Item"
-                        on:click|stopPropagation={() => openEditModal(item)}
-                      >
-                        <EditOutline class="w-4 h-4 text-primary-900 group-hover/btn:text-neutral-950" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Remover Item"
-                        class="p-1.5 rounded-none border border-primary-500 hover:border-red-500 hover:bg-red-600 group/btn transition-all duration-300"
-                        on:click|stopPropagation={() => openConfirm(item.id)}
-                        disabled={deletingId === item.id || loading}
-                      >
-                        <TrashBinOutline class="w-4 h-4 text-red-400 group-hover/btn:text-white" />
-                      </button>
-                    </div>
-                  {/if}
-                </div>
-
-                <div class="px-5 py-3 text-left">
-                  <!-- Aumentado para line-clamp-3 para caber um texto maior e mais descritivo -->
-                  <p class="text-primary-950 text-xs font-medium leading-relaxed line-clamp-3">
-                    {item.resumo}
-                  </p>
-                </div>
+<div class="w-[98%] mx-auto pb-12">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+    {#each items as item}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="w-full max-w-none p-0 overflow-hidden shadow-2xl border bg-primary-350/80 backdrop-blur-lg border-primary-400 rounded-none flex flex-col justify-between cursor-pointer hover:border-amber-600 transition-all duration-200 group"
+        on:click={() => window.location.href = `/Cardapio/${item.id}`}
+      >
+        <div>
+          <div class="relative w-full h-44 bg-tertiary-200/40 border-b border-primary-400/50 overflow-hidden flex items-center justify-center">
+            {#if item.imagem}
+              <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+            {:else}
+              <div class="text-primary-900/40 font-mono text-xs uppercase tracking-widest">
+                Sem Imagem
               </div>
+            {/if}
 
-              <div class="px-5 pb-4 pt-2 flex justify-end items-center mt-auto">
-                <span class="text-xl font-black text-amber-500 tracking-tight">
-                  {formatarPreco(item.preco)}
-                </span>
+            {#if item.categoria}
+              <Badge class="absolute top-2 left-2 bg-neutral-950 text-amber-500 border border-neutral-800/60 rounded-none text-[10px] font-bold uppercase tracking-widest px-2 py-0.5">
+                {item.categoria}
+              </Badge>
+            {/if}
+          </div>
+
+          <div class="px-5 pt-4 pb-2 flex items-start justify-between bg-tertiary-200/60 border-b border-primary-400/30">
+            <h3 class="text-lg font-bold text-primary-700 text-left leading-tight group-hover:text-amber-500 transition-colors">
+              {item.nome}
+            </h3>
+
+            {#if isAdmin}
+              <div class="flex gap-1.5 shrink-0 ml-2">
+                <button
+                  type="button"
+                  class="p-1.5 rounded-none border border-primary-500 hover:border-amber-600 hover:bg-amber-600 group/btn transition-all duration-300 z-10 relative"
+                  title="Editar Item"
+                  on:click|stopPropagation={() => openEditModal(item)}
+                >
+                  <EditOutline class="w-4 h-4 text-primary-900 group-hover/btn:text-neutral-950" />
+                </button>
+                <button
+                  type="button"
+                  title="Remover Item"
+                  class="p-1.5 rounded-none border border-primary-500 hover:border-red-500 hover:bg-red-600 group/btn transition-all duration-300 z-10 relative"
+                  on:click|stopPropagation={() => openConfirm(item.id)}
+                  disabled={deletingId === item.id || loading}
+                >
+                  <TrashBinOutline class="w-4 h-4 text-red-400 group-hover/btn:text-white" />
+                </button>
               </div>
-            </div>
-          {/each}
+            {/if}
+          </div>
+
+          <div class="px-5 py-3 text-left">
+            <p class="text-primary-950 text-xs font-medium leading-relaxed line-clamp-3">
+              {item.resumo}
+            </p>
+          </div>
+        </div>
+
+        <div class="px-5 pb-4 pt-2 flex justify-end items-center mt-auto">
+          <span class="text-xl font-black text-amber-500 tracking-tight">
+            {formatarPreco(item.preco)}
+          </span>
         </div>
       </div>
+    {/each}
+  </div>
+</div>
     {/if}
   </div>
 </main>

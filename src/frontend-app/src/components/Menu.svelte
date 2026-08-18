@@ -76,7 +76,7 @@
   >
     
     <NavBrand href="/" class="flex items-center gap-3.5">
-      <img src="images/logo_sete_vidas_cafe.png" class="h-12 sm:h-16 md:h-18 object-contain transition-transform duration-300 hover:scale-105" alt="Logo Sete Vidas" />
+      <img src="/images/logo_sete_vidas_cafe.png" class="h-12 sm:h-16 md:h-18 object-contain transition-transform duration-300 hover:scale-105" alt="Logo Sete Vidas" />
       <div class="flex flex-col">
         <Heading class="text-xl sm:text-2xl font-black tracking-[0.22em] text-white uppercase font-serif leading-none">
           7 Vidas Café

@@ -31,7 +31,7 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/gatos', gatosRouter);
-app.use('/cardapio', cardapioRouter);
+app.use('/Cardapio', cardapioRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

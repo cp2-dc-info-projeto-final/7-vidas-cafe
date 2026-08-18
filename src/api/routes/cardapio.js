@@ -131,12 +131,12 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
 
     const atual = checkItem.rows[0];
 
-    const finalNome = nome !== undefined ? nome.trim() : atual.nome;
-    const finalPreco = preco !== undefined ? preco : atual.preco;
-    const finalCategoria = categoria !== undefined ? categoria.trim() : atual.categoria;
-    const finalResumo = resumo !== undefined ? resumo.trim() : atual.resumo;
-    const finalDescricao = descricao !== undefined ? descricao.trim() : atual.descricao;
-    const finalImagem = imagem !== undefined ? (imagem.trim() !== '' ? imagem.trim() : null) : atual.imagem;
+    const finalNome = nome !== undefined && nome !== null ? String(nome).trim() : atual.nome;
+    const finalPreco = preco !== undefined && preco !== '' ? Number(preco) : atual.preco;
+    const finalCategoria = categoria !== undefined && categoria !== null ? String(categoria).trim() : atual.categoria;
+    const finalResumo = resumo !== undefined && resumo !== null ? String(resumo).trim() : atual.resumo;
+    const finalDescricao = descricao !== undefined && descricao !== null ? String(descricao).trim() : atual.descricao;
+    const finalImagem = imagem !== undefined ? (imagem && String(imagem).trim() !== '' ? String(imagem).trim() : null) : atual.imagem;
 
     const errors = [];
     if (!finalNome) errors.push({ field: 'nome', message: 'O nome não pode ser vazio.', code: 'REQUIRED' });
@@ -151,8 +151,8 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
       return sendError(res, 400, 'Verifique os dados informados.', errors);
     }
 
-    // Verificar se outro item já possui esse nome
-    const duplicate = await pool.query('SELECT id FROM cardapio WHERE nome = $1 AND id != $2', [finalNome, id]);
+    // Verificar se outro item já possui esse nome (convertendo id para número para evitar conflito de tipo)
+    const duplicate = await pool.query('SELECT id FROM cardapio WHERE LOWER(nome) = LOWER($1) AND id != $2', [finalNome, Number(id)]);
     if (duplicate.rows.length > 0) {
       return sendError(res, 409, 'Já existe outro item com esse nome no cardápio.', [
         { field: 'nome', message: 'Nome em uso por outro item.', code: 'CONFLICT' }
@@ -165,7 +165,7 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
       WHERE id = $7
       RETURNING id, nome, preco, categoria, resumo, descricao, imagem
     `;
-    const params = [finalNome, finalPreco, finalCategoria, finalResumo, finalDescricao, finalImagem, id];
+    const params = [finalNome, finalPreco, finalCategoria, finalResumo, finalDescricao, finalImagem, Number(id)];
 
     const result = await pool.query(query, params);
     return sendSuccess(res, 200, 'Item do cardápio atualizado com sucesso', result.rows[0]);
@@ -174,7 +174,6 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
-
 /* DELETE - Remover item do cardápio (Apenas Admin) */
 router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
   try {
