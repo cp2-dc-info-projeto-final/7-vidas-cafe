@@ -250,15 +250,15 @@
 
 <style>
   input::placeholder {
-    color: #C47B54;
-    opacity: 1;
+    color: #8A5219;
+    opacity: 0.8;
   }
 </style>
 
 <Menu />
 
-<main class="mx-auto pt-36 md:pt-48 text-neutral-100">
-    <div class="mx-auto">
+<main class="mx-auto pt-36 md:pt-48 text-primary-50">
+  <div class="mx-auto">
     {#if loading}
       <div class="my-8 text-center text-neutral-400 font-medium uppercase tracking-widest animate-pulse">
         Carregando cardápio...
@@ -268,125 +268,127 @@
         {error}
       </div>
     {:else}
-      <!-- Barra de Categorias Fixa (Substituindo o hambúrguer) -->
-<div class="w-[98%] mx-auto mb-4 bg-tertiary-200/40 border border-primary-400/40 p-3">
-  <div class="flex flex-wrap items-center gap-2">
-    <span class="text-xs font-bold uppercase tracking-wider text-amber-500 mr-2">
-      Categorias:
-    </span>
-    
-    <button
-      type="button"
-      class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${!categoriaSelecionada ? 'bg-amber-600 text-neutral-950 border-amber-600' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-amber-600'}`}
-      on:click={() => { categoriaSelecionada = ''; }}
-    >
-      Todas
-    </button>
+      <!-- Barra de Categorias -->
+      <div class="w-[98%] mx-auto mb-4 bg-tertiary-200/40 border border-primary-400/40 p-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-tertiary-400 mr-2 flex items-center gap-1">
+             Categorias:
+          </span>
+          
+          <button
+            type="button"
+            class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${!categoriaSelecionada ? 'bg-tertiary-500 text-primary-950 border-tertiary-500' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-tertiary-400'}`}
+            on:click={() => { categoriaSelecionada = ''; }}
+          >
+            Todas
+          </button>
 
-    {#each categoriasList as cat}
-      <button
-        type="button"
-        class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${categoriaSelecionada === cat ? 'bg-amber-600 text-neutral-950 border-amber-600' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-amber-600'}`}
-        on:click={() => { categoriaSelecionada = cat; }}
-      >
-        {cat}
-      </button>
-    {/each}
-  </div>
-</div>
+          {#each categoriasList as cat}
+            <button
+              type="button"
+              class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${categoriaSelecionada === cat ? 'bg-tertiary-500 text-primary-950 border-tertiary-500' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-tertiary-400'}`}
+              on:click={() => { categoriaSelecionada = cat; }}
+            >
+              {cat}
+            </button>
+          {/each}
+        </div>
+      </div>
+
       <!-- Topo: Campo de Pesquisa e Botão Novo Item -->
       <div class="w-[98%] mx-auto py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <input
           type="text"
-          placeholder="Pesquisar no Cardápio"
+          placeholder="Pesquisar no Cardápio..."
           style="padding: 12px; width: 300px; display: flex;"
-          class="bg-tertiary-100 border border-black rounded-none text-neutral-900 text-sm tracking-wide focus:outline-none focus:border-amber-600 focus:ring-0"
+          class="bg-tertiary-100 border border-black rounded-none text-primary-900 text-sm tracking-wide focus:outline-none focus:border-tertiary-500 focus:ring-0"
           bind:value={filtro}
         />
 
         {#if isAdmin}
           <button
             type="button"
-            class="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-neutral-950 font-bold px-5 py-3 rounded-none uppercase tracking-wider text-xs transition-colors duration-300 border border-black cursor-pointer"
+            class="flex items-center gap-2 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-bold px-5 py-3 rounded-full uppercase tracking-wider text-xs transition-all duration-300 border border-black cursor-pointer shadow-md"
             on:click={openAddModal}
           >
-            <PlusOutline class="w-5 h-5 text-neutral-950" />
+            <PlusOutline class="w-5 h-5 text-primary-950" />
             Adicionar Item
           </button>
         {/if}
       </div>
 
       <!-- Grid do Cardápio -->
-<div class="w-[98%] mx-auto pb-12">
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
-    {#each items as item}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="w-full max-w-none p-0 overflow-hidden shadow-2xl border bg-primary-350/80 backdrop-blur-lg border-primary-400 rounded-none flex flex-col justify-between cursor-pointer hover:border-amber-600 transition-all duration-200 group"
-        on:click={() => window.location.href = `/Cardapio/${item.id}`}
-      >
-        <div>
-          <div class="relative w-full h-44 bg-tertiary-200/40 border-b border-primary-400/50 overflow-hidden flex items-center justify-center">
-            {#if item.imagem}
-              <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-            {:else}
-              <div class="text-primary-900/40 font-mono text-xs uppercase tracking-widest">
-                Sem Imagem
+      <div class="w-[98%] mx-auto pb-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
+          {#each items as item}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="w-full max-w-none p-0 overflow-hidden shadow-2xl border-2 border-tertiary-600/70 bg-primary-800 rounded-3xl flex flex-col justify-between cursor-pointer hover:border-tertiary-400 hover:scale-[1.02] transition-all duration-300 group relative"
+              on:click={() => window.location.href = `/Cardapio/${item.id}`}
+            >
+              <div>
+                <div class="relative w-full h-48 bg-primary-900/60 border-b-2 border-tertiary-600/50 overflow-hidden flex items-center justify-center rounded-t-3xl">
+                  {#if item.imagem}
+                    <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  {:else}
+                    <div class="text-tertiary-300 font-bold text-xs uppercase tracking-wider flex items-center gap-1">
+                      <span> Sem Imagem</span>
+                    </div>
+                  {/if}
+
+                  {#if item.categoria}
+                    <Badge class="absolute top-3 left-3 bg-tertiary-600 text-primary-50 border border-tertiary-400 rounded-full text-[10px] font-bold uppercase tracking-widest px-3 py-1 shadow-md">
+                       {item.categoria}
+                    </Badge>
+                  {/if}
+                </div>
+
+                <div class="px-5 pt-4 pb-2 flex items-start justify-between">
+                  <h3 class="text-lg font-black text-primary-50 text-left leading-tight group-hover:text-tertiary-300 transition-colors">
+                    {item.nome}
+                  </h3>
+
+                  {#if isAdmin}
+                    <div class="flex gap-1.5 shrink-0 ml-2">
+                      <button
+                        type="button"
+                        class="p-2 rounded-full bg-primary-700 border border-primary-600 hover:bg-tertiary-500 hover:text-primary-950 text-tertiary-200 transition-all duration-200 shadow-sm z-10"
+                        title="Editar Item"
+                        on:click|stopPropagation={() => openEditModal(item)}
+                      >
+                        <EditOutline class="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Remover Item"
+                        class="p-2 rounded-full bg-primary-700 border border-primary-600 hover:bg-red-600 hover:text-white text-red-300 transition-all duration-200 shadow-sm z-10"
+                        on:click|stopPropagation={() => openConfirm(item.id)}
+                        disabled={deletingId === item.id || loading}
+                      >
+                        <TrashBinOutline class="w-4 h-4" />
+                      </button>
+                    </div>
+                  {/if}
+                </div>
+
+                <div class="px-5 py-2 text-left">
+                  <p class="text-primary-200 text-xs font-medium leading-relaxed line-clamp-2">
+                    {item.resumo}
+                  </p>
+                </div>
               </div>
-            {/if}
 
-            {#if item.categoria}
-              <Badge class="absolute top-2 left-2 bg-neutral-950 text-amber-500 border border-neutral-800/60 rounded-none text-[10px] font-bold uppercase tracking-widest px-2 py-0.5">
-                {item.categoria}
-              </Badge>
-            {/if}
-          </div>
-
-          <div class="px-5 pt-4 pb-2 flex items-start justify-between bg-tertiary-200/60 border-b border-primary-400/30">
-            <h3 class="text-lg font-bold text-primary-700 text-left leading-tight group-hover:text-amber-500 transition-colors">
-              {item.nome}
-            </h3>
-
-            {#if isAdmin}
-              <div class="flex gap-1.5 shrink-0 ml-2">
-                <button
-                  type="button"
-                  class="p-1.5 rounded-none border border-primary-500 hover:border-amber-600 hover:bg-amber-600 group/btn transition-all duration-300 z-10 relative"
-                  title="Editar Item"
-                  on:click|stopPropagation={() => openEditModal(item)}
-                >
-                  <EditOutline class="w-4 h-4 text-primary-900 group-hover/btn:text-neutral-950" />
-                </button>
-                <button
-                  type="button"
-                  title="Remover Item"
-                  class="p-1.5 rounded-none border border-primary-500 hover:border-red-500 hover:bg-red-600 group/btn transition-all duration-300 z-10 relative"
-                  on:click|stopPropagation={() => openConfirm(item.id)}
-                  disabled={deletingId === item.id || loading}
-                >
-                  <TrashBinOutline class="w-4 h-4 text-red-400 group-hover/btn:text-white" />
-                </button>
+              <div class="px-5 pb-4 pt-3 flex justify-between items-center mt-auto border-t border-primary-700/80 mx-3">
+                <span class="text-xs text-primary-300 font-bold uppercase tracking-wider">Valor</span>
+                <span class="text-lg font-black text-primary-950 bg-tertiary-400 px-3.5 py-1 rounded-2xl border border-tertiary-300 shadow-md">
+                  {formatarPreco(item.preco)}
+                </span>
               </div>
-            {/if}
-          </div>
-
-          <div class="px-5 py-3 text-left">
-            <p class="text-primary-950 text-xs font-medium leading-relaxed line-clamp-3">
-              {item.resumo}
-            </p>
-          </div>
-        </div>
-
-        <div class="px-5 pb-4 pt-2 flex justify-end items-center mt-auto">
-          <span class="text-xl font-black text-amber-500 tracking-tight">
-            {formatarPreco(item.preco)}
-          </span>
+            </div>
+          {/each}
         </div>
       </div>
-    {/each}
-  </div>
-</div>
     {/if}
   </div>
 </main>
@@ -459,59 +461,110 @@
   </Modal>
 {/if}
 
-<!-- Modal de Adicionar / Editar Item -->
-<Modal bind:open={modalFormOpen} title={isEditing ? 'Editar Item do Cardápio' : 'Adicionar Novo Item'} size="md" autoclose={false} class="bg-neutral-950/90 border border-neutral-800" headerClass="text-amber-500 font-bold border-b border-neutral-700">
-  <form on:submit|preventDefault={handleSubmit} class="space-y-4">
+<!-- Modal de Adicionar / Editar Item (Design Reformulado) -->
+<Modal 
+  bind:open={modalFormOpen} 
+  title={isEditing ? ' Editar Item do Cardápio' : '➕ Adicionar Novo Item'} 
+  size="md" 
+  autoclose={false} 
+  class="bg-primary-900/95 border-2 border-tertiary-600/80 shadow-2xl rounded-3xl backdrop-blur-xl" 
+  headerClass="text-tertiary-300 font-black text-base uppercase tracking-wider border-b border-tertiary-600/40 pb-3"
+>
+  <form on:submit|preventDefault={handleSubmit} class="space-y-4 pt-2">
     {#if formError}
-      <div class="p-3 bg-red-900/30 border border-red-500 text-red-400 text-xs rounded">
-        {formError}
+      <div class="p-3 bg-red-950/60 border border-red-500/80 text-red-300 text-xs rounded-xl font-medium tracking-wide">
+        ⚠️ {formError}
       </div>
     {/if}
 
     <div>
-      <Label for="nome" class="text-xs font-bold uppercase tracking-wide text-amber-500">Nome do Item *</Label>
-      <Input id="nome" type="text" placeholder="Ex: Coxinha" bind:value={formNome} required />
+      <Label for="nome" class="text-[11px] font-bold uppercase tracking-widest text-tertiary-300 mb-1">Nome do Item *</Label>
+      <Input 
+        id="nome" 
+        type="text" 
+        placeholder="Ex: Coxinha de Frango" 
+        bind:value={formNome} 
+        required 
+        class="bg-primary-950/60 border border-tertiary-600/60 text-primary-50 rounded-xl text-sm p-3 focus:outline-none focus:border-tertiary-400 focus:ring-1 focus:ring-tertiary-400 transition-all placeholder:text-primary-300/40"
+      />
     </div>
 
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <Label for="preco" class="text-xs font-bold uppercase tracking-wide text-amber-500">Preço (R$) *</Label>
-        <Input id="preco" type="number" step="0.01" min="0" placeholder="45.00" bind:value={formPreco} required />
+        <Label for="preco" class="text-[11px] font-bold uppercase tracking-widest text-tertiary-300 mb-1">Preço (R$) *</Label>
+        <Input 
+          id="preco" 
+          type="number" 
+          step="0.01" 
+          min="0" 
+          placeholder="0.00" 
+          bind:value={formPreco} 
+          required 
+          class="bg-primary-950/60 border border-tertiary-600/60 text-primary-50 rounded-xl text-sm p-3 focus:outline-none focus:border-tertiary-400 focus:ring-1 focus:ring-tertiary-400 transition-all placeholder:text-primary-300/40"
+        />
       </div>
       <div>
-        <Label for="categoria" class="text-xs font-bold uppercase tracking-wide text-amber-500">Categoria *</Label>
+        <Label for="categoria" class="text-[11px] font-bold uppercase tracking-widest text-tertiary-300 mb-1">Categoria *</Label>
         <select 
           id="categoria" 
           bind:value={formCategoria} 
-          class="w-full bg-tertiary-100 border border-black text-neutral-900 text-sm p-2.5 rounded-none focus:outline-none focus:border-amber-600"
+          class="w-full bg-primary-950/60 border border-tertiary-600/60 text-primary-50 text-sm p-3 rounded-xl focus:outline-none focus:border-tertiary-400 focus:ring-1 focus:ring-tertiary-400 transition-all cursor-pointer"
           required
         >
           {#each categoriasList as cat}
-            <option value={cat}>{cat}</option>
+            <option value={cat} class="bg-primary-900 text-primary-50">{cat}</option>
           {/each}
         </select>
       </div>
     </div>
 
     <div>
-      <Label for="resumo" class="text-xs font-bold uppercase tracking-wide text-amber-500">Resumo *</Label>
-      <Input id="resumo" type="text" placeholder="Descrição um pouco mais detalhada do item..." bind:value={formResumo} required />
+      <Label for="resumo" class="text-[11px] font-bold uppercase tracking-widest text-tertiary-300 mb-1">Resumo *</Label>
+      <Input 
+        id="resumo" 
+        type="text" 
+        placeholder="Breve descrição em uma linha..." 
+        bind:value={formResumo} 
+        required 
+        class="bg-primary-950/60 border border-tertiary-600/60 text-primary-50 rounded-xl text-sm p-3 focus:outline-none focus:border-tertiary-400 focus:ring-1 focus:ring-tertiary-400 transition-all placeholder:text-primary-300/40"
+      />
     </div>
 
     <div>
-      <Label for="descricao" class="text-xs font-bold uppercase tracking-wide text-amber-500">Descrição Completa *</Label>
-      <Textarea id="descricao" rows="3" placeholder="Detalhes dos ingredientes, preparo, etc." bind:value={formDescricao} required />
+      <Label for="descricao" class="text-[11px] font-bold uppercase tracking-widest text-tertiary-300 mb-1">Descrição Completa *</Label>
+      <Textarea 
+        id="descricao" 
+        rows="3" 
+        placeholder="Detalhes dos ingredientes, modo de preparo, etc." 
+        bind:value={formDescricao} 
+        required 
+        class="bg-primary-950/60 border border-tertiary-600/60 text-primary-50 rounded-xl text-sm p-3 focus:outline-none focus:border-tertiary-400 focus:ring-1 focus:ring-tertiary-400 transition-all placeholder:text-primary-300/40 resize-none"
+      />
     </div>
 
     <div>
-      <Label for="imagem" class="text-xs font-bold uppercase tracking-wide text-amber-500">URL da Imagem (Opcional)</Label>
-      <Input id="imagem" type="url" placeholder="https://exemplo.com/imagem.jpg" bind:value={formImagem} />
+      <Label for="imagem" class="text-[11px] font-bold uppercase tracking-widest text-tertiary-300 mb-1">URL da Imagem (Opcional)</Label>
+      <Input 
+        id="imagem" 
+        type="url" 
+        placeholder="https://exemplo.com/imagem.jpg" 
+        bind:value={formImagem} 
+        class="bg-primary-950/60 border border-tertiary-600/60 text-primary-50 rounded-xl text-sm p-3 focus:outline-none focus:border-tertiary-400 focus:ring-1 focus:ring-tertiary-400 transition-all placeholder:text-primary-300/40"
+      />
     </div>
 
-    <div class="flex justify-end gap-3 pt-4 border-t border-neutral-800">
+    <!-- Pré-visualização da imagem caso a URL seja inserida -->
+    {#if formImagem.trim() !== ''}
+      <div class="mt-2 p-2 bg-primary-950/40 border border-tertiary-600/30 rounded-xl flex items-center gap-3">
+        <img src={formImagem} alt="Pré-visualização" class="w-12 h-12 rounded-lg object-cover border border-tertiary-500/50" />
+        <span class="text-xs text-tertiary-300 font-medium">Pré-visualização da imagem</span>
+      </div>
+    {/if}
+
+    <div class="flex justify-end gap-3 pt-4 border-t border-tertiary-600/40 mt-6">
       <button
         type="button"
-        class="bg-neutral-700 hover:bg-neutral-600 text-neutral-100 font-bold px-4 py-2 text-xs uppercase tracking-wider transition-colors duration-200 border border-black cursor-pointer"
+        class="bg-primary-800 hover:bg-primary-700 text-primary-200 font-bold px-5 py-2.5 text-xs uppercase tracking-wider rounded-xl transition-all duration-200 border border-primary-600 cursor-pointer"
         on:click={() => (modalFormOpen = false)}
       >
         Cancelar
@@ -519,10 +572,10 @@
 
       <button
         type="submit"
-        class="bg-amber-600 hover:bg-amber-700 text-neutral-950 font-bold px-4 py-2 text-xs uppercase tracking-wider transition-colors duration-200 border border-black cursor-pointer disabled:opacity-50"
+        class="bg-tertiary-500 hover:bg-tertiary-400 text-primary-950 font-black px-6 py-2.5 text-xs uppercase tracking-wider rounded-xl transition-all duration-200 border border-tertiary-400 shadow-lg cursor-pointer disabled:opacity-50"
         disabled={formSubmitting}
       >
-        {formSubmitting ? 'Salvando...' : isEditing ? 'Atualizar' : 'Cadastrar'}
+        {formSubmitting ? 'Salvando...' : isEditing ? 'Atualizar Item' : 'Cadastrar Item'}
       </button>
     </div>
   </form>

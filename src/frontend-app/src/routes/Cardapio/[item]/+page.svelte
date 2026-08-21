@@ -116,7 +116,7 @@
                                 </Badge>
                             {/if}
 
-                            <h1 class="text-2xl md:text-3xl font-black text-neutral-100 tracking-wide leading-tight">
+                            <h1 class="text-2xl md:text-3xl font-black text-neutral-100 text-primary-500 tracking-wide leading-tight">
                                 {item.nome}
                             </h1>
 
@@ -131,11 +131,10 @@
                     </div>
 
                     <div class="space-y-2">
-                        <h2 class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                        <h2 class="text-[10px] font-bold text-primary-100 uppercase tracking-widest">
                             Descrição
                         </h2>
-                        <!-- Caixa estilo input/textarea do modal (bg-neutral-950 com borda sutil) -->
-                        <p class="text-neutral-300 text-xs md:text-sm leading-relaxed whitespace-pre-line bg-neutral-950 p-4 border border-neutral-800">
+                        <p class="text-neutral-300 text-xs md:text-sm leading-relaxed text-tertiary-100 bg-tertiary-900 whitespace-pre-line bg-neutral-950 p-4 border border-neutral-800">
                             {item.descricao}
                         </p>
                     </div>
