@@ -269,12 +269,12 @@
       </div>
     {:else}
       <!-- Barra de Categorias -->
-      <div class="w-[98%] mx-auto mb-4 bg-tertiary-200/40 border border-primary-400/40 p-3">
+      <div class="hidden xl:block max-w-7xl bg-tertiary-200/40 border border-primary-400/40 p-3">
+        
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-xs font-bold uppercase tracking-wider text-tertiary-400 mr-2 flex items-center gap-1">
-             Categorias:
-          </span>
-          
+            Categorias:
+         </span>
           <button
             type="button"
             class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${!categoriaSelecionada ? 'bg-tertiary-500 text-primary-950 border-tertiary-500' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-tertiary-400'}`}
@@ -287,6 +287,42 @@
             <button
               type="button"
               class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${categoriaSelecionada === cat ? 'bg-tertiary-500 text-primary-950 border-tertiary-500' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-tertiary-400'}`}
+              on:click={() => { categoriaSelecionada = cat; }}
+            >
+              {cat}
+            </button>
+          {/each}
+        </div>
+      </div>
+
+
+      <div class="block xl:hidden w-full bg-tertiary-200/40 border-y border-primary-400/40 py-2.5 px-3">
+        <span class="text-xs font-bold uppercase tracking-wider text-tertiary-900 mr-2 flex items-center gap-1">
+          Categorias:
+       </span> 
+        <div class="flex items-center gap-2 overflow-x-auto scrollbar-none no-scrollbar whitespace-nowrap -mx-3 px-3">
+          <!-- Botão Todas -->
+          <button
+            type="button"
+            class={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer rounded-full shrink-0 border ${
+              !categoriaSelecionada 
+                ? 'bg-tertiary-500 text-primary-950 border-tertiary-500 shadow-sm' 
+                : 'bg-primary-350 text-primary-900 border-primary-500/60 hover:border-tertiary-400'
+            }`}
+            on:click={() => { categoriaSelecionada = ''; }}
+          >
+            Todas
+          </button>
+      
+          <!-- Lista de Categorias -->
+          {#each categoriasList as cat}
+            <button
+              type="button"
+              class={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer rounded-full shrink-0 border ${
+                categoriaSelecionada === cat 
+                  ? 'bg-tertiary-500 text-primary-950 border-tertiary-500 shadow-sm' 
+                  : 'bg-primary-350 text-primary-900 border-primary-500/60 hover:border-tertiary-400'
+              }`}
               on:click={() => { categoriaSelecionada = cat; }}
             >
               {cat}
@@ -318,7 +354,7 @@
       </div>
 
       <!-- Grid do Cardápio -->
-      <div class="w-[98%] mx-auto pb-12">
+      <div class="hidden xl:block max-w-7xl">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
           {#each items as item}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -382,6 +418,80 @@
               <div class="px-5 pb-4 pt-3 flex justify-between items-center mt-auto border-t border-primary-700/80 mx-3">
                 <span class="text-xs text-primary-300 font-bold uppercase tracking-wider">Valor</span>
                 <span class="text-lg font-black text-primary-950 bg-tertiary-400 px-3.5 py-1 rounded-2xl border border-tertiary-300 shadow-md">
+                  {formatarPreco(item.preco)}
+                </span>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+      
+      <div class="block xl:hidden px-2">
+        <div class="grid grid-cols-2 gap-3 w-full">
+          {#each items as item}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="w-full max-w-none p-0 overflow-hidden shadow-xl border-2 border-tertiary-600/70 bg-primary-800 rounded-2xl flex flex-col justify-between cursor-pointer hover:border-tertiary-400 hover:scale-[1.02] transition-all duration-300 group relative"
+              on:click={() => window.location.href = `/Cardapio/${item.id}`}
+            >
+              <div>
+                <!-- Altura da imagem reduzida para h-32 para manter proporção retangular -->
+                <div class="relative w-full h-32 bg-primary-900/60 border-b-2 border-tertiary-600/50 overflow-hidden flex items-center justify-center rounded-t-2xl">
+                  {#if item.imagem}
+                    <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                  {:else}
+                    <div class="text-tertiary-300 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
+                      <span>Sem Imagem</span>
+                    </div>
+                  {/if}
+       
+                  {#if item.categoria}
+                    <Badge class="absolute top-2 left-2 bg-tertiary-600 text-primary-50 border border-tertiary-400 rounded-full text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 shadow-md">
+                      {item.categoria}
+                    </Badge>
+                  {/if}
+                </div>
+       
+                <div class="px-3 pt-3 pb-1 flex items-start justify-between">
+                  <!-- Título um pouco mais compacto -->
+                  <h3 class="text-sm md:text-base font-black text-primary-50 text-left leading-tight group-hover:text-tertiary-300 transition-colors line-clamp-2">
+                    {item.nome}
+                  </h3>
+       
+                  {#if isAdmin}
+                    <div class="flex gap-1 shrink-0 ml-1">
+                      <button
+                        type="button"
+                        class="p-1.5 rounded-full bg-primary-700 border border-primary-600 hover:bg-tertiary-500 hover:text-primary-950 text-tertiary-200 transition-all duration-200 shadow-sm z-10"
+                        title="Editar Item"
+                        on:click|stopPropagation={() => openEditModal(item)}
+                      >
+                        <EditOutline class="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Remover Item"
+                        class="p-1.5 rounded-full bg-primary-700 border border-primary-600 hover:bg-red-600 hover:text-white text-red-300 transition-all duration-200 shadow-sm z-10"
+                        on:click|stopPropagation={() => openConfirm(item.id)}
+                        disabled={deletingId === item.id || loading}
+                      >
+                        <TrashBinOutline class="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  {/if}
+                </div>
+       
+                <div class="px-3 py-1 text-left">
+                  <p class="text-primary-200 text-[11px] font-medium leading-relaxed line-clamp-2">
+                    {item.resumo}
+                  </p>
+                </div>
+              </div>
+       
+              <div class="px-3 pb-3 pt-2 flex justify-between items-center mt-auto border-t border-primary-700/80 mx-2">
+                <span class="text-[10px] text-primary-300 font-bold uppercase tracking-wider">Valor</span>
+                <span class="text-sm md:text-base font-black text-primary-950 bg-tertiary-400 px-2.5 py-0.5 rounded-xl border border-tertiary-300 shadow-md">
                   {formatarPreco(item.preco)}
                 </span>
               </div>
