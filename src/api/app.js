@@ -14,6 +14,8 @@ var cardapioRouter = require('./routes/cardapio');
 
 var app = express();
 
+
+
 // CORS para liberar requests do frontend via nginx
 app.use(cors({
   origin: ['http://localhost', 'http://127.0.0.1', 'http://localhost:80', 'http://127.0.0.1:80', 'http://localhost:5173', 'http://127.0.0.1:5173'],
@@ -32,8 +34,7 @@ app.use('/users', usersRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/gatos', gatosRouter);
 app.use('/Cardapio', cardapioRouter);
-
-// catch 404 and forward to error handler
+app.use('/uploads', express.static(path.join(__dirname, 'static')));// catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
 });

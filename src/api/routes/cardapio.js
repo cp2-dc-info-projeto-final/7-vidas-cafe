@@ -2,6 +2,33 @@ var express = require('express');
 var router = express.Router();
 const pool = require('../db/config');
 const { verifyToken, isAdmin } = require('../middlewares/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configuração do armazenamento do Multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, '../static'); // ou '../public/static' dependendo da sua estrutura
+    
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas arquivos de imagem são permitidos!'), false);
+    }
+  }
+});
 
 // Funções utilitárias padronizadas de resposta
 function sendSuccess(res, status, message, data) {
@@ -19,7 +46,7 @@ function sendError(res, status, message, errors = []) {
   });
 }
 
-/* GET - Buscar todos os itens do cardápio (Público/Autenticado) */
+/* GET - Buscar todos os itens do cardápio */
 router.get('/', async function(req, res) {
   try {
     const result = await pool.query(
@@ -50,7 +77,7 @@ router.get('/busca/:filtro', async function(req, res) {
   }
 });
 
-/* GET parametrizado - Buscar item do cardápio por ID */
+/* GET parametrizado - Buscar item por ID */
 router.get('/:id', async function(req, res) {
   try {
     const { id } = req.params;
@@ -70,10 +97,14 @@ router.get('/:id', async function(req, res) {
   }
 });
 
-/* POST - Adicionar novo item ao cardápio (Apenas Admin) */
-router.post('/', verifyToken, isAdmin, async function(req, res) {
+/* POST - Adicionar novo item ao cardápio com Upload de Imagem (Apenas Admin) */
+router.post('/', verifyToken, isAdmin, upload.single('imagem'), async function(req, res) {
   try {
-    const { nome, preco, categoria, resumo, descricao, imagem } = req.body;
+    const { nome, preco, categoria, resumo, descricao } = req.body;
+    
+    // Se o multer salvou um arquivo, geramos a URL relativa para acessar via web
+    // (Certifique-se de configurar o Express para servir essa pasta como estática, ex: app.use('/uploads', express.static('public/uploads')))
+    const imagemPath = req.file ? `/uploads/${req.file.filename}` : null;
 
     const errors = [];
     if (!nome || !nome.trim()) errors.push({ field: 'nome', message: 'O nome é obrigatório.', code: 'REQUIRED' });
@@ -85,12 +116,14 @@ router.post('/', verifyToken, isAdmin, async function(req, res) {
     if (!descricao || !descricao.trim()) errors.push({ field: 'descricao', message: 'A descrição é obrigatória.', code: 'REQUIRED' });
 
     if (errors.length > 0) {
+      // Se houver erro, remove a imagem enviada para não acumular lixo no servidor
+      if (req.file) fs.unlinkSync(req.file.path);
       return sendError(res, 400, 'Preencha todos os campos obrigatórios corretamente.', errors);
     }
 
-    // Verificar se já existe um item com o mesmo nome
     const existingName = await pool.query('SELECT id FROM cardapio WHERE nome = $1', [nome.trim()]);
     if (existingName.rows.length > 0) {
+      if (req.file) fs.unlinkSync(req.file.path);
       return sendError(res, 409, 'Já existe um item cadastrado com este nome.', [
         { field: 'nome', message: 'Nome já em uso.', code: 'CONFLICT' }
       ]);
@@ -107,25 +140,29 @@ router.post('/', verifyToken, isAdmin, async function(req, res) {
       categoria.trim(),
       resumo.trim(),
       descricao.trim(),
-      imagem && imagem.trim() !== '' ? imagem.trim() : null // Imagem opcional
+      imagemPath
     ];
 
     const result = await pool.query(query, params);
     return sendSuccess(res, 201, 'Item adicionado ao cardápio com sucesso', result.rows[0]);
   } catch (error) {
     console.error('Erro ao criar item no cardápio:', error);
+    if (req.file) {
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+    }
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
 
-/* PUT - Atualizar item do cardápio (Apenas Admin) */
-router.put('/:id', verifyToken, isAdmin, async function(req, res) {
+/* PUT - Atualizar item do cardápio com Upload opcional de Imagem (Apenas Admin) */
+router.put('/:id', verifyToken, isAdmin, upload.single('imagem'), async function(req, res) {
   try {
     const { id } = req.params;
-    const { nome, preco, categoria, resumo, descricao, imagem } = req.body;
+    const { nome, preco, categoria, resumo, descricao } = req.body;
 
     const checkItem = await pool.query('SELECT * FROM cardapio WHERE id = $1', [id]);
     if (checkItem.rows.length === 0) {
+      if (req.file) fs.unlinkSync(req.file.path);
       return sendError(res, 404, 'Item não encontrado no cardápio.');
     }
 
@@ -136,7 +173,19 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
     const finalCategoria = categoria !== undefined && categoria !== null ? String(categoria).trim() : atual.categoria;
     const finalResumo = resumo !== undefined && resumo !== null ? String(resumo).trim() : atual.resumo;
     const finalDescricao = descricao !== undefined && descricao !== null ? String(descricao).trim() : atual.descricao;
-    const finalImagem = imagem !== undefined ? (imagem && String(imagem).trim() !== '' ? String(imagem).trim() : null) : atual.imagem;
+    
+    // Se enviou um novo arquivo, usa ele. Senão, mantém a imagem anterior que já estava no banco.
+    let finalImagem = atual.imagem;
+    if (req.file) {
+      finalImagem = `/uploads/${req.file.filename}`;
+      // Opcional: deletar a imagem antiga do servidor se ela existir e começar com /uploads/
+      if (atual.imagem && atual.imagem.startsWith('/uploads/')) {
+        const oldPath = path.join(__dirname, '../public', atual.imagem);
+        if (fs.existsSync(oldPath)) {
+          try { fs.unlinkSync(oldPath); } catch (e) {}
+        }
+      }
+    }
 
     const errors = [];
     if (!finalNome) errors.push({ field: 'nome', message: 'O nome não pode ser vazio.', code: 'REQUIRED' });
@@ -148,12 +197,13 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
     if (!finalDescricao) errors.push({ field: 'descricao', message: 'A descrição não pode ser vazia.', code: 'REQUIRED' });
 
     if (errors.length > 0) {
+      if (req.file) fs.unlinkSync(req.file.path);
       return sendError(res, 400, 'Verifique os dados informados.', errors);
     }
 
-    // Verificar se outro item já possui esse nome (convertendo id para número para evitar conflito de tipo)
     const duplicate = await pool.query('SELECT id FROM cardapio WHERE LOWER(nome) = LOWER($1) AND id != $2', [finalNome, Number(id)]);
     if (duplicate.rows.length > 0) {
+      if (req.file) fs.unlinkSync(req.file.path);
       return sendError(res, 409, 'Já existe outro item com esse nome no cardápio.', [
         { field: 'nome', message: 'Nome em uso por outro item.', code: 'CONFLICT' }
       ]);
@@ -171,17 +221,31 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
     return sendSuccess(res, 200, 'Item do cardápio atualizado com sucesso', result.rows[0]);
   } catch (error) {
     console.error('Erro ao atualizar item do cardápio:', error);
+    if (req.file) {
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+    }
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
+
 /* DELETE - Remover item do cardápio (Apenas Admin) */
 router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
   try {
     const { id } = req.params;
 
-    const checkItem = await pool.query('SELECT id FROM cardapio WHERE id = $1', [id]);
+    const checkItem = await pool.query('SELECT id, imagem FROM cardapio WHERE id = $1', [id]);
     if (checkItem.rows.length === 0) {
       return sendError(res, 404, 'Item não encontrado no cardápio');
+    }
+
+    const item = checkItem.rows[0];
+
+    // Opcional: remover a imagem física do servidor ao deletar o item
+    if (item.imagem && item.imagem.startsWith('/uploads/')) {
+      const filePath = path.join(__dirname, '../public', item.imagem);
+      if (fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath); } catch (e) {}
+      }
     }
 
     await pool.query('DELETE FROM cardapio WHERE id = $1', [id]);

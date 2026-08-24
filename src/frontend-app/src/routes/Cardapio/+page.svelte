@@ -53,6 +53,7 @@
   let formImagem = '';
   let formError = '';
   let formSubmitting = false;
+  let formFile: File | null = null;
 
   // Reatividade para verificação de Admin
   $: isAdmin = currentUser?.role?.toLowerCase() === 'admin' || 
@@ -110,77 +111,84 @@
   }
 
   function openAddModal() {
-    isEditing = false;
-    formId = null;
-    formNome = '';
-    formPreco = '';
-    formCategoria = categoriaSelecionada || 'Salgados';
-    formResumo = '';
-    formDescricao = '';
-    formImagem = '';
-    formError = '';
-    modalFormOpen = true;
-  }
+  isEditing = false;
+  formId = null;
+  formNome = '';
+  formPreco = '';
+  formCategoria = categoriaSelecionada || 'Salgados';
+  formResumo = '';
+  formDescricao = '';
+  formImagem = '';
+  formFile = null; // Limpa o arquivo anterior
+  formError = '';
+  modalFormOpen = true;
+}
 
-  function openEditModal(item: MenuItem) {
-    isEditing = true;
-    formId = item.id;
-    formNome = item.nome;
-    formPreco = item.preco;
-    formCategoria = item.categoria || 'Salgados';
-    formResumo = item.resumo;
-    formDescricao = item.descricao;
-    formImagem = item.imagem || '';
-    formError = '';
-    modalFormOpen = true;
-  }
+function openEditModal(item: MenuItem) {
+  isEditing = true;
+  formId = item.id;
+  formNome = item.nome;
+  formPreco = item.preco;
+  formCategoria = item.categoria || 'Salgados';
+  formResumo = item.resumo;
+  formDescricao = item.descricao;
+  formImagem = item.imagem || '';
+  formFile = null; // Reseta o arquivo (se não trocar, o backend mantém a imagem antiga)
+  formError = '';
+  modalFormOpen = true;
+}
 
   async function handleSubmit() {
-    formError = '';
-    formSubmitting = true;
+  formError = '';
+  formSubmitting = true;
 
-    const payload = {
-      nome: formNome,
-      preco: Number(formPreco),
-      categoria: formCategoria,
-      resumo: formResumo,
-      descricao: formDescricao,
-      imagem: formImagem.trim() !== '' ? formImagem.trim() : null
+  // Usamos FormData para suportar envio de arquivos e textos juntos
+  const formData = new FormData();
+  formData.append('nome', formNome);
+  formData.append('preco', String(formPreco));
+  formData.append('categoria', formCategoria);
+  formData.append('resumo', formResumo);
+  formData.append('descricao', formDescricao);
+  
+  if (formFile) {
+    formData.append('imagem', formFile); // O arquivo selecionado
+  }
+
+  try {
+    // Dica: Certifique-se de que seu backend aceita multipart/form-data nas rotas POST e PUT /cardapio
+    const config = {
+      headers: { 'Content-Type': 'multipart/form-data' }
     };
 
-    try {
-      if (isEditing && formId !== null) {
-        const res = await api.put(`/cardapio/${formId}`, payload);
-        const body = res.data as ApiResponse<MenuItem>;
-        if (body.success && body.data) {
-          items = items.map((i) => (i.id === formId ? body.data : i));
-          modalFormOpen = false;
-          if (selectedItem?.id === formId) {
-            selectedItem = body.data;
-          }
-          await buscarCardapio();
-        } else {
-          formError = body.message || 'Erro ao atualizar item.';
-        }
+    if (isEditing && formId !== null) {
+      const res = await api.put(`/cardapio/${formId}`, formData, config);
+      const body = res.data as ApiResponse<MenuItem>;
+      if (body.success && body.data) {
+        items = items.map((i) => (i.id === formId ? body.data : i));
+        modalFormOpen = false;
+        await buscarCardapio();
       } else {
-        const res = await api.post('/cardapio', payload);
-        const body = res.data as ApiResponse<MenuItem>;
-        if (body.success && body.data) {
-          items = [body.data, ...items];
-          modalFormOpen = false;
-          await buscarCardapio();
-        } else {
-          formError = body.message || 'Erro ao cadastrar item.';
-        }
+        formError = body.message || 'Erro ao atualizar item.';
       }
-    } catch (e: any) {
-      console.error('Erro no salvamento:', e);
-      const body = e.response?.data as ApiResponse<null> | undefined;
-      formError = body?.message || 'Erro de comunicação com o servidor.';
-    } finally {
-      formSubmitting = false;
+    } else {
+      const res = await api.post('/cardapio', formData, config);
+      const body = res.data as ApiResponse<MenuItem>;
+      if (body.success && body.data) {
+        items = [body.data, ...items];
+        modalFormOpen = false;
+        await buscarCardapio();
+      } else {
+        formError = body.message || 'Erro ao cadastrar item.';
+      }
     }
+  } catch (e: any) {
+    console.error('Erro no salvamento:', e);
+    const body = e.response?.data as ApiResponse<null> | undefined;
+    formError = body?.message || 'Erro de comunicação com o servidor.';
+  } finally {
+    formSubmitting = false;
   }
+}
 
   onMount(async () => {
     loading = true;
@@ -578,7 +586,7 @@
   size="md" 
   autoclose={false} 
   class="bg-primary-900/95 border-2 border-tertiary-600/80 shadow-2xl rounded-3xl backdrop-blur-xl" 
-  headerClass="text-tertiary-300 font-black text-base uppercase tracking-wider border-b border-tertiary-600/40 pb-3"
+  classes={{ header: "text-tertiary-300 font-black text-base uppercase tracking-wider border-b border-tertiary-600/40 pb-3" }}
 >
   <form on:submit|preventDefault={handleSubmit} class="space-y-4 pt-2">
     {#if formError}
@@ -653,24 +661,48 @@
     </div>
 
     <div>
-      <Label for="imagem" class="text-[11px] font-bold uppercase tracking-widest text-tertiary-300 mb-1">URL da Imagem (Opcional)</Label>
-      <Input 
-        id="imagem" 
-        type="url" 
-        placeholder="https://exemplo.com/imagem.jpg" 
-        bind:value={formImagem} 
-        class="bg-primary-950/60 border border-tertiary-600/60 text-primary-50 rounded-xl text-sm p-3 focus:outline-none focus:border-tertiary-400 focus:ring-1 focus:ring-tertiary-400 transition-all placeholder:text-primary-300/40"
-      />
+      <Label class="text-[11px] font-bold uppercase tracking-widest text-tertiary-300 mb-1">Imagem do Produto *</Label>
+      
+      <div class="flex items-center gap-3">
+        <!-- Botão estilizado que abre o explorador de arquivos -->
+        <label class="cursor-pointer bg-primary-950/80 hover:bg-primary-950 text-tertiary-300 hover:text-tertiary-200 border border-tertiary-600/60 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm">
+          <span>📁 Selecionar Arquivo</span>
+          <input 
+            type="file" 
+            accept="image/*"
+            class="hidden" 
+            on:change={(e) => {
+              const target = e.target as HTMLInputElement;
+              if (target.files && target.files[0]) {
+                formFile = target.files[0];
+                // Cria a URL temporária apenas para mostrar o preview na hora
+                formImagem = URL.createObjectURL(target.files[0]);
+              }
+            }}
+          />
+        </label>
+    
+        <!-- Nome do arquivo selecionado para o usuário saber que escolheu -->
+        {#if formFile}
+          <span class="text-xs text-primary-200 truncate max-w-[200px]" title={formFile.name}>
+            {formFile.name}
+          </span>
+        {:else}
+          <span class="text-xs text-primary-400 italic">Nenhum arquivo escolhido</span>
+        {/if}
+      </div>
     </div>
-
-    <!-- Pré-visualização da imagem caso a URL seja inserida -->
-    {#if formImagem.trim() !== ''}
-      <div class="mt-2 p-2 bg-primary-950/40 border border-tertiary-600/30 rounded-xl flex items-center gap-3">
-        <img src={formImagem} alt="Pré-visualização" class="w-12 h-12 rounded-lg object-cover border border-tertiary-500/50" />
-        <span class="text-xs text-tertiary-300 font-medium">Pré-visualização da imagem</span>
+    
+    <!-- Pré-visualização da imagem selecionada -->
+    {#if formImagem}
+      <div class="mt-3 p-2 bg-primary-950/40 border border-tertiary-600/30 rounded-xl flex items-center gap-3">
+        <img src={formImagem} alt="Pré-visualização" class="w-14 h-14 rounded-lg object-cover border border-tertiary-500/50 shadow-md" />
+        <div>
+          <span class="block text-xs text-tertiary-300 font-bold uppercase">Pré-visualização</span>
+          <span class="text-[11px] text-primary-300">Pronta para envio</span>
+        </div>
       </div>
     {/if}
-
     <div class="flex justify-end gap-3 pt-4 border-t border-tertiary-600/40 mt-6">
       <button
         type="button"
