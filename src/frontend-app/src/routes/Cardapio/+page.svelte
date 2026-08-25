@@ -582,7 +582,7 @@ function openEditModal(item: MenuItem) {
 <!-- Modal de Adicionar / Editar Item (Design Reformulado) -->
 <Modal 
   bind:open={modalFormOpen} 
-  title={isEditing ? ' Editar Item do Cardápio' : '➕ Adicionar Novo Item'} 
+  title={isEditing ? '✒️ Editar Item do Cardápio' : '➕ Adicionar Novo Item'} 
   size="md" 
   autoclose={false} 
   class="bg-primary-900/95 border-2 border-tertiary-600/80 shadow-2xl rounded-3xl backdrop-blur-xl" 

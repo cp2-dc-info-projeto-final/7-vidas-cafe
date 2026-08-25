@@ -6,16 +6,21 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Configuração do armazenamento do Multer
+// Configuração do armazenamento do Multer apontando para o frontend
+const uploadDir = path.join(__dirname, '../../frontend-app/static/images');
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../static'); // ou '../public/static' dependendo da sua estrutura
-    
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
+  filename: function (req, file, cb) {
+    // Gera um nome único para a imagem não sobrescrever outra com o mesmo nome
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
 });
 
 const upload = multer({ 
@@ -102,9 +107,8 @@ router.post('/', verifyToken, isAdmin, upload.single('imagem'), async function(r
   try {
     const { nome, preco, categoria, resumo, descricao } = req.body;
     
-    // Se o multer salvou um arquivo, geramos a URL relativa para acessar via web
-    // (Certifique-se de configurar o Express para servir essa pasta como estática, ex: app.use('/uploads', express.static('public/uploads')))
-    const imagemPath = req.file ? `/uploads/${req.file.filename}` : null;
+    // Caminho relativo para o SvelteKit servir a imagem a partir de /images/
+    const imagemPath = req.file ? `/images/${req.file.filename}` : null;
 
     const errors = [];
     if (!nome || !nome.trim()) errors.push({ field: 'nome', message: 'O nome é obrigatório.', code: 'REQUIRED' });
@@ -116,7 +120,6 @@ router.post('/', verifyToken, isAdmin, upload.single('imagem'), async function(r
     if (!descricao || !descricao.trim()) errors.push({ field: 'descricao', message: 'A descrição é obrigatória.', code: 'REQUIRED' });
 
     if (errors.length > 0) {
-      // Se houver erro, remove a imagem enviada para não acumular lixo no servidor
       if (req.file) fs.unlinkSync(req.file.path);
       return sendError(res, 400, 'Preencha todos os campos obrigatórios corretamente.', errors);
     }
@@ -174,13 +177,13 @@ router.put('/:id', verifyToken, isAdmin, upload.single('imagem'), async function
     const finalResumo = resumo !== undefined && resumo !== null ? String(resumo).trim() : atual.resumo;
     const finalDescricao = descricao !== undefined && descricao !== null ? String(descricao).trim() : atual.descricao;
     
-    // Se enviou um novo arquivo, usa ele. Senão, mantém a imagem anterior que já estava no banco.
     let finalImagem = atual.imagem;
     if (req.file) {
-      finalImagem = `/uploads/${req.file.filename}`;
-      // Opcional: deletar a imagem antiga do servidor se ela existir e começar com /uploads/
-      if (atual.imagem && atual.imagem.startsWith('/uploads/')) {
-        const oldPath = path.join(__dirname, '../public', atual.imagem);
+      finalImagem = `/images/${req.file.filename}`;
+      // Remove a imagem antiga da pasta do frontend se ela existir
+      if (atual.imagem && atual.imagem.startsWith('/images/')) {
+        const filename = atual.imagem.replace('/images/', '');
+        const oldPath = path.join(uploadDir, filename);
         if (fs.existsSync(oldPath)) {
           try { fs.unlinkSync(oldPath); } catch (e) {}
         }
@@ -240,9 +243,10 @@ router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
 
     const item = checkItem.rows[0];
 
-    // Opcional: remover a imagem física do servidor ao deletar o item
-    if (item.imagem && item.imagem.startsWith('/uploads/')) {
-      const filePath = path.join(__dirname, '../public', item.imagem);
+    // Remove a imagem física do frontend ao deletar o item
+    if (item.imagem && item.imagem.startsWith('/images/')) {
+      const filename = item.imagem.replace('/images/', '');
+      const filePath = path.join(uploadDir, filename);
       if (fs.existsSync(filePath)) {
         try { fs.unlinkSync(filePath); } catch (e) {}
       }

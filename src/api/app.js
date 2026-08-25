@@ -34,7 +34,6 @@ app.use('/users', usersRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/gatos', gatosRouter);
 app.use('/Cardapio', cardapioRouter);
-app.use('/uploads', express.static(path.join(__dirname, 'static')));// catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
 });
