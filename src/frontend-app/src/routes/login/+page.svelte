@@ -38,76 +38,70 @@
   <title>Sete Vidas Café</title>
 </svelte:head>
 
-<div class="fixed inset-0 bg-neutral-950/20 backdrop-blur-md z-30 pointer-events-none"></div>
-
-<div class="min-h-screen w-full bg-transparent flex flex-col items-center justify-center p-4 relative overflow-hidden z-40">
-  
-  <div class="w-full max-w-sm mt-40 mb-12">
+<main class="pt-36 pb-20 px-4 sm:px-6 lg:px-8 relative z-30 flex justify-center">
+  <div class="w-full max-w-md bg-primary-900/90 backdrop-blur-xl border border-primary-700/60 shadow-2xl rounded-2xl p-6 sm:p-10 flex flex-col gap-6">
     
-    <div class="text-center mb-6 flex flex-col items-center">
-      <span class="text-xs font-bold tracking-[0.4em] text-amber-500 uppercase block mb-2">Acesso ao Refúgio</span>
-      <h2 class="text-3xl font-black tracking-[0.2em] text-secondary-600 uppercase font-serif">
+    <div class="flex flex-col items-center text-center border-b border-primary-800 pb-5 gap-1.5">
+      <span class="text-[10px] font-bold uppercase tracking-[0.25em] text-tertiary-400">Acesso ao Refúgio</span>
+      <h2 class="text-xl sm:text-2xl font-black tracking-wider text-primary-50 font-serif">
         Login
       </h2>
-      <div class="w-12 h-[1px] bg-neutral-800/40 mt-3"></div>
     </div>
-    
-    <Card class="p-8 w-full bg-primary-350/90 border border-primary-350 rounded-none shadow-2xl">
-      <form on:submit|preventDefault={handleLogin} class="space-y-6">
-        
-        <div>
-          <!-- Modificado o texto da Label para indicar Usuário ou Email -->
-          <Label for="login" class="mb-1 text-[10px] font-bold uppercase tracking-widest text-primary-900 block">Usuário ou E-mail</Label>
-          <Input
-            class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0 custom-placeholder"
-            id="login"
-            type="text"
-            bind:value={login}
-            placeholder="Digite seu usuário ou e-mail"
-            required
-          />
-        </div>
 
-        <div>
-          <Label for="password" class="mb-1 text-[10px] font-bold uppercase tracking-widest text-primary-900 block">Senha</Label>
-          <Input
-            class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600 focus:ring-0 custom-placeholder"
-            id="password"
-            type="password"
-            bind:value={password}
-            placeholder="Digite sua senha"
-            required
-          />
-        </div>
+    {#if error}
+      <div class="text-xs font-medium tracking-wide text-red-300 bg-red-950/60 p-4 rounded-xl border border-red-900/50 flex items-center gap-2">
+        <span>⚠️</span> {error}
+      </div>
+    {/if}
 
-        {#if error}
-          <div class="p-2.5 bg-red-100 border border-red-900/40 text-red-600 text-xs tracking-wide text-center rounded-none">
-            {error}
-          </div>
-        {/if}
+    <form on:submit|preventDefault={handleLogin} class="flex flex-col gap-5">
+      
+      <div class="flex flex-col gap-1.5">
+        <Label for="login" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Usuário ou E-mail</Label>
+        <Input
+          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+          id="login"
+          type="text"
+          bind:value={login}
+          placeholder="Digite seu usuário ou e-mail"
+          required
+        />
+      </div>
 
+      <div class="flex flex-col gap-1.5">
+        <Label for="password" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Senha</Label>
+        <Input
+          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+          id="password"
+          type="password"
+          bind:value={password}
+          placeholder="Digite sua senha"
+          required
+        />
+      </div>
+
+      <div class="flex flex-col gap-3 mt-4 pt-4 border-t border-primary-800">
         <Button 
           type="submit"
-          class="w-full bg-tertiary-200 border border-amber-700 hover:bg-amber-600 text-amber-800 hover:text-neutral-950 font-bold uppercase tracking-widest text-[10px] py-3 rounded-none transition-all duration-300" 
+          class="w-full py-3 bg-tertiary-600 hover:bg-tertiary-500 text-primary-950 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors shadow-md"
           disabled={loading}
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </Button>
           
-        <div class="text-center pt-2">
-          <a href="/users/new" class="text-[10px] font-bold uppercase tracking-widest text-primary-900 hover:text-amber-600 transition-colors duration-300 relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1px] after:bg-amber-600 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300 no-underline">
-            Cadastre-se
+        <div class="text-center pt-1">
+          <a href="/users/new" class="text-[10px] font-bold uppercase tracking-widest text-primary-300 hover:text-tertiary-400 transition-colors no-underline">
+            Não tem uma conta? <span class="text-tertiary-400 underline underline-offset-4">Cadastre-se</span>
           </a>
         </div>
-      </form>
-    </Card>
+      </div>
+    </form>
   </div>
-</div>
+</main>
 
 <style>
-  /* Escopa o placeholder em uma classe específica para não herdar efeitos de hover de outros elementos */
-  :global(.custom-placeholder::placeholder) {
-    color: #9b4b06 !important; 
-    opacity: 1 !important;
+  :global(input::placeholder) {
+    color: #C0AA9B !important; 
+    opacity: 0.6 !important; 
   }
 </style>

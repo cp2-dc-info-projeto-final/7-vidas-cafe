@@ -19,9 +19,8 @@
   let loading = false;
   let error = '';
   let fieldErrors: ApiFieldError[] = [];
-  let currentUser = { role: 'admin' }; // Pode ser alimentado dinamicamente pelo seu auth store
+  let currentUser = { role: 'admin' }; 
 
-  // Restrição nativa de calendário para 16 anos atrás
   const hoje = new Date();
   const dataLimite16Anos = new Date(hoje.getFullYear() - 16, hoje.getMonth(), hoje.getDate())
     .toISOString()
@@ -31,7 +30,6 @@
     return fieldErrors.find((item) => item.field === field)?.message ?? null;
   }
 
-  // Carrega usuário se for edição
   onMount(async () => {
     if (id !== null) {
       loading = true;
@@ -62,21 +60,16 @@
     } 
   });
 
-  // Submissão do formulário
   async function handleSubmit() {
     fieldErrors = [];
     error = '';
 
-    // --- VALIDAÇÕES RÍGIDAS DO FRONTEND ---
-    
-    // 1. Validar tamanho de Login
     if (user.login.trim().length < 3) {
       fieldErrors = [{ field: 'login', message: 'O nome de usuário deve conter pelo menos 3 caracteres.' }];
       error = 'Corrija os erros do formulário.';
       return;
     }
 
-    // 2. Validar Provedor de E-mail
     const emailRegex = /^[a-zA-Z0-9._%+-]+@(gmail|hotmail|outlook|yahoo|icloud|live)\.(com|com\.br)$/i;
     if (!emailRegex.test(user.email.trim())) {
       fieldErrors = [{ field: 'email', message: 'Insira um e-mail válido (Ex: nome@gmail.com, nome@outlook.com).' }];
@@ -84,8 +77,7 @@
       return;
     }
 
-    // 3. Validar Senhas
-    if (id === null) { // Modo Criação
+    if (id === null) { 
       if (!user.senha || user.senha.length < 6) {
         fieldErrors = [{ field: 'senha', message: 'A senha deve ter pelo menos 6 caracteres.' }];
         error = 'Senha muito curta.';
@@ -96,7 +88,7 @@
         error = 'As senhas não coincidem.';
         return;
       }
-    } else { // Modo Edição
+    } else { 
       if (user.senha && user.senha.length < 6) {
         fieldErrors = [{ field: 'senha', message: 'A nova senha deve ter pelo menos 6 caracteres.' }];
         error = 'Senha muito curta.';
@@ -104,7 +96,6 @@
       }
     }
 
-    // 4. Validar CPF estruturado
     const cpfRegex = /^(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})$/;
     if (!cpfRegex.test(user.cpf.trim())) {
       fieldErrors = [{ field: 'cpf', message: 'Use o padrão numérico puro (11 dígitos) ou formatado (123.456.789-00).' }];
@@ -112,7 +103,6 @@
       return;
     }
 
-    // 5. Validar Data de Nascimento (Maior de 16 anos e limite histórico de 1900)
     if (user.dat_nas) {
       const dataSelecionada = new Date(user.dat_nas);
       const dataMinima = new Date('1900-01-01');
@@ -131,13 +121,12 @@
       }
 
       if (idade < 16) {
-        fieldErrors = [{ field: 'dat_nas', message: 'Cadastro permitido apenas para maiores de 16 bnmmmmmmmmmmn nb hhhh                                   hb anos.' }];
+        fieldErrors = [{ field: 'dat_nas', message: 'Cadastro permitido apenas para maiores de 16 anos.' }];
         error = 'Usuário é menor de idade.';
         return;
       }
     }
 
-    // 6. Validar Telefone/Celular estruturado
     const telRegex = /^\((1[1-9]|[2-9][1-9])\)(9[2-9]\d{3}|[2-5]\d{3})-\d{4}$/;
     if (!telRegex.test(user.num_tel.trim())) {
       const digitos = user.num_tel.replace(/\D/g, '');
@@ -152,7 +141,6 @@
       return;
     }
 
-    // Envio dos dados para a API
     loading = true;
     try {
       const userData = { ...user };
@@ -189,168 +177,160 @@
   }
 </script>
 
-<div class="fixed inset-0 bg-neutral-950/20 backdrop-blur-md z-20 pointer-events-none"></div>
-
-<Card class="relative z-30 max-w-sm mx-auto mt-40 mb-12 p-0 overflow-hidden shadow-2xl border border-primary-350 bg-primary-350/90 rounded-none">
-  <form class="flex flex-col gap-3.5 p-5" on:submit|preventDefault={handleSubmit}>
+<main class="pt-36 pb-20 px-4 sm:px-6 lg:px-8 relative z-30 flex justify-center">
+  <div class="w-full max-w-lg bg-primary-900/90 backdrop-blur-xl border border-primary-700/60 shadow-2xl rounded-2xl p-6 sm:p-10 flex flex-col gap-6">
     
-    <div class="text-center mb-1 flex flex-col items-center gap-2">      
-      <Heading tag="h4" class="text-lg font-black tracking-[0.15em] uppercase font-serif text-secondary-600">
-        {id === null ? 'Cadastrar Usuário' : 'Editar Usuário'}
-      </Heading>
-      <div class="w-10 h-[1px] bg-neutral-800/20 mt-0.5"></div>
+    <div class="flex items-center justify-between border-b border-primary-800 pb-5 gap-4">
+      <div>
+        <span class="text-[10px] font-bold uppercase tracking-[0.25em] text-tertiary-400 block mb-1">Painel do Administrador</span>
+        <h2 class="text-xl sm:text-2xl font-black tracking-wider text-primary-50 font-serif">
+          {id === null ? 'Cadastrar Usuário' : 'Editar Usuário'}
+        </h2>
+      </div>
     </div>
 
     {#if error}
-      <div class="p-2.5 bg-red-950/20 border border-red-900/40 text-red-400 text-xs tracking-wide text-center rounded-none">{error}</div>
-    {/if}
-
-    <div>
-      <Label for="login" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Nome de Usuário</Label>
-      <Input id="login" bind:value={user.login} placeholder="Mínimo 3 caracteres" required class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600" />
-      {#if errorOf('login')}
-        <div class="mt-1 text-[11px] text-red-400 font-medium tracking-wide">{errorOf('login')}</div>
-      {/if}
-    </div>
-
-    <div>
-      <Label for="email" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Email</Label>
-      <Input id="email" type="email" bind:value={user.email} placeholder="nome@provedor.com" required class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600" />
-      {#if errorOf('email')}
-        <div class="mt-1 text-[11px] text-red-400 font-medium tracking-wide">{errorOf('email')}</div>
-      {/if}
-    </div>
-
-    <div>
-      <Label for="senha" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">
-        Senha {id !== null ? '(opcional)' : ''}
-      </Label>
-      <Input 
-        id="senha" 
-        type="password" 
-        bind:value={user.senha} 
-        placeholder={id === null ? 'Mínimo 6 caracteres' : 'Deixe vazio para manter'} 
-        required={id === null}
-        class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600" 
-      />
-      {#if errorOf('senha')}
-        <div class="mt-1 text-[11px] text-red-400 font-medium tracking-wide">{errorOf('senha')}</div>
-      {/if}
-    </div>
-
-    {#if id === null}
-    <div>
-      <Label for="confirmarSenha" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Confirmar Senha</Label>
-      <Input
-        id="confirmarSenha"
-        type="password"
-        bind:value={user.confirmarSenha}
-        placeholder="Confirme a senha digitada"
-        required
-        class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600"
-      />
-      {#if errorOf('confirmarSenha')}
-        <div class="mt-1 text-[11px] text-red-400 font-medium tracking-wide">{errorOf('confirmarSenha')}</div>
-      {/if}
-    </div>
-    {/if}
-
-    <div>
-      <Label for="cpf" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">CPF</Label>
-      <Input
-        id="cpf"
-        bind:value={user.cpf}
-        placeholder="123.456.789-00"      
-        required
-        class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600"
-      />
-      {#if errorOf('cpf')}
-        <div class="mt-1 text-[11px] text-red-400 font-medium tracking-wide">{errorOf('cpf')}</div>
-      {/if}
-    </div>
-
-    <div>
-      <Label for="dat_nas" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Data de Nascimento</Label>
-      <Input
-        id="dat_nas"
-        type="date"
-        min="1900-01-01"
-        max={ dataLimite16Anos}
-        bind:value={user.dat_nas}
-        required
-        class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600"
-      />
-      {#if errorOf('dat_nas')}
-        <div class="mt-1 text-[11px] text-red-400 font-medium tracking-wide">{errorOf('dat_nas')}</div>
-      {/if}
-    </div>
-
-    <div>
-      <Label for="num_tel" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Telefone</Label>
-      <Input
-        id="num_tel"
-        bind:value={user.num_tel}
-        placeholder="(21)92345-6789"
-        required
-        class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600"
-      />
-      {#if errorOf('num_tel')}
-        <div class="mt-1 text-[11px] text-red-400 font-medium tracking-wide">{errorOf('num_tel')}</div>
-      {/if}
-    </div>
-
-    {#if id !== null && currentUser.role === 'admin'}
-      <div>
-        <Label for="role" class="text-[10px] font-bold tracking-widest text-primary-900 uppercase mb-0.5 block">Perfil de Acesso</Label>
-        <Select 
-          id="role" 
-          bind:value={user.role} 
-          items={roleOptions} 
-          class="w-full bg-tertiary-100 border border-black rounded-none p-2 text-xs text-neutral-900 focus:outline-none focus:border-amber-600"
-        />
-        {#if errorOf('role')}
-          <div class="mt-1 text-[11px] text-red-400 font-medium tracking-wide">{errorOf('role')}</div>
-        {/if}
+      <div class="text-xs font-medium tracking-wide text-red-300 bg-red-950/60 p-4 rounded-xl border border-red-900/50 flex items-center gap-2">
+        <span>⚠️</span> {error}
       </div>
     {/if}
 
-    <div class="flex gap-2.5 justify-end mt-2">
-      <a 
-        href="/users"
-        class="inline-flex items-center justify-center bg-transparent border border-primary-500 hover:border-neutral-800 hover:bg-neutral-800/10 text-primary-900 font-bold uppercase tracking-widest text-[10px] px-3 py-2 rounded-none transition-all duration-300 no-underline select-none"
-      >
-        <ArrowLeftOutline class="inline w-3 h-3 mr-1" />
-        {id === null ? 'Voltar' : 'Cancelar'}
-      </a>
+    <form class="flex flex-col gap-5" on:submit|preventDefault={handleSubmit}>
       
-      <Button 
-        type="submit" 
-        disabled={loading}
-        class="bg-transparent border border-amber-600 hover:bg-amber-600 text-amber-700 hover:text-neutral-950 font-bold uppercase tracking-widest text-[10px] px-3 py-2 rounded-none transition-all duration-300"
-      >
-        <FloppyDiskAltOutline class="inline w-3 h-3 mr-1 align-text-bottom" />
-        {id === null ? 'Cadastrar' : 'Salvar'}
-      </Button>
-    </div>
-  </form>
-</Card>
+      <div class="flex flex-col gap-1.5">
+        <Label for="login" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Nome de Usuário</Label>
+        <Input id="login" bind:value={user.login} placeholder="Mínimo 3 caracteres" required class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors" />
+        {#if errorOf('login')}
+          <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('login')}</div>
+        {/if}
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <Label for="email" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Email</Label>
+        <Input id="email" type="email" bind:value={user.email} placeholder="nome@provedor.com" required class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors" />
+        {#if errorOf('email')}
+          <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('email')}</div>
+        {/if}
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <Label for="senha" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">
+          Senha {id !== null ? '(opcional)' : ''}
+        </Label>
+        <Input 
+          id="senha" 
+          type="password" 
+          bind:value={user.senha} 
+          placeholder={id === null ? 'Mínimo 6 caracteres' : 'Deixe vazio para manter'} 
+          required={id === null}
+          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors" 
+        />
+        {#if errorOf('senha')}
+          <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('senha')}</div>
+        {/if}
+      </div>
+
+      {#if id === null}
+      <div class="flex flex-col gap-1.5">
+        <Label for="confirmarSenha" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Confirmar Senha</Label>
+        <Input
+          id="confirmarSenha"
+          type="password"
+          bind:value={user.confirmarSenha}
+          placeholder="Confirme a senha digitada"
+          required
+          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+        />
+        {#if errorOf('confirmarSenha')}
+          <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('confirmarSenha')}</div>
+        {/if}
+      </div>
+      {/if}
+
+      <div class="flex flex-col gap-1.5">
+        <Label for="cpf" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">CPF</Label>
+        <Input
+          id="cpf"
+          bind:value={user.cpf}
+          placeholder="123.456.789-00"      
+          required
+          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+        />
+        {#if errorOf('cpf')}
+          <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('cpf')}</div>
+        {/if}
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <Label for="dat_nas" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Data de Nascimento</Label>
+        <Input
+          id="dat_nas"
+          type="date"
+          min="1900-01-01"
+          max={dataLimite16Anos}
+          bind:value={user.dat_nas}
+          required
+          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+        />
+        {#if errorOf('dat_nas')}
+          <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('dat_nas')}</div>
+        {/if}
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <Label for="num_tel" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Telefone</Label>
+        <Input
+          id="num_tel"
+          bind:value={user.num_tel}
+          placeholder="(21)92345-6789"
+          required
+          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+        />
+        {#if errorOf('num_tel')}
+          <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('num_tel')}</div>
+        {/if}
+      </div>
+
+      {#if id !== null && currentUser.role === 'admin'}
+        <div class="flex flex-col gap-1.5">
+          <Label for="role" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Perfil de Acesso</Label>
+          <Select 
+            id="role" 
+            bind:value={user.role} 
+            items={roleOptions} 
+            class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+          />
+          {#if errorOf('role')}
+            <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('role')}</div>
+          {/if}
+        </div>
+      {/if}
+
+      <div class="flex gap-3 justify-end mt-4 pt-4 border-t border-primary-800">
+        <a 
+          href="/users"
+          class="px-4 py-2.5 bg-primary-800 hover:bg-primary-700 text-primary-100 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors inline-flex items-center justify-center no-underline select-none"
+        >
+          <ArrowLeftOutline class="inline w-3 h-3 mr-1.5" />
+          {id === null ? 'Voltar' : 'Cancelar'}
+        </a>
+        
+        <Button 
+          type="submit" 
+          disabled={loading}
+          class="px-4 py-2.5 bg-tertiary-600 hover:bg-tertiary-500 text-primary-950 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors shadow-md"
+        >
+          <FloppyDiskAltOutline class="inline w-3 h-3 mr-1.5 align-text-bottom" />
+          {loading ? 'Salvando...' : (id === null ? 'Cadastrar' : 'Salvar')}
+        </Button>
+      </div>
+    </form>
+  </div>
+</main>
 
 <style>
-  /* Mantém o estilo dos placeholders normais (texto) */
   :global(input::placeholder) {
-    color: #9b4b06 !important; 
-    opacity: 1 !important; 
-  }
-
-  /* Captura o texto padrão (vazio) do campo de data e muda a cor */
-  :global(input[type="date"]:invalid),
-  :global(input[type="date"]::-webkit-datetime-edit) {
-    color: #9b4b06 !important;
-    opacity: 1 !important;
-  }
-
-  /* Extra: garante que os traços e textos (dd/mm/aaaa) nos navegadores baseados em Chromium fiquem na cor certa */
-  :global(input[type="date"]::-webkit-datetime-edit-fields-wrapper) {
-    color: #9b4b06 !important;
+    color: #C0AA9B !important; 
+    opacity: 0.6 !important; 
   }
 </style>
