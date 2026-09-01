@@ -257,9 +257,44 @@ function openEditModal(item: MenuItem) {
 </script>
 
 <style>
-  input::placeholder {
-    color: #8A5219;
-    opacity: 0.8;
+  /* Cor e visibilidade excelente para o placeholder da pesquisa */
+  :global(input[type="text"]::placeholder) {
+    color: #F5F2EF !important;
+    opacity: 0.85 !important;
+  }
+
+  /* Mantém o fundo translúcido original do input durante o autofill */
+  :global(input:-webkit-autofill),
+  :global(input:-webkit-autofill:hover),
+  :global(input:-webkit-autofill:focus),
+  :global(input:-webkit-autofill:active) {
+    -webkit-box-shadow: 0 0 0 30px rgba(16, 12, 10, 0.6) inset !important;
+    -webkit-text-fill-color: #F5F2EF !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* Padroniza o Select do Flowbite */
+  :global(select) {
+    background-color: rgba(16, 12, 10, 0.6) !important;
+    color: #F5F2EF !important;
+  }
+
+  :global(select option) {
+    background-color: #100C0A !important;
+    color: #F5F2EF !important;
+  }
+
+  /* Texto digitado e fundo bem visíveis na barra de pesquisa */
+  :global(input[type="text"]) {
+    background-color: rgba(28, 20, 16, 0.85) !important;
+    color: #FFFFFF !important;
+    border-color: #D97706 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  :global(input[type="text"]:focus) {
+    border-color: #FBBF24 !important;
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.3) !important;
   }
 </style>
 

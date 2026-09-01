@@ -75,7 +75,7 @@ export async function logout(): Promise<void> {
     if (token) {
       // Tenta fazer logout no servidor, mas não falha se não der certo
       try {
-        await api.post('/users/logout');
+        await api.post('api/users/logout');
       } catch (logoutError) {
         console.warn('Logout no servidor falhou, removendo token localmente:', logoutError);
       }

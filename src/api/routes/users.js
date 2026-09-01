@@ -243,6 +243,16 @@ router.post('/login', async function(req, res) {
   }
 });
 
+/* POST - Logout do usuário */
+router.post('/logout', verifyToken, async function(req, res) {
+  try {
+    return sendSuccess(res, 200, 'Logout realizado com sucesso');
+  } catch (error) {
+    console.error('Erro no logout:', error);
+    return sendError(res, 500, 'Erro interno do servidor');
+  }
+});
+
 /* PUT - Atualizar usuário (Ajustado para permitir que o dono altere CPF e Data de Nascimento) */
 router.put('/:id', verifyToken, async function(req, res) {
   try {
@@ -450,9 +460,5 @@ router.delete('/:id', verifyToken, async function(req, res) {
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
-
-
-
-
 
 module.exports = router;

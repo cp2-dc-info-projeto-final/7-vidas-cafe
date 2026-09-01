@@ -333,4 +333,25 @@
     color: #C0AA9B !important; 
     opacity: 0.6 !important; 
   }
+
+  /* Mantém o fundo translúcido original do input durante o autofill */
+  :global(input:-webkit-autofill),
+  :global(input:-webkit-autofill:hover),
+  :global(input:-webkit-autofill:focus),
+  :global(input:-webkit-autofill:active) {
+    -webkit-box-shadow: 0 0 0 30px rgba(16, 12, 10, 0.4) inset !important;
+    -webkit-text-fill-color: #F5F2EF !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* Padroniza o Select do Flowbite para manter o fundo e texto corretos */
+  :global(select) {
+    background-color: rgba(16, 12, 10, 0.4) !important;
+    color: #F5F2EF !important;
+  }
+
+  :global(select option) {
+    background-color: #100C0A !important;
+    color: #F5F2EF !important;
+  }
 </style>

@@ -1,9 +1,27 @@
 var express = require('express');
 var router = express.Router();
 const pool = require('../db/config');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const { verifyToken, isAdmin } = require('../middlewares/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Configuração do armazenamento local com Multer
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = path.join(__dirname, '../public/static/images/gatos');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
 
 // Funções utilitárias padronizadas de resposta
 function sendSuccess(res, status, message, data) {
@@ -22,10 +40,34 @@ function sendError(res, status, message, errors = []) {
 }
 
 /* GET - Buscar todos os gatos */
-// Ajustado de '/gatos' para '/' para que o endpoint final seja 'GET /api/gatos'
 router.get('/', async function(req, res) {
   try {
-    const result = await pool.query('SELECT id, nome, idade, raca, castracao, personalidade, adocao, tutor, imagem FROM gatos ORDER BY id');
+    // Tenta pegar o token do header caso o usuário esteja logado
+    const authHeader = req.headers['authorization'];
+    let isAdminUser = false;
+
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const jwt = require('jsonwebtoken');
+        // Certifique-se de usar a mesma chave secreta do seu middleware de auth
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'sua_chave_secreta');
+        if (decoded && decoded.role === 'admin') {
+          isAdminUser = true;
+        }
+      } catch (err) {
+        // Token inválido ou expirado, segue como usuário normal
+      }
+    }
+
+    // Se for admin, busca todos. Se não for, busca apenas os disponíveis para adoção.
+    let query = 'SELECT id, nome, idade, raca, castracao, personalidade, adocao, tutor, imagem FROM gatos';
+    if (!isAdminUser) {
+      query += ' WHERE adocao = true';
+    }
+    query += ' ORDER BY id';
+
+    const result = await pool.query(query);
     return sendSuccess(res, 200, null, result.rows);
   } catch (error) {
     console.error('Erro ao buscar gatos:', error);
@@ -33,12 +75,11 @@ router.get('/', async function(req, res) {
   }
 });
 
-/* POST - Adicionar gato (Apenas Admin) */
-// Caminho final: POST /api/gatos
-router.post('/', verifyToken, isAdmin, async function(req, res) {
+/* POST - Adicionar gato (Apenas Admin) com suporte a upload de imagem */
+router.post('/', verifyToken, isAdmin, upload.single('imagem'), async function(req, res) {
   try {
-    const { nome, idade, raca, castracao, personalidad, adocao, tutor = null, imagem = null } = req.body;
-    const personalidade = personalidad || req.body.personalidade; // Garante compatibilidade
+    const { nome, idade, raca, castracao, personalidad, adocao, tutor = null } = req.body;
+    const personalidade = personalidad || req.body.personalidade; 
 
     if (!nome || idade === undefined || !raca || castracao === undefined || !personalidade || adocao === undefined) {
       const errors = [];
@@ -57,12 +98,13 @@ router.post('/', verifyToken, isAdmin, async function(req, res) {
     }
 
     const tutorId = (tutor && tutor !== "") ? parseInt(tutor) : null;
+    const imagemPath = req.file ? `/static/images/gatos/${req.file.filename}` : null;
 
     const result = await pool.query(
       `INSERT INTO gatos (nome, idade, raca, castracao, personalidade, adocao, tutor, imagem) 
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING id, nome, idade, raca, castracao, personalidade, adocao, tutor, imagem`,
-      [nome, parseInt(idade), raca, castracao, personalidade, adocao, tutorId, imagem]
+      [nome, parseInt(idade), raca, castracao === 'true' || castracao === true, personalidade, adocao === 'true' || adocao === true, tutorId, imagemPath]
     );
 
     return sendSuccess(res, 201, 'Gato adicionado com sucesso', result.rows[0]);
@@ -72,12 +114,51 @@ router.post('/', verifyToken, isAdmin, async function(req, res) {
   }
 });
 
-/* PUT - Editar gato (Apenas Admin) */
-// Caminho final: PUT /api/gatos/:id
-router.put('/:id', verifyToken, isAdmin, async function(req, res) {
+/* PUT - Efetivar adoção (Remove o gato do catálogo e vincula o tutor) */
+router.put('/:id/adotar', verifyToken, async function(req, res) {
   try {
     const { id } = req.params;
-    const { nome, idade, raca, castracao, personalidade, adocao, tutor, imagem } = req.body;
+    const { mensagem } = req.body;
+    const usuarioId = req.user.id;
+
+    if (!mensagem || !mensagem.trim()) {
+      return sendError(res, 400, 'A mensagem de interesse na adoção é obrigatória.');
+    }
+
+    const gatoResult = await pool.query('SELECT * FROM gatos WHERE id = $1', [id]);
+    if (gatoResult.rows.length === 0) {
+      return sendError(res, 404, 'Gato não encontrado');
+    }
+
+    const gato = gatoResult.rows[0];
+    if (!gato.adocao) {
+      return sendError(res, 400, 'Este gato não está disponível para adoção.');
+    }
+
+    // Se houver imagem física salva, você pode apagá-la opcionalmente aqui, 
+    // ou apenas deletar o registro do banco para ele sumir da listagem:
+    if (gato.imagem) {
+      const caminhoFisico = path.join(__dirname, '../public', gato.imagem);
+      if (fs.existsSync(caminhoFisico)) {
+        fs.unlinkSync(caminhoFisico);
+      }
+    }
+
+    // Deleta o gato da tabela definitivamente
+    await pool.query('DELETE FROM gatos WHERE id = $1', [id]);
+
+    return sendSuccess(res, 200, 'Adoção realizada com sucesso!', gato);
+  } catch (error) {
+    console.error('Erro ao processar adoção:', error);
+    return sendError(res, 500, 'Erro interno do servidor');
+  }
+});
+
+/* PUT - Editar gato (Apenas Admin) com suporte a nova imagem opcional */
+router.put('/:id', verifyToken, isAdmin, upload.single('imagem'), async function(req, res) {
+  try {
+    const { id } = req.params;
+    const { nome, idade, raca, castracao, personalidade, adocao, tutor } = req.body;
 
     const gatoResult = await pool.query('SELECT * FROM gatos WHERE id = $1', [id]);
     if (gatoResult.rows.length === 0) return sendError(res, 404, 'Gato não encontrado');
@@ -87,13 +168,13 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
     const finalNome = (nome !== undefined) ? nome.trim() : atual.nome;
     const finalIdade = (idade !== undefined) ? parseInt(idade) : atual.idade;
     const finalRaca = (raca !== undefined) ? raca.trim() : atual.raca;
-    const finalCastracao = (castracao !== undefined) ? castracao : atual.castracao;
-    // Corrigido 'personality.trim()' para 'finalPersonalidade' consistente:
+    
+    const finalCastracao = (castracao !== undefined) ? (castracao === 'true' || castracao === true) : atual.castracao;
     const finalPersonalidade = (personalidade !== undefined) ? personalidade.trim() : atual.personalidade;
-    const finalAdocao = (adocao !== undefined) ? adocao : atual.adocao;
+    const finalAdocao = (adocao !== undefined) ? (adocao === 'true' || adocao === true) : atual.adocao;
     
     const finalTutor = (tutor && tutor !== "") ? parseInt(tutor) : null;
-    const finalImagem = (imagem !== undefined) ? imagem : atual.imagem;
+    const finalImagem = req.file ? `/static/images/gatos/${req.file.filename}` : atual.imagem;
 
     if (finalIdade < 0) return sendError(res, 400, 'A idade do gato não pode ser negativa.');
 
@@ -113,7 +194,6 @@ router.put('/:id', verifyToken, isAdmin, async function(req, res) {
 });
 
 /* DELETE - Remover gato (Apenas Admin) */
-// Caminho final: DELETE /api/gatos/:id
 router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
   try {
     const { id } = req.params;
@@ -121,9 +201,17 @@ router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
 
     if (!motivo) return sendError(res, 400, 'É necessário informar o motivo da exclusão.');
 
-    const gatoResult = await pool.query('SELECT id FROM gatos WHERE id = $1', [id]);
+    const gatoResult = await pool.query('SELECT id, imagem FROM gatos WHERE id = $1', [id]);
     if (gatoResult.rows.length === 0) return sendError(res, 404, 'Gato não encontrado');
 
+    const gato = gatoResult.rows[0];
+
+    if (gato.imagem) {
+      const caminhoFisico = path.join(__dirname, '../public', gato.imagem);
+      if (fs.existsSync(caminhoFisico)) {
+        fs.unlinkSync(caminhoFisico);
+      }
+    }
     await pool.query('DELETE FROM gatos WHERE id = $1', [id]);
     console.log(`[AUDITORIA] Gato ID ${id} deletado. Motivo: ${motivo}`);
 
@@ -133,5 +221,7 @@ router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
+
+
 
 module.exports = router;
