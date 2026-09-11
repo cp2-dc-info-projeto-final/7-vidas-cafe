@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Formulário de usuário - Refinado com as regras do Perfil
+  // Formulário de usuário - Refinado com o background de modal
   import { Card, Button, Label, Input, Heading, Select } from 'flowbite-svelte'; 
   import { onMount } from 'svelte'; 
   import api from '$lib/api'; 
@@ -177,20 +177,27 @@
   }
 </script>
 
-<main class="pt-36 pb-20 px-4 sm:px-6 lg:px-8 relative z-30 flex justify-center">
-  <div class="w-full max-w-lg bg-primary-900/90 backdrop-blur-xl border border-primary-700/60 shadow-2xl rounded-2xl p-6 sm:p-10 flex flex-col gap-6">
+<svelte:head>
+  <title>Sete Vidas Café</title>
+</svelte:head>
+
+<!-- Overlay de blur fixo que não bloqueia o ponteiro nem o scroll da página -->
+<div class="fixed inset-0 bg-primary-950/60 backdrop-blur-md pointer-events-none z-30"></div>
+
+<main class="pt-36 pb-20 px-4 sm:px-6 lg:px-8 relative z-40 flex justify-center min-h-screen">
+  <div class="w-full max-w-lg bg-primary-900 border border-primary-700 shadow-2xl rounded-2xl p-6 sm:p-10 flex flex-col gap-6 h-fit my-auto">
     
     <div class="flex items-center justify-between border-b border-primary-800 pb-5 gap-4">
       <div>
         <span class="text-[10px] font-bold uppercase tracking-[0.25em] text-tertiary-400 block mb-1">Painel do Administrador</span>
-        <h2 class="text-xl sm:text-2xl font-black tracking-wider text-primary-50 font-serif">
+        <h2 class="text-xl sm:text-2xl font-black tracking-wider text-white font-serif">
           {id === null ? 'Cadastrar Usuário' : 'Editar Usuário'}
         </h2>
       </div>
     </div>
 
     {#if error}
-      <div class="text-xs font-medium tracking-wide text-red-300 bg-red-950/60 p-4 rounded-xl border border-red-900/50 flex items-center gap-2">
+      <div class="text-xs font-medium tracking-wide text-red-300 bg-red-950/60 backdrop-blur-md p-4 rounded-xl border border-red-900/50 flex items-center gap-2">
         <span>⚠️</span> {error}
       </div>
     {/if}
@@ -199,7 +206,7 @@
       
       <div class="flex flex-col gap-1.5">
         <Label for="login" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Nome de Usuário</Label>
-        <Input id="login" bind:value={user.login} placeholder="Mínimo 3 caracteres" required class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors" />
+        <Input id="login" bind:value={user.login} placeholder="Mínimo 3 caracteres" required class="w-full text-primary-50 bg-primary-950/40 backdrop-blur-md border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors" />
         {#if errorOf('login')}
           <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('login')}</div>
         {/if}
@@ -207,7 +214,7 @@
 
       <div class="flex flex-col gap-1.5">
         <Label for="email" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Email</Label>
-        <Input id="email" type="email" bind:value={user.email} placeholder="nome@provedor.com" required class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors" />
+        <Input id="email" type="email" bind:value={user.email} placeholder="nome@provedor.com" required class="w-full text-primary-50 bg-primary-950/40 backdrop-blur-md border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors" />
         {#if errorOf('email')}
           <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('email')}</div>
         {/if}
@@ -223,7 +230,7 @@
           bind:value={user.senha} 
           placeholder={id === null ? 'Mínimo 6 caracteres' : 'Deixe vazio para manter'} 
           required={id === null}
-          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors" 
+          class="w-full text-primary-50 bg-primary-950/40 backdrop-blur-md border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors" 
         />
         {#if errorOf('senha')}
           <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('senha')}</div>
@@ -239,7 +246,7 @@
           bind:value={user.confirmarSenha}
           placeholder="Confirme a senha digitada"
           required
-          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+          class="w-full text-primary-50 bg-primary-950/40 backdrop-blur-md border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
         />
         {#if errorOf('confirmarSenha')}
           <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('confirmarSenha')}</div>
@@ -252,9 +259,9 @@
         <Input
           id="cpf"
           bind:value={user.cpf}
-          placeholder="123.456.789-00"      
+          placeholder="123.456.789-00"    
           required
-          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+          class="w-full text-primary-50 bg-primary-950/40 backdrop-blur-md border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
         />
         {#if errorOf('cpf')}
           <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('cpf')}</div>
@@ -270,7 +277,7 @@
           max={dataLimite16Anos}
           bind:value={user.dat_nas}
           required
-          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+          class="w-full text-primary-50 bg-primary-950/40 backdrop-blur-md border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
         />
         {#if errorOf('dat_nas')}
           <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('dat_nas')}</div>
@@ -284,7 +291,7 @@
           bind:value={user.num_tel}
           placeholder="(21)92345-6789"
           required
-          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+          class="w-full text-primary-50 bg-primary-950/40 backdrop-blur-md border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
         />
         {#if errorOf('num_tel')}
           <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('num_tel')}</div>
@@ -298,7 +305,7 @@
             id="role" 
             bind:value={user.role} 
             items={roleOptions} 
-            class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+            class="w-full text-primary-50 bg-primary-950/40 backdrop-blur-md border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
           />
           {#if errorOf('role')}
             <div class="text-[11px] text-red-300 font-medium tracking-wide mt-1">{errorOf('role')}</div>
@@ -347,6 +354,7 @@
   /* Padroniza o Select do Flowbite para manter o fundo e texto corretos */
   :global(select) {
     background-color: rgba(16, 12, 10, 0.4) !important;
+    backdrop-filter: blur(12px);
     color: #F5F2EF !important;
   }
 

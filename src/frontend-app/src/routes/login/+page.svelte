@@ -38,12 +38,14 @@
   <title>Sete Vidas Café</title>
 </svelte:head>
 
-<main class="pt-36 pb-20 px-4 sm:px-6 lg:px-8 relative z-30 flex justify-center">
-  <div class="w-full max-w-md bg-primary-900/90 backdrop-blur-xl border border-primary-700/60 shadow-2xl rounded-2xl p-6 sm:p-10 flex flex-col gap-6">
+<div class="fixed inset-x-0 top-20 bottom-16 bg-primary-950/60 backdrop-blur-sm pointer-events-none z-30"></div>
+
+<main class="pt-36 pb-20 px-4 sm:px-6 lg:px-8 relative z-40 flex justify-center">
+  <div class="w-full max-w-md bg-primary-900 border border-primary-700 shadow-2xl rounded-2xl p-6 sm:p-10 flex flex-col gap-6">
     
     <div class="flex flex-col items-center text-center border-b border-primary-800 pb-5 gap-1.5">
       <span class="text-[10px] font-bold uppercase tracking-[0.25em] text-tertiary-400">Acesso ao Refúgio</span>
-      <h2 class="text-xl sm:text-2xl font-black tracking-wider text-primary-50 font-serif">
+      <h2 class="text-xl sm:text-2xl font-black tracking-wider text-white font-serif">
         Login
       </h2>
     </div>
