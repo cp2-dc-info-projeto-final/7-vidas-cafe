@@ -13,6 +13,8 @@
     personalidade: string;
     adocao: boolean;
     imagem: string | null;
+    tutor: number | null;
+    tutor_login?: string;
   }
 
   interface Usuario {
@@ -116,7 +118,13 @@
   const API_URL = 'http://localhost:3000'; 
 
   async function carregarGatos() {
-    const res = await fetch(`${API_URL}/api/gatos`);
+    const headers: Record<string, string> = {};
+    const token = getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${API_URL}/api/gatos`, { headers });
     const json = await res.json();
     if (json.success) gatos = json.data;
   }
@@ -133,7 +141,7 @@
 
     try {
       const res = await fetch(`${API_URL}/api/gatos/${gatoParaAdocao.id}/adotar`, {
-        method: 'PUT', // <-- Certifique-se de que está 'PUT' aqui
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${getToken()}`
@@ -232,7 +240,7 @@
   {/if}
 
   <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-    {#each gatos.filter(g => (user && user.role === 'admin') || g.adocao) as gato}
+    {#each gatos.filter(item => (user && user.role === 'admin') || item.adocao || (user && item.tutor === user.id)) as gato}
       <div class="bg-primary-900/40 border border-primary-800/80 p-5 flex flex-col justify-between shadow-lg hover:border-tertiary-600/50 transition duration-300 group">
         <div>
           <!-- Foto do Gato com Tag de Status em cima -->
@@ -248,6 +256,10 @@
               {#if gato.adocao}
                 <span class="bg-tertiary-600/90 text-primary-950 text-[10px] tracking-widest font-black px-3 py-1 uppercase shadow-md border border-tertiary-400/30">
                   Disponível para Adoção
+                </span>
+              {:else if user && gato.tutor === user.id}
+                <span class="bg-tertiary-500 text-primary-950 text-[10px] tracking-widest font-black px-3 py-1 uppercase shadow-md border border-tertiary-300">
+                  :3 Você adotou este gatinho
                 </span>
               {:else}
                 <span class="bg-primary-950/80 text-primary-300 text-[10px] tracking-widest font-bold px-3 py-1 uppercase shadow-md border border-primary-800">
@@ -265,6 +277,15 @@
             <p class="flex justify-between"><span class="text-primary-400 uppercase font-semibold text-[10px]">Raça:</span> <span class="font-medium text-white">{gato.raca}</span></p>
             <p class="flex justify-between"><span class="text-primary-400 uppercase font-semibold text-[10px]">Idade:</span> <span class="font-medium text-white">{gato.idade} anos</span></p>
             <p class="flex justify-between"><span class="text-primary-400 uppercase font-semibold text-[10px]">Castração:</span> <span class="font-medium text-white">{gato.castracao ? 'Castrado' : 'Não Castrado'}</span></p>
+            
+            <!-- Exibir Tutor se for Admin e houver um tutor vinculado -->
+            {#if hasToken && user && user.role === 'admin' && gato.tutor_login}
+              <p class="flex justify-between bg-tertiary-950/40 p-1.5 border border-tertiary-800/50">
+                <span class="text-tertiary-400 uppercase font-semibold text-[10px]">Tutor (Adotante):</span> 
+                <span class="font-bold text-tertiary-300">{gato.tutor_login}</span>
+              </p>
+            {/if}
+
             <div class="pt-2">
               <p class="text-[11px] text-primary-300 italic bg-primary-950/40 p-2.5 border-l-2 border-tertiary-600">"{gato.personalidade}"</p>
             </div>

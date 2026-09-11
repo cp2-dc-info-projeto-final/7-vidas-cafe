@@ -42,30 +42,44 @@ function sendError(res, status, message, errors = []) {
 /* GET - Buscar todos os gatos */
 router.get('/', async function(req, res) {
   try {
-    // Tenta pegar o token do header caso o usuário esteja logado
     const authHeader = req.headers['authorization'];
     let isAdminUser = false;
+    let userId = null;
 
     if (authHeader) {
       const token = authHeader.split(' ')[1];
       try {
         const jwt = require('jsonwebtoken');
-        // Certifique-se de usar a mesma chave secreta do seu middleware de auth
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'sua_chave_secreta');
-        if (decoded && decoded.role === 'admin') {
-          isAdminUser = true;
+        if (decoded) {
+          if (decoded.role === 'admin') {
+            isAdminUser = true;
+          }
+          userId = decoded.id; // Captura o ID do usuário logado através do token
         }
       } catch (err) {
-        // Token inválido ou expirado, segue como usuário normal
+        // Token inválido ou expirado
       }
     }
 
-    // Se for admin, busca todos. Se não for, busca apenas os disponíveis para adoção.
-    let query = 'SELECT id, nome, idade, raca, castracao, personalidade, adocao, tutor, imagem FROM gatos';
+    // Fazemos um LEFT JOIN com a tabela usuario para trazer o login/nome do tutor
+    let query = `
+      SELECT 
+        g.id, g.nome, g.idade, g.raca, g.castracao, g.personalidade, g.adocao, g.tutor, g.imagem,
+        u.login as tutor_login
+      FROM gatos g
+      LEFT JOIN usuario u ON g.tutor = u.id
+    `;
+    
+    // Se não for admin, exibe os disponíveis para adoção OU os que pertencem ao usuário logado
     if (!isAdminUser) {
-      query += ' WHERE adocao = true';
+      if (userId) {
+        query += ` WHERE g.adocao = true OR g.tutor = ${userId}`;
+      } else {
+        query += ' WHERE g.adocao = true';
+      }
     }
-    query += ' ORDER BY id';
+    query += ' ORDER BY g.id';
 
     const result = await pool.query(query);
     return sendSuccess(res, 200, null, result.rows);
@@ -114,7 +128,7 @@ router.post('/', verifyToken, isAdmin, upload.single('imagem'), async function(r
   }
 });
 
-/* PUT - Efetivar adoção (Remove o gato do catálogo e vincula o tutor) */
+/* PUT - Efetivar adoção (Atualiza o tutor e retira da vitrine de adoção) */
 router.put('/:id/adotar', verifyToken, async function(req, res) {
   try {
     const { id } = req.params;
@@ -135,19 +149,13 @@ router.put('/:id/adotar', verifyToken, async function(req, res) {
       return sendError(res, 400, 'Este gato não está disponível para adoção.');
     }
 
-    // Se houver imagem física salva, você pode apagá-la opcionalmente aqui, 
-    // ou apenas deletar o registro do banco para ele sumir da listagem:
-    if (gato.imagem) {
-      const caminhoFisico = path.join(__dirname, '../public', gato.imagem);
-      if (fs.existsSync(caminhoFisico)) {
-        fs.unlinkSync(caminhoFisico);
-      }
-    }
+    // Em vez de deletar, atualizamos o tutor, tiramos da adoção e guardamos a mensagem se quiser
+    const result = await pool.query(
+      'UPDATE gatos SET tutor = $1, adocao = false WHERE id = $2 RETURNING *',
+      [usuarioId, id]
+    );
 
-    // Deleta o gato da tabela definitivamente
-    await pool.query('DELETE FROM gatos WHERE id = $1', [id]);
-
-    return sendSuccess(res, 200, 'Adoção realizada com sucesso!', gato);
+    return sendSuccess(res, 200, 'Adoção realizada com sucesso!', result.rows[0]);
   } catch (error) {
     console.error('Erro ao processar adoção:', error);
     return sendError(res, 500, 'Erro interno do servidor');
