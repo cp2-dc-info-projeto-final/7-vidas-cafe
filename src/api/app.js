@@ -11,6 +11,9 @@ var usersRouter = require('./routes/users');
 var usersRouter = require('./routes/users');
 var gatosRouter = require('./routes/gatos');
 var cardapioRouter = require('./routes/cardapio');
+var carrinhoRouter = require('./routes/carrinho');
+var pedidoRouter = require('./routes/pedido');
+
 
 var app = express();
 
@@ -34,6 +37,10 @@ app.use('/users', usersRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/gatos', gatosRouter);
 app.use('/Cardapio', cardapioRouter);
+app.use('/carrinho', carrinhoRouter);
+app.use('/pedido', pedidoRouter);
+
+
 app.use(function(req, res, next) {
   next(createError(404));
 });

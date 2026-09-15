@@ -181,17 +181,16 @@ router.put('/:id', verifyToken, isAdmin, upload.single('imagem'), async function
     const finalPersonalidade = (personalidade !== undefined) ? personalidade.trim() : atual.personalidade;
     const finalAdocao = (adocao !== undefined) ? (adocao === 'true' || adocao === true) : atual.adocao;
     
-    const finalTutor = (tutor && tutor !== "") ? parseInt(tutor) : null;
     const finalImagem = req.file ? `/static/images/gatos/${req.file.filename}` : atual.imagem;
 
     if (finalIdade < 0) return sendError(res, 400, 'A idade do gato não pode ser negativa.');
 
     const result = await pool.query(
       `UPDATE gatos 
-       SET nome = $1, idade = $2, raca = $3, castracao = $4, personalidade = $5, adocao = $6, tutor = $7, imagem = $8
-       WHERE id = $9 
+       SET nome = $1, idade = $2, raca = $3, castracao = $4, personalidade = $5, adocao = $6, imagem = $7
+       WHERE id = $8 
        RETURNING id, nome, idade, raca, castracao, personalidade, adocao, tutor, imagem`,
-      [finalNome, finalIdade, finalRaca, finalCastracao, finalPersonalidade, finalAdocao, finalTutor, finalImagem, id]
+      [finalNome, finalIdade, finalRaca, finalCastracao, finalPersonalidade, finalAdocao, finalImagem, id]
     );
 
     return sendSuccess(res, 200, 'Gato atualizado com sucesso', result.rows[0]);

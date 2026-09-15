@@ -182,7 +182,6 @@
 </svelte:head>
 
 <!-- Overlay de blur fixo que não bloqueia o ponteiro nem o scroll da página -->
-<div class="fixed inset-0 bg-primary-950/60 backdrop-blur-md pointer-events-none z-30"></div>
 
 <main class="pt-36 pb-20 px-4 sm:px-6 lg:px-8 relative z-40 flex justify-center min-h-screen">
   <div class="w-full max-w-lg bg-primary-900 border border-primary-700 shadow-2xl rounded-2xl p-6 sm:p-10 flex flex-col gap-6 h-fit my-auto">

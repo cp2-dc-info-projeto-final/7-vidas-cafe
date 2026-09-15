@@ -61,24 +61,25 @@ CREATE TABLE gatos (
     CONSTRAINT ck_gatos_idade CHECK (idade >= 0)
 );
 
-DROP Table IF EXISTS pedidos CASCADE;
+DROP TABLE IF EXISTS pedidos CASCADE;
 
-CREATE Table pedidos(
+CREATE TABLE pedidos (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    data_compra DATE NOT NULL,
+    data_compra TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     preco_pedido DECIMAL(10, 2) NOT NULL,
     endereco TEXT NOT NULL,
     form_pag TEXT NOT NULL,
     cupom TEXT,
-
     comprador BIGINT NOT NULL,
+    
     CONSTRAINT fk_pedidos_usuario
-        Foreign Key (comprador) 
+        FOREIGN KEY (comprador) 
         REFERENCES usuario(id)
         ON DELETE CASCADE,
 
-        CONSTRAINT ck_pedido_preco CHECK (preco_pedido >= 0)
+    CONSTRAINT ck_pedido_preco CHECK (preco_pedido >= 0)
 );
+
 DROP TABLE IF EXISTS carrinho CASCADE;
 
 CREATE TABLE carrinho(
@@ -100,6 +101,7 @@ CREATE TABLE itens_carrinho (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   carrinho_id BIGINT NOT NULL,
   cardapio_id BIGINT NOT NULL,
+  pedido_id BIGINT DEFAULT NULL,
   quantidade INT NOT NULL,
   preco_unitario DECIMAL(10, 2) NOT NULL,
   subtotal DECIMAL(10, 2) NOT NULL,
@@ -107,6 +109,11 @@ CREATE TABLE itens_carrinho (
     FOREIGN KEY (cardapio_id) 
     REFERENCES cardapio(id)
     ON DELETE CASCADE,
+
+    CONSTRAINT fk_item_pedido
+        FOREIGN KEY (pedido_id) 
+        REFERENCES pedidos(id)
+        ON DELETE SET NULL,
     
   CONSTRAINT fk_item_carrinho
     FOREIGN KEY (carrinho_id) 
@@ -117,6 +124,8 @@ CREATE TABLE itens_carrinho (
     CONSTRAINT ck_preco_unitario CHECK (preco_unitario >= 0),
     CONSTRAINT ck_subtotal CHECK (subtotal >= 0)
 );
+
+
 SET datestyle = 'ISO, DMY';
 
 
