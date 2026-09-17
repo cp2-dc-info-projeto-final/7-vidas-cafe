@@ -4,7 +4,7 @@
   import { goto } from "$app/navigation";
   import { getCurrentUser, getToken, type User } from "$lib/auth"; 
   import { onMount } from 'svelte';
-  import { slide } from 'svelte/transition'; // <--- IMPORT CORRIGIDO AQUI
+  import { slide } from 'svelte/transition';
   import api from '$lib/api';
 
   let user: User | null = null;
@@ -16,8 +16,17 @@
   let carrinho: any = null;
   let itensCarrinho: any[] = [];
 
-  // Dados para o POST /pedido
-  let endereco = '';
+  // Dados de Endereço Separados (para a busca do ViaCEP)
+  let cep = '';
+  let rua = '';
+  let numero = '';
+  let bairro = '';
+  let cidade = '';
+  let uf = '';
+  let complemento = '';
+  let erroCep = '';
+
+  // Outros dados do Checkout
   let form_pag = 'Cartão de Crédito';
   let cupom = '';
 
@@ -69,6 +78,35 @@
       }
   }
 
+  // Função para buscar o CEP automaticamente no ViaCEP
+  async function buscarCep() {
+      const cepLimpo = cep.replace(/\D/g, '');
+
+      if (cepLimpo.length !== 8) {
+          return; 
+      }
+
+      try {
+          erroCep = '';
+          const res = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+          const data = await res.json();
+
+          if (data.erro) {
+              erroCep = 'CEP não encontrado.';
+              return;
+          }
+
+          rua = data.logradouro;
+          bairro = data.bairro;
+          cidade = data.localidade;
+          uf = data.uf;
+          
+      } catch (e) {
+          console.error('Erro ao buscar CEP:', e);
+          erroCep = 'Erro ao consultar o CEP.';
+      }
+  }
+
   async function alterarQuantidadeItem(itemId: number, novaQuantidade: number) {
       if (novaQuantidade <= 0) {
           await removerItem(itemId);
@@ -102,26 +140,29 @@
   }
 
   async function finalizarPedido() {
-      if (!endereco.trim()) {
-          alert('Por favor, informe o endereço de entrega.');
+      // Validação dos campos obrigatórios de endereço
+      if (!cep.trim() || !rua.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !uf.trim()) {
+          alert('Por favor, preencha todos os campos obrigatórios do endereço (CEP, Rua, Número, Bairro, Cidade e UF).');
           return;
       }
+
+      // Monta a string completa para enviar ao backend mantendo a compatibilidade
+      const enderecoCompleto = `CEP: ${cep}, ${rua}, nº ${numero}${complemento ? ' - ' + complemento : ''}, ${bairro} - ${cidade}/${uf}`;
 
       actionLoading = true;
       error = '';
 
       try {
           const response = await api.post('/pedido', {
-              endereco,
+              endereco: enderecoCompleto,
               form_pag,
               cupom: cupom || null
           });
 
           alert(response.data.message || 'Pedido realizado com sucesso!');
-          goto('/pedidos'); 
+          goto('/pedido'); 
       } catch (e: any) {
           console.error('Erro ao finalizar pedido:', e);
-          // Mostra o erro exato que veio do servidor backend se houver
           const mensagemErro = e.response?.data?.message || e.message || 'Erro ao processar o pedido.';
           alert(mensagemErro);
       } finally {
@@ -243,23 +284,105 @@
                       {/if}
                   </div>
 
-                  <!-- Formulário de Checkout -->
+                  <!-- Formulário de Checkout com Busca de CEP -->
                   {#if mostrandoCheckout}
                       <div transition:slide class="flex flex-col gap-4 pt-4 border-t border-primary-800 text-xs">
                           <h3 class="font-serif font-bold text-tertiary-400 text-sm">Dados de Entrega e Pagamento</h3>
                           
-                          <div class="flex flex-col gap-1.5">
-                              <label for="endereco" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Endereço Completo</label>
-                              <input 
-                                  id="endereco"
-                                  type="text" 
-                                  bind:value={endereco} 
-                                  placeholder="Ex: Rua das Flores, 123 - Bairro" 
-                                  class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
-                              />
+                          <!-- Linha 1: CEP e Rua -->
+                          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              <div class="flex flex-col gap-1.5">
+                                  <label for="cep" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">CEP</label>
+                                  <input 
+                                      id="cep"
+                                      type="text" 
+                                      bind:value={cep} 
+                                      on:blur={buscarCep}
+                                      maxlength="8"
+                                      placeholder="Apenas números" 
+                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
+                                  />
+                                  {#if erroCep}
+                                      <span class="text-red-400 text-[10px]">{erroCep}</span>
+                                  {/if}
+                              </div>
+
+                              <div class="flex flex-col gap-1.5 sm:col-span-2">
+                                  <label for="rua" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Rua / Logradouro</label>
+                                  <input 
+                                      id="rua"
+                                      type="text" 
+                                      bind:value={rua} 
+                                      placeholder="Preenchido via CEP" 
+                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
+                                  />
+                              </div>
                           </div>
 
-                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <!-- Linha 2: Número e Complemento -->
+                          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              <div class="flex flex-col gap-1.5">
+                                  <label for="numero" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Número</label>
+                                  <input 
+                                      id="numero"
+                                      type="text" 
+                                      bind:value={numero} 
+                                      placeholder="Ex: 123" 
+                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
+                                  />
+                              </div>
+
+                              <div class="flex flex-col gap-1.5 sm:col-span-2">
+                                  <label for="complemento" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Complemento (Opcional)</label>
+                                  <input 
+                                      id="complemento"
+                                      type="text" 
+                                      bind:value={complemento} 
+                                      placeholder="Ex: Apto 42, Bloco B" 
+                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
+                                  />
+                              </div>
+                          </div>
+
+                          <!-- Linha 3: Bairro, Cidade e UF -->
+                          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                              <div class="flex flex-col gap-1.5">
+                                  <label for="bairro" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Bairro</label>
+                                  <input 
+                                      id="bairro"
+                                      type="text" 
+                                      bind:value={bairro} 
+                                      placeholder="Bairro" 
+                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
+                                  />
+                              </div>
+
+                              <div class="flex flex-col gap-1.5">
+                                  <label for="cidade" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Cidade</label>
+                                  <input 
+                                      id="cidade"
+                                      type="text" 
+                                      bind:value={cidade} 
+                                      placeholder="Cidade" 
+                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
+                                  />
+                              </div>
+
+                              <div class="flex flex-col gap-1.5">
+                                  <label for="uf" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Estado (UF)</label>
+                                  <input 
+                                      id="uf"
+                                      type="text" 
+                                      bind:value={uf} 
+                                      maxlength="2"
+                                      placeholder="UF" 
+                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500 uppercase"
+                                  />
+                              </div>
+                          </div>
+
+                          <!-- Forma de Pagamento e Cupom -->
+                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                               <div class="flex flex-col gap-1.5">
                                   <label for="form_pag" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Forma de Pagamento</label>
                                   <select 

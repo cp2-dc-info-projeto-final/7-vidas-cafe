@@ -246,7 +246,7 @@
           <!-- Foto do Gato com Tag de Status em cima -->
           <div class="mb-5 w-full h-56 overflow-hidden bg-primary-950 border border-primary-800 relative">
             {#if gato.imagem}
-              <img src={`${API_URL}${gato.imagem}`} alt={gato.nome} class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+              <img src={gato.imagem} alt={gato.nome} class="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
             {:else}
               <div class="w-full h-full flex items-center justify-center text-primary-600 text-xs italic">Sem foto</div>
             {/if}

@@ -25,7 +25,7 @@ router.post('/', verifyToken, async (req, res) => {
             [userId]
         );
 
-        if (carrinhoRes.rows.length === 0 || carrinhoRes.rows[0].preco_total <= 0) {
+        if (carrinhoRes.rows.length === 0 || Number(carrinhoRes.rows[0].preco_total) <= 0) {
             await client.query('ROLLBACK');
             return res.status(400).json({ message: 'Seu carrinho está vazio.' });
         }
@@ -52,7 +52,7 @@ router.post('/', verifyToken, async (req, res) => {
 
         const novoPedido = pedidoInsert.rows[0];
 
-        // D. A IDEIA DO PROFESSOR: Atualiza os itens vinculando ao pedido_id e desvinculando do carrinho_id
+        // D. Atualiza os itens vinculando ao pedido_id e desvinculando do carrinho_id
         await client.query(
             `UPDATE itens_carrinho 
              SET pedido_id = $1, carrinho_id = NULL 
@@ -72,8 +72,8 @@ router.post('/', verifyToken, async (req, res) => {
 
     } catch (error) {
         await client.query('ROLLBACK'); // Desfaz tudo se der erro
-        console.error('Erro ao finalizar pedido:', error);
-        return res.status(500).json({ message: 'Erro interno ao processar o pedido.' });
+        console.error('Erro detalhado ao finalizar pedido:', error);
+        return res.status(500).json({ message: 'Erro interno ao processar o pedido: ' + error.message });
     } finally {
         client.release();
     }
@@ -87,21 +87,23 @@ router.get('/meus-pedidos', verifyToken, async (req, res) => {
 
     try {
         const pedidosRes = await pool.query(
-            `SELECT p.*, 
-                json_agg(
-                    json_build_object(
-                        'id', ic.id,
-                        'cardapio_id', ic.cardapio_id,
-                        'nome_produto', c.nome,
-                        'quantidade', ic.quantidade,
-                        'preco_unitario', ic.preco_unitario,
-                        'subtotal', ic.subtotal,
-                        'imagem', c.imagem
-                    )
+            `SELECT p.id, p.data_compra, p.preco_pedido, p.endereco, p.form_pag, p.cupom,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', ic.id,
+                            'cardapio_id', ic.cardapio_id,
+                            'nome_produto', c.nome,
+                            'quantidade', ic.quantidade,
+                            'preco_unitario', ic.preco_unitario,
+                            'subtotal', ic.subtotal,
+                            'imagem', c.imagem
+                        )
+                    ) FILTER (WHERE ic.id IS NOT NULL), '[]'
                 ) as itens
              FROM pedidos p
-             JOIN itens_carrinho ic ON p.id = ic.pedido_id
-             JOIN cardapio c ON ic.cardapio_id = c.id
+             LEFT JOIN itens_carrinho ic ON p.id = ic.pedido_id
+             LEFT JOIN cardapio c ON ic.cardapio_id = c.id
              WHERE p.comprador = $1
              GROUP BY p.id
              ORDER BY p.data_compra DESC`,
@@ -122,17 +124,19 @@ router.get('/admin/todos', verifyToken, isAdmin, async (req, res) => {
     try {
         const pedidosRes = await pool.query(
             `SELECT p.*, u.login as nome_comprador, u.email as email_comprador,
-                json_agg(
-                    json_build_object(
-                        'nome_produto', c.nome,
-                        'quantidade', ic.quantidade,
-                        'subtotal', ic.subtotal
-                    )
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'nome_produto', c.nome,
+                            'quantidade', ic.quantidade,
+                            'subtotal', ic.subtotal
+                        )
+                    ) FILTER (WHERE ic.id IS NOT NULL), '[]'
                 ) as itens
              FROM pedidos p
              JOIN usuario u ON p.comprador = u.id
-             JOIN itens_carrinho ic ON p.id = ic.pedido_id
-             JOIN cardapio c ON ic.cardapio_id = c.id
+             LEFT JOIN itens_carrinho ic ON p.id = ic.pedido_id
+             LEFT JOIN cardapio c ON ic.cardapio_id = c.id
              GROUP BY p.id, u.login, u.email
              ORDER BY p.data_compra DESC`
         );
@@ -141,6 +145,65 @@ router.get('/admin/todos', verifyToken, isAdmin, async (req, res) => {
     } catch (error) {
         console.error('Erro ao listar todos os pedidos:', error);
         return res.status(500).json({ message: 'Erro ao carregar pedidos para administração.' });
+    }
+});
+
+// ==========================================
+// 4. CANCELAR PEDIDO
+// ==========================================
+router.delete('/:id', verifyToken, async (req, res) => {
+    const pedidoId = req.params.id;
+    const userId = req.user.id;
+    const userRole = req.user.role; // Ou verificação de admin dependendo do seu payload JWT
+
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        // A. Busca o pedido para verificar se ele existe e se pertence ao usuário (ou se é admin)
+        const pedidoRes = await client.query(
+            'SELECT id, comprador FROM pedidos WHERE id = $1',
+            [pedidoId]
+        );
+
+        if (pedidoRes.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ message: 'Pedido não encontrado.' });
+        }
+
+        const pedido = pedidoRes.rows[0];
+
+        // B. Regra de permissão: Apenas o próprio comprador ou um admin podem cancelar
+        // (Ajuste 'admin' conforme a string exata salva no seu sistema/role)
+        const isAdminUser = userRole === 'admin' || req.user.isAdmin === true;
+        if (pedido.comprador !== userId && !isAdminUser) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ message: 'Você não tem permissão para cancelar este pedido.' });
+        }
+
+        // C. Remove os itens associados a este pedido na tabela itens_carrinho
+        await client.query(
+            'DELETE FROM itens_carrinho WHERE pedido_id = $1',
+            [pedidoId]
+        );
+
+        // D. Deleta o pedido principal
+        await client.query(
+            'DELETE FROM pedidos WHERE id = $1',
+            [pedidoId]
+        );
+
+        await client.query('COMMIT');
+
+        return res.json({ message: 'Pedido cancelado com sucesso.' });
+
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro ao cancelar pedido:', error);
+        return res.status(500).json({ message: 'Erro interno ao cancelar o pedido: ' + error.message });
+    } finally {
+        client.release();
     }
 });
 

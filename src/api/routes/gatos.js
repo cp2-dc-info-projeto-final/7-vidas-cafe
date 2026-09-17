@@ -6,14 +6,15 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Configuração do armazenamento local com Multer
+// Configuração do armazenamento do Multer apontando direto para a pasta principal de imagens do frontend
+const uploadDir = path.join(__dirname, '../../frontend-app/static/images');
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const dir = path.join(__dirname, '../public/static/images/gatos');
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
     }
-    cb(null, dir);
+    cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -21,7 +22,17 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas arquivos de imagem são permitidos!'), false);
+    }
+  }
+});
 
 // Funções utilitárias padronizadas de resposta
 function sendSuccess(res, status, message, data) {
@@ -55,14 +66,13 @@ router.get('/', async function(req, res) {
           if (decoded.role === 'admin') {
             isAdminUser = true;
           }
-          userId = decoded.id; // Captura o ID do usuário logado através do token
+          userId = decoded.id;
         }
       } catch (err) {
         // Token inválido ou expirado
       }
     }
 
-    // Fazemos um LEFT JOIN com a tabela usuario para trazer o login/nome do tutor
     let query = `
       SELECT 
         g.id, g.nome, g.idade, g.raca, g.castracao, g.personalidade, g.adocao, g.tutor, g.imagem,
@@ -71,7 +81,6 @@ router.get('/', async function(req, res) {
       LEFT JOIN usuario u ON g.tutor = u.id
     `;
     
-    // Se não for admin, exibe os disponíveis para adoção OU os que pertencem ao usuário logado
     if (!isAdminUser) {
       if (userId) {
         query += ` WHERE g.adocao = true OR g.tutor = ${userId}`;
@@ -104,15 +113,18 @@ router.post('/', verifyToken, isAdmin, upload.single('imagem'), async function(r
       if (!personalidade) errors.push({ field: 'personalidade', message: 'Personalidade é obrigatória', code: 'REQUIRED' });
       if (adocao === undefined) errors.push({ field: 'adocao', message: 'Status de adoção é obrigatório', code: 'REQUIRED' });
 
+      if (req.file) fs.unlinkSync(req.file.path);
       return sendError(res, 400, 'Todos os campos do felino são obrigatórios', errors);
     }
 
     if (parseInt(idade) < 0) {
+      if (req.file) fs.unlinkSync(req.file.path);
       return sendError(res, 400, 'Dados inválidos.', [{ field: 'idade', message: 'A idade não pode ser menor que zero.', code: 'INVALID_VALUE' }]);
     }
 
     const tutorId = (tutor && tutor !== "") ? parseInt(tutor) : null;
-    const imagemPath = req.file ? `/static/images/gatos/${req.file.filename}` : null;
+    // Salva direto na raiz de /images/
+    const imagemPath = req.file ? `/images/${req.file.filename}` : null;
 
     const result = await pool.query(
       `INSERT INTO gatos (nome, idade, raca, castracao, personalidade, adocao, tutor, imagem) 
@@ -124,11 +136,14 @@ router.post('/', verifyToken, isAdmin, upload.single('imagem'), async function(r
     return sendSuccess(res, 201, 'Gato adicionado com sucesso', result.rows[0]);
   } catch (error) {
     console.error('Erro ao inserir gato:', error);
+    if (req.file) {
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+    }
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
 
-/* PUT - Efetivar adoção (Atualiza o tutor e retira da vitrine de adoção) */
+/* PUT - Efetivar adoção */
 router.put('/:id/adotar', verifyToken, async function(req, res) {
   try {
     const { id } = req.params;
@@ -149,7 +164,6 @@ router.put('/:id/adotar', verifyToken, async function(req, res) {
       return sendError(res, 400, 'Este gato não está disponível para adoção.');
     }
 
-    // Em vez de deletar, atualizamos o tutor, tiramos da adoção e guardamos a mensagem se quiser
     const result = await pool.query(
       'UPDATE gatos SET tutor = $1, adocao = false WHERE id = $2 RETURNING *',
       [usuarioId, id]
@@ -162,14 +176,17 @@ router.put('/:id/adotar', verifyToken, async function(req, res) {
   }
 });
 
-/* PUT - Editar gato (Apenas Admin) com suporte a nova imagem opcional */
+/* PUT - Editar gato (Apenas Admin) */
 router.put('/:id', verifyToken, isAdmin, upload.single('imagem'), async function(req, res) {
   try {
     const { id } = req.params;
     const { nome, idade, raca, castracao, personalidade, adocao, tutor } = req.body;
 
     const gatoResult = await pool.query('SELECT * FROM gatos WHERE id = $1', [id]);
-    if (gatoResult.rows.length === 0) return sendError(res, 404, 'Gato não encontrado');
+    if (gatoResult.rows.length === 0) {
+      if (req.file) fs.unlinkSync(req.file.path);
+      return sendError(res, 404, 'Gato não encontrado');
+    }
 
     const atual = gatoResult.rows[0];
 
@@ -181,9 +198,23 @@ router.put('/:id', verifyToken, isAdmin, upload.single('imagem'), async function
     const finalPersonalidade = (personalidade !== undefined) ? personalidade.trim() : atual.personalidade;
     const finalAdocao = (adocao !== undefined) ? (adocao === 'true' || adocao === true) : atual.adocao;
     
-    const finalImagem = req.file ? `/static/images/gatos/${req.file.filename}` : atual.imagem;
+    let finalImagem = atual.imagem;
+    if (req.file) {
+      finalImagem = `/images/${req.file.filename}`;
+      // Remove a imagem antiga se existir na pasta principal
+      if (atual.imagem && atual.imagem.startsWith('/images/')) {
+        const filename = atual.imagem.replace('/images/', '');
+        const oldPath = path.join(uploadDir, filename);
+        if (fs.existsSync(oldPath)) {
+          try { fs.unlinkSync(oldPath); } catch (e) {}
+        }
+      }
+    }
 
-    if (finalIdade < 0) return sendError(res, 400, 'A idade do gato não pode ser negativa.');
+    if (finalIdade < 0) {
+      if (req.file) fs.unlinkSync(req.file.path);
+      return sendError(res, 400, 'A idade do gato não pode ser negativa.');
+    }
 
     const result = await pool.query(
       `UPDATE gatos 
@@ -196,6 +227,9 @@ router.put('/:id', verifyToken, isAdmin, upload.single('imagem'), async function
     return sendSuccess(res, 200, 'Gato atualizado com sucesso', result.rows[0]);
   } catch (error) {
     console.error('Erro ao atualizar gato:', error);
+    if (req.file) {
+      try { fs.unlinkSync(req.file.path); } catch (e) {}
+    }
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
@@ -213,12 +247,14 @@ router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
 
     const gato = gatoResult.rows[0];
 
-    if (gato.imagem) {
-      const caminhoFisico = path.join(__dirname, '../public', gato.imagem);
-      if (fs.existsSync(caminhoFisico)) {
-        fs.unlinkSync(caminhoFisico);
+    if (gato.imagem && gato.imagem.startsWith('/images/')) {
+      const filename = gato.imagem.replace('/images/', '');
+      const filePath = path.join(uploadDir, filename);
+      if (fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath); } catch (e) {}
       }
     }
+
     await pool.query('DELETE FROM gatos WHERE id = $1', [id]);
     console.log(`[AUDITORIA] Gato ID ${id} deletado. Motivo: ${motivo}`);
 
@@ -228,7 +264,5 @@ router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
     return sendError(res, 500, 'Erro interno do servidor');
   }
 });
-
-
 
 module.exports = router;

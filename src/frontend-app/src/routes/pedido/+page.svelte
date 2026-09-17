@@ -54,6 +54,18 @@
             error = err.response?.data?.message || 'Não foi possível carregar o histórico de pedidos.';
         }
     }
+
+    async function cancelarPedido(id: number) {
+    if (!confirm('Tem certeza que deseja cancelar este pedido?')) return;
+
+    try {
+        await api.delete(`/pedido/${id}`);
+        // Remove da lista localmente para atualizar a tela na hora
+        meusPedidos = meusPedidos.filter(p => p.id !== id);
+    } catch (err: any) {
+        alert(err.response?.data?.message || 'Erro ao cancelar o pedido.');
+    }
+}
 </script>
 
 <Menu />
@@ -144,6 +156,16 @@
                                 <span class="text-base font-black text-tertiary-400 font-serif">R$ {Number(pedido.preco_pedido).toFixed(2)}</span>
                             </div>
                         </div>
+                        <!-- Exemplo de botão para colocar dentro do card do pedido -->
+<div class="flex justify-between items-center pt-4 border-t border-primary-800">
+    <button 
+        on:click={() => cancelarPedido(pedido.id)}
+        class="px-4 py-2 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/50 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer">
+        Cancelar Pedido
+    </button>
+    
+    <!-- Restante do rodapé com o Total... -->
+</div>
 
                     </div>
                 {/each}

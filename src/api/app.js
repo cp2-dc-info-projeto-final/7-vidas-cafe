@@ -26,8 +26,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use('/static', express.static(path.join(__dirname, 'public/static')));
-app.use(logger('dev'));
+// Libera as imagens usando path.resolve para garantir que o caminho ache a pasta certa
+app.use('/images', express.static(path.resolve(__dirname, '../../frontend-app/static/images')));app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
