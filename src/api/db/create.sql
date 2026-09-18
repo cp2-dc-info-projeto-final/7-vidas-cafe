@@ -70,6 +70,7 @@ CREATE TABLE pedidos (
     endereco TEXT NOT NULL,
     form_pag TEXT NOT NULL,
     cupom TEXT,
+    status_pedido TEXT NOT NULL DEFAULT 'pendente', -- Adicionado aqui!
     comprador BIGINT NOT NULL,
     
     CONSTRAINT fk_pedidos_usuario
@@ -77,7 +78,8 @@ CREATE TABLE pedidos (
         REFERENCES usuario(id)
         ON DELETE CASCADE,
 
-    CONSTRAINT ck_pedido_preco CHECK (preco_pedido >= 0)
+    CONSTRAINT ck_pedido_preco CHECK (preco_pedido >= 0),
+CONSTRAINT ck_pedido_status CHECK (status_pedido IN ('pendente', 'preparando', 'saiu para entrega', 'entregue', 'cancelado'))
 );
 
 DROP TABLE IF EXISTS carrinho CASCADE;

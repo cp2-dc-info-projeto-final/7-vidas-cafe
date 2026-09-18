@@ -46,7 +46,6 @@
 
     async function carregarPedidosDoServidor() {
         try {
-            // Rota configurada no pedido.js: GET /pedido/meus-pedidos
             const response = await api.get('/pedido/meus-pedidos');
             meusPedidos = response.data || [];
         } catch (err: any) {
@@ -56,14 +55,22 @@
     }
 
     async function cancelarPedido(id: number) {
-    if (!confirm('Tem certeza que deseja cancelar este pedido?')) return;
+        if (!confirm('Tem certeza que deseja cancelar este pedido?')) return;
 
-    try {
-        await api.delete(`/pedido/${id}`);
-        // Remove da lista localmente para atualizar a tela na hora
-        meusPedidos = meusPedidos.filter(p => p.id !== id);
-    } catch (err: any) {
-        alert(err.response?.data?.message || 'Erro ao cancelar o pedido.');
+        try {
+            await api.delete(`/pedido/${id}`);
+            meusPedidos = meusPedidos.filter(p => p.id !== id);
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Erro ao cancelar o pedido.');
+        }
+    }
+
+    function corStatus(status: string) {
+    switch (status?.toLowerCase()) {
+        case 'pendente': return 'bg-yellow-950/40 text-yellow-400 border-yellow-900/50';
+        case 'aprovado': case 'concluído': return 'bg-green-950/40 text-green-400 border-green-900/50';
+        case 'cancelado': return 'bg-red-950/40 text-red-400 border-red-900/50';
+        default: return 'bg-primary-800 text-primary-200 border-primary-700';
     }
 }
 </script>
@@ -115,7 +122,14 @@
                         
                         <!-- Topo do Card do Pedido -->
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-primary-800 pb-3 gap-2 text-xs">
-                            <span class="font-black text-tertiary-400 tracking-wider text-sm">PEDIDO #{pedido.id}</span>
+                            <div class="flex items-center gap-3">
+                                <span class="font-black text-tertiary-400 tracking-wider text-sm">PEDIDO #{pedido.id}</span>
+                                {#if pedido.status_pedidos}
+                                    <span class={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${corStatus(pedido.status_pedido)}`}>
+                                        {pedido.status_pedido}
+                                    </span>
+                                {/if}
+                            </div>
                             <span class="text-primary-300 font-medium">
                                 {new Date(pedido.data_compra).toLocaleDateString('pt-BR')} às {new Date(pedido.data_compra).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
                             </span>
@@ -142,7 +156,7 @@
                             </div>
                         </div>
 
-                        <!-- Informações de Entrega e Rodapé -->
+                        <!-- Informações de Entrega -->
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-t border-primary-800 pt-4 gap-4 text-xs">
                             <div class="space-y-1">
                                 <p class="text-[11px] text-primary-300"><strong>Endereço:</strong> {pedido.endereco}</p>
@@ -156,16 +170,15 @@
                                 <span class="text-base font-black text-tertiary-400 font-serif">R$ {Number(pedido.preco_pedido).toFixed(2)}</span>
                             </div>
                         </div>
-                        <!-- Exemplo de botão para colocar dentro do card do pedido -->
-<div class="flex justify-between items-center pt-4 border-t border-primary-800">
-    <button 
-        on:click={() => cancelarPedido(pedido.id)}
-        class="px-4 py-2 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/50 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer">
-        Cancelar Pedido
-    </button>
-    
-    <!-- Restante do rodapé com o Total... -->
-</div>
+
+                        <!-- Botão de Ação / Cancelar -->
+                        <div class="flex justify-between items-center pt-4 border-t border-primary-800">
+                            <button 
+                                on:click={() => cancelarPedido(pedido.id)}
+                                class="px-4 py-2 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/50 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer">
+                                Cancelar Pedido
+                            </button>
+                        </div>
 
                     </div>
                 {/each}

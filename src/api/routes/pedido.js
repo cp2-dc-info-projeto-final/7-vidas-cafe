@@ -87,7 +87,7 @@ router.get('/meus-pedidos', verifyToken, async (req, res) => {
 
     try {
         const pedidosRes = await pool.query(
-            `SELECT p.id, p.data_compra, p.preco_pedido, p.endereco, p.form_pag, p.cupom,
+            `SELECT p.id, p.data_compra, p.preco_pedido, p.endereco, p.form_pag, p.cupom, p.status_pedido,
                 COALESCE(
                     json_agg(
                         json_build_object(
@@ -113,7 +113,7 @@ router.get('/meus-pedidos', verifyToken, async (req, res) => {
         return res.json(pedidosRes.rows);
     } catch (error) {
         console.error('Erro ao buscar pedidos do usuário:', error);
-        return res.status(500).json({ message: 'Erro ao carregar histórico de pedidos.' });
+        return res.status(500).json({ message: 'Erro ao carregar histórico de pedidos: ' + error.message });
     }
 });
 
@@ -149,19 +149,100 @@ router.get('/admin/todos', verifyToken, isAdmin, async (req, res) => {
 });
 
 // ==========================================
-// 4. CANCELAR PEDIDO
+// 4. BUSCAR PEDIDO ESPECÍFICO POR ID
+// ==========================================
+router.get('/:id', verifyToken, async (req, res) => {
+    const pedidoId = req.params.id;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const isAdminUser = userRole === 'admin';
+
+    try {
+        const pedidoRes = await pool.query(
+            `SELECT p.id, p.data_compra, p.preco_pedido, p.endereco, p.form_pag, p.cupom, p.comprador,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'id', ic.id,
+                            'cardapio_id', ic.cardapio_id,
+                            'nome_produto', c.nome,
+                            'quantidade', ic.quantidade,
+                            'preco_unitario', ic.preco_unitario,
+                            'subtotal', ic.subtotal,
+                            'imagem', c.imagem
+                        )
+                    ) FILTER (WHERE ic.id IS NOT NULL), '[]'
+                ) as itens
+             FROM pedidos p
+             LEFT JOIN itens_carrinho ic ON p.id = ic.pedido_id
+             LEFT JOIN cardapio c ON ic.cardapio_id = c.id
+             WHERE p.id = $1
+             GROUP BY p.id`,
+            [pedidoId]
+        );
+
+        if (pedidoRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Pedido não encontrado.' });
+        }
+
+        const pedido = pedidoRes.rows[0];
+
+        // Valida se o pedido pertence ao usuário ou se é admin
+        if (pedido.comprador !== userId && !isAdminUser) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+
+        return res.json(pedido);
+    } catch (error) {
+        console.error('Erro ao buscar pedido:', error);
+        return res.status(500).json({ message: 'Erro ao carregar o pedido.' });
+    }
+});
+
+// ==========================================
+// 5. ATUALIZAR STATUS DO PEDIDO (Área Admin)
+// ==========================================
+router.patch('/:id/status', verifyToken, isAdmin, async (req, res) => {
+    const pedidoId = req.params.id;
+    const { status } = req.body;
+
+    if (!status) {
+        return res.status(400).json({ message: 'O novo status é obrigatório.' });
+    }
+
+    try {
+        const updateRes = await pool.query(
+            'UPDATE pedidos SET status = $1 WHERE id = $2 RETURNING *',
+            [status, pedidoId]
+        );
+
+        if (updateRes.rows.length === 0) {
+            return res.status(404).json({ message: 'Pedido não encontrado.' });
+        }
+
+        return res.json({
+            message: 'Status atualizado com sucesso!',
+            pedido: updateRes.rows[0]
+        });
+    } catch (error) {
+        console.error('Erro ao atualizar status do pedido:', error);
+        return res.status(500).json({ message: 'Erro interno ao atualizar status.' });
+    }
+});
+
+// ==========================================
+// 6. CANCELAR PEDIDO
 // ==========================================
 router.delete('/:id', verifyToken, async (req, res) => {
     const pedidoId = req.params.id;
     const userId = req.user.id;
-    const userRole = req.user.role; // Ou verificação de admin dependendo do seu payload JWT
+    const userRole = req.user.role;
 
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
 
-        // A. Busca o pedido para verificar se ele existe e se pertence ao usuário (ou se é admin)
         const pedidoRes = await client.query(
             'SELECT id, comprador FROM pedidos WHERE id = $1',
             [pedidoId]
@@ -173,22 +254,18 @@ router.delete('/:id', verifyToken, async (req, res) => {
         }
 
         const pedido = pedidoRes.rows[0];
-
-        // B. Regra de permissão: Apenas o próprio comprador ou um admin podem cancelar
-        // (Ajuste 'admin' conforme a string exata salva no seu sistema/role)
         const isAdminUser = userRole === 'admin' || req.user.isAdmin === true;
+
         if (pedido.comprador !== userId && !isAdminUser) {
             await client.query('ROLLBACK');
             return res.status(403).json({ message: 'Você não tem permissão para cancelar este pedido.' });
         }
 
-        // C. Remove os itens associados a este pedido na tabela itens_carrinho
         await client.query(
             'DELETE FROM itens_carrinho WHERE pedido_id = $1',
             [pedidoId]
         );
 
-        // D. Deleta o pedido principal
         await client.query(
             'DELETE FROM pedidos WHERE id = $1',
             [pedidoId]
