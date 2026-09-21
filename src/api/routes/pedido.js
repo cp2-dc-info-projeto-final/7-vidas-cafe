@@ -211,8 +211,9 @@ router.patch('/:id/status', verifyToken, isAdmin, async (req, res) => {
     }
 
     try {
+        // CORRIGIDO AQUI: mudado de 'status = $1' para 'status_pedido = $1'
         const updateRes = await pool.query(
-            'UPDATE pedidos SET status = $1 WHERE id = $2 RETURNING *',
+            'UPDATE pedidos SET status_pedido = $1 WHERE id = $2 RETURNING *',
             [status, pedidoId]
         );
 
@@ -229,7 +230,6 @@ router.patch('/:id/status', verifyToken, isAdmin, async (req, res) => {
         return res.status(500).json({ message: 'Erro interno ao atualizar status.' });
     }
 });
-
 // ==========================================
 // 6. CANCELAR PEDIDO
 // ==========================================
@@ -281,6 +281,31 @@ router.delete('/:id', verifyToken, async (req, res) => {
         return res.status(500).json({ message: 'Erro interno ao cancelar o pedido: ' + error.message });
     } finally {
         client.release();
+    }
+});
+
+// ==========================================
+// 7. BUSCAR ENDEREÇOS ANTERIORES DO USUÁRIO
+// ==========================================
+router.get('/usuario/meus-enderecos', verifyToken, async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        const query = `
+            SELECT DISTINCT endereco 
+            FROM pedidos 
+            WHERE comprador = $1 
+              AND endereco != 'Retirada no Local'
+            ORDER BY data_compra DESC 
+            LIMIT 5;
+        `;
+        const resultado = await pool.query(query, [userId]);
+        const enderecos = resultado.rows.map(row => row.endereco);
+
+        return res.json({ success: true, enderecos });
+    } catch (error) {
+        console.error('Erro ao buscar endereços anteriores:', error);
+        return res.status(500).json({ success: false, message: 'Erro ao buscar endereços.' });
     }
 });
 

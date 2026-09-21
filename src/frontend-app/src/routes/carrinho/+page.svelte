@@ -16,19 +16,6 @@
   let carrinho: any = null;
   let itensCarrinho: any[] = [];
 
-  // Dados de Endereço Separados (para a busca do ViaCEP)
-  let cep = '';
-  let rua = '';
-  let numero = '';
-  let bairro = '';
-  let cidade = '';
-  let uf = '';
-  let complemento = '';
-  let erroCep = '';
-
-  // Outros dados do Checkout
-  let form_pag = 'Cartão de Crédito';
-  let cupom = '';
 
   onMount(async () => {
       await inicializarInterface();
@@ -78,34 +65,6 @@
       }
   }
 
-  // Função para buscar o CEP automaticamente no ViaCEP
-  async function buscarCep() {
-      const cepLimpo = cep.replace(/\D/g, '');
-
-      if (cepLimpo.length !== 8) {
-          return; 
-      }
-
-      try {
-          erroCep = '';
-          const res = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-          const data = await res.json();
-
-          if (data.erro) {
-              erroCep = 'CEP não encontrado.';
-              return;
-          }
-
-          rua = data.logradouro;
-          bairro = data.bairro;
-          cidade = data.localidade;
-          uf = data.uf;
-          
-      } catch (e) {
-          console.error('Erro ao buscar CEP:', e);
-          erroCep = 'Erro ao consultar o CEP.';
-      }
-  }
 
   async function alterarQuantidadeItem(itemId: number, novaQuantidade: number) {
       if (novaQuantidade <= 0) {
@@ -139,36 +98,6 @@
       }
   }
 
-  async function finalizarPedido() {
-      // Validação dos campos obrigatórios de endereço
-      if (!cep.trim() || !rua.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !uf.trim()) {
-          alert('Por favor, preencha todos os campos obrigatórios do endereço (CEP, Rua, Número, Bairro, Cidade e UF).');
-          return;
-      }
-
-      // Monta a string completa para enviar ao backend mantendo a compatibilidade
-      const enderecoCompleto = `CEP: ${cep}, ${rua}, nº ${numero}${complemento ? ' - ' + complemento : ''}, ${bairro} - ${cidade}/${uf}`;
-
-      actionLoading = true;
-      error = '';
-
-      try {
-          const response = await api.post('/pedido', {
-              endereco: enderecoCompleto,
-              form_pag,
-              cupom: cupom || null
-          });
-
-          alert(response.data.message || 'Pedido realizado com sucesso!');
-          goto('/pedido'); 
-      } catch (e: any) {
-          console.error('Erro ao finalizar pedido:', e);
-          const mensagemErro = e.response?.data?.message || e.message || 'Erro ao processar o pedido.';
-          alert(mensagemErro);
-      } finally {
-          actionLoading = false;
-      }
-  }
 </script>
 
 <Menu />
@@ -262,172 +191,28 @@
                   {/each}
               </div>
 
-              <!-- Resumo e Botão de Fechar Pedido -->
-              <div class="mt-4 pt-6 border-t border-primary-800 bg-primary-950/60 p-5 rounded-2xl flex flex-col gap-4 shadow-inner">
-                  <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                      <div>
-                          <p class="text-[10px] font-bold text-primary-300 uppercase tracking-widest">
-                              Total Acumulado ({carrinho?.quantidade || 0} {carrinho?.quantidade === 1 ? 'item' : 'itens'})
-                          </p>
-                          <p class="text-2xl font-black text-tertiary-400 tracking-wider mt-1 font-serif">
-                              R$ {parseFloat(carrinho?.preco_total || 0).toFixed(2)}
-                          </p>
-                      </div>
-                      
-                      {#if !mostrandoCheckout}
-                          <button 
-                              on:click={() => mostrandoCheckout = true} 
-                              class="w-full sm:w-auto px-8 py-3.5 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-black rounded-xl text-xs uppercase tracking-widest transition-all duration-300 shadow-lg cursor-pointer"
-                          >
-                              Fechar Pedido
-                          </button>
-                      {/if}
-                  </div>
-
-                  <!-- Formulário de Checkout com Busca de CEP -->
-                  {#if mostrandoCheckout}
-                      <div transition:slide class="flex flex-col gap-4 pt-4 border-t border-primary-800 text-xs">
-                          <h3 class="font-serif font-bold text-tertiary-400 text-sm">Dados de Entrega e Pagamento</h3>
-                          
-                          <!-- Linha 1: CEP e Rua -->
-                          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                              <div class="flex flex-col gap-1.5">
-                                  <label for="cep" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">CEP</label>
-                                  <input 
-                                      id="cep"
-                                      type="text" 
-                                      bind:value={cep} 
-                                      on:blur={buscarCep}
-                                      maxlength="8"
-                                      placeholder="Apenas números" 
-                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
-                                  />
-                                  {#if erroCep}
-                                      <span class="text-red-400 text-[10px]">{erroCep}</span>
-                                  {/if}
-                              </div>
-
-                              <div class="flex flex-col gap-1.5 sm:col-span-2">
-                                  <label for="rua" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Rua / Logradouro</label>
-                                  <input 
-                                      id="rua"
-                                      type="text" 
-                                      bind:value={rua} 
-                                      placeholder="Preenchido via CEP" 
-                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
-                                  />
-                              </div>
-                          </div>
-
-                          <!-- Linha 2: Número e Complemento -->
-                          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                              <div class="flex flex-col gap-1.5">
-                                  <label for="numero" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Número</label>
-                                  <input 
-                                      id="numero"
-                                      type="text" 
-                                      bind:value={numero} 
-                                      placeholder="Ex: 123" 
-                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
-                                  />
-                              </div>
-
-                              <div class="flex flex-col gap-1.5 sm:col-span-2">
-                                  <label for="complemento" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Complemento (Opcional)</label>
-                                  <input 
-                                      id="complemento"
-                                      type="text" 
-                                      bind:value={complemento} 
-                                      placeholder="Ex: Apto 42, Bloco B" 
-                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
-                                  />
-                              </div>
-                          </div>
-
-                          <!-- Linha 3: Bairro, Cidade e UF -->
-                          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                              <div class="flex flex-col gap-1.5">
-                                  <label for="bairro" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Bairro</label>
-                                  <input 
-                                      id="bairro"
-                                      type="text" 
-                                      bind:value={bairro} 
-                                      placeholder="Bairro" 
-                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
-                                  />
-                              </div>
-
-                              <div class="flex flex-col gap-1.5">
-                                  <label for="cidade" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Cidade</label>
-                                  <input 
-                                      id="cidade"
-                                      type="text" 
-                                      bind:value={cidade} 
-                                      placeholder="Cidade" 
-                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
-                                  />
-                              </div>
-
-                              <div class="flex flex-col gap-1.5">
-                                  <label for="uf" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Estado (UF)</label>
-                                  <input 
-                                      id="uf"
-                                      type="text" 
-                                      bind:value={uf} 
-                                      maxlength="2"
-                                      placeholder="UF" 
-                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500 uppercase"
-                                  />
-                              </div>
-                          </div>
-
-                          <!-- Forma de Pagamento e Cupom -->
-                          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                              <div class="flex flex-col gap-1.5">
-                                  <label for="form_pag" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Forma de Pagamento</label>
-                                  <select 
-                                      id="form_pag"
-                                      bind:value={form_pag} 
-                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
-                                  >
-                                      <option value="Cartão de Crédito">Cartão de Crédito</option>
-                                      <option value="Cartão de Débito">Cartão de Débito</option>
-                                      <option value="Pix">Pix</option>
-                                      <option value="Dinheiro">Dinheiro</option>
-                                  </select>
-                              </div>
-
-                              <div class="flex flex-col gap-1.5">
-                                  <label for="cupom" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Cupom de Desconto (Opcional)</label>
-                                  <input 
-                                      id="cupom"
-                                      type="text" 
-                                      bind:value={cupom} 
-                                      placeholder="Ex: SETEVIDAS" 
-                                      class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500"
-                                  />
-                              </div>
-                          </div>
-
-                          <div class="flex gap-3 pt-2">
-                              <button 
-                                  on:click={() => mostrandoCheckout = false} 
-                                  class="w-1/3 py-3 bg-primary-800 hover:bg-primary-700 text-primary-200 font-bold rounded-xl uppercase tracking-wider transition-colors cursor-pointer"
-                              >
-                                  Voltar
-                              </button>
-                              <button 
-                                  on:click={finalizarPedido} 
-                                  disabled={actionLoading} 
-                                  class="w-2/3 py-3 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-black rounded-xl uppercase tracking-widest transition-all shadow-md cursor-pointer disabled:opacity-50"
-                              >
-                                  {actionLoading ? 'Enviando Pedido...' : 'Confirmar e Finalizar'}
-                              </button>
-                          </div>
-                      </div>
-                  {/if}
-
-              </div>
+             <!-- Resumo e Botão de Fechar Pedido -->
+<div class="mt-4 pt-6 border-t border-primary-800 bg-primary-950/60 p-5 rounded-2xl flex flex-col gap-4 shadow-inner">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+            <p class="text-[10px] font-bold text-primary-300 uppercase tracking-widest">
+                Total Acumulado ({carrinho?.quantidade || 0} {carrinho?.quantidade === 1 ? 'item' : 'itens'})
+            </p>
+            <p class="text-2xl font-black text-tertiary-400 tracking-wider mt-1 font-serif">
+                R$ {parseFloat(carrinho?.preco_total || 0).toFixed(2)}
+            </p>
+        </div>
+        
+        {#if !mostrandoCheckout}
+            <button 
+                on:click={() => goto('/pedido/finalizar pedido')} 
+                class="w-full sm:w-auto px-8 py-3.5 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-black rounded-xl text-xs uppercase tracking-widest transition-all duration-300 shadow-lg cursor-pointer"
+            >
+                Comprar
+            </button>
+        {/if}
+    </div>
+</div>
           {/if}
 
       </div>

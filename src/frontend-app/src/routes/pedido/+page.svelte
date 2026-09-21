@@ -44,6 +44,8 @@
         }
     }
 
+
+    
     async function carregarPedidosDoServidor() {
         try {
             const response = await api.get('/pedido/meus-pedidos');
@@ -68,11 +70,35 @@
     function corStatus(status: string) {
     switch (status?.toLowerCase()) {
         case 'pendente': return 'bg-yellow-950/40 text-yellow-400 border-yellow-900/50';
-        case 'aprovado': case 'concluído': return 'bg-green-950/40 text-green-400 border-green-900/50';
+        case 'preparando': return 'bg-blue-950/40 text-blue-400 border-blue-900/50';
+        case 'saiu para entrega': return 'bg-purple-950/40 text-purple-400 border-purple-900/50';
+        case 'entregue': return 'bg-green-950/40 text-green-400 border-green-900/50';
         case 'cancelado': return 'bg-red-950/40 text-red-400 border-red-900/50';
         default: return 'bg-primary-800 text-primary-200 border-primary-700';
     }
 }
+
+async function alterarStatusPedido(pedidoId: number, novoStatus: string) {
+        try {
+            const response = await api.patch(`/pedido/${pedidoId}/status`, {
+                status: novoStatus
+            });
+            
+            // Atualiza o status localmente na lista para refletir na hora sem precisar dar F5
+            meusPedidos = meusPedidos.map(p => {
+                if (p.id === pedidoId) {
+                    return { ...p, status_pedido: novoStatus };
+                }
+                return p;
+            });
+
+            alert(response.data.message || 'Status atualizado com sucesso!');
+        } catch (err: any) {
+            alert(err.response?.data?.message || 'Erro ao atualizar o status do pedido.');
+        }
+    }
+
+
 </script>
 
 <Menu />
@@ -124,7 +150,7 @@
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-primary-800 pb-3 gap-2 text-xs">
                             <div class="flex items-center gap-3">
                                 <span class="font-black text-tertiary-400 tracking-wider text-sm">PEDIDO #{pedido.id}</span>
-                                {#if pedido.status_pedidos}
+                                {#if pedido.status_pedido}
                                     <span class={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${corStatus(pedido.status_pedido)}`}>
                                         {pedido.status_pedido}
                                     </span>
@@ -134,6 +160,28 @@
                                 {new Date(pedido.data_compra).toLocaleDateString('pt-BR')} às {new Date(pedido.data_compra).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
                             </span>
                         </div>
+
+                        <!-- Seletor de Status exclusivo para o Admin -->
+                        {#if user && user.role === 'admin'}
+                            <div class="flex items-center gap-2 mt-4 pt-4 border-t border-primary-800">
+                                <label for={`status-${pedido.id}`} class="text-[10px] font-bold uppercase tracking-widest text-primary-300">
+                                    Alterar Status:
+                                </label>
+                                
+                                <select 
+                                    id={`status-${pedido.id}`}
+                                    value={pedido.status_pedido}
+                                    on:change={(e) => alterarStatusPedido(pedido.id, e.currentTarget.value)}
+                                    class="bg-primary-950 text-primary-50 border border-primary-700 rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-tertiary-500 cursor-pointer"
+                                >
+                                    <option value="pendente">Pendente</option>
+                                    <option value="preparando">Preparando</option>
+                                    <option value="saiu para entrega">Saiu para Entrega</option>
+                                    <option value="entregue">Entregue</option>
+                                    <option value="cancelado">Cancelado</option>
+                                </select>
+                            </div>
+                    {/if}
 
                         <!-- Itens do Pedido -->
                         <div class="flex flex-col gap-2.5 text-xs">
