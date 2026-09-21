@@ -101,19 +101,25 @@
       }
   }
 
-  function confirmarNovoEndereco() {
-      if (!cep.trim() || !rua.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !uf.trim()) {
-          alert('Por favor, preencha todos os campos obrigatórios do endereço.');
-          return;
-      }
-      const novo = `CEP: ${cep}, ${rua}, nº ${numero}${complemento ? ' - ' + complemento : ''}, ${bairro} - ${cidade}/${uf}`;
-      
-      // Adiciona temporariamente aos salvos e seleciona
-      enderecosSalvos = [novo, ...enderecosSalvos];
-      enderecoSelecionado = novo;
-      modoNovoEndereco = false;
-      modalAberto = false;
-  }
+  async function confirmarNovoEndereco() {
+    if (!cep.trim() || !rua.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !uf.trim()) {
+        alert('Por favor, preencha todos os campos obrigatórios do endereço.');
+        return;
+    }
+    const novo = `CEP: ${cep}, ${rua}, nº ${numero}${complemento ? ' - ' + complemento : ''}, ${bairro} - ${cidade}/${uf}`;
+    
+    try {
+        // Salva de forma permanente no backend
+        await api.post('/pedido/usuario/meus-enderecos', { endereco: novo });
+
+        enderecosSalvos = [novo, ...enderecosSalvos];
+        enderecoSelecionado = novo;
+        modoNovoEndereco = false;
+        modalAberto = false;
+    } catch (e) {
+        alert('Erro ao salvar o endereço no perfil.');
+    }
+}
 
   async function finalizarPedido() {
       let enderecoCompleto = 'Retirada no Local';

@@ -82,6 +82,21 @@ CREATE TABLE pedidos (
 CONSTRAINT ck_pedido_status CHECK (status_pedido IN ('pendente', 'preparando', 'saiu para entrega', 'entregue', 'cancelado'))
 );
 
+DROP TABLE IF EXISTS enderecos_usuario CASCADE;
+
+
+CREATE TABLE enderecos_usuario (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    usuario_id BIGINT NOT NULL,
+    endereco_completo TEXT NOT NULL,
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_endereco_usuario
+        FOREIGN KEY (usuario_id) 
+        REFERENCES usuario(id)
+        ON DELETE CASCADE
+);
+
 DROP TABLE IF EXISTS carrinho CASCADE;
 
 CREATE TABLE carrinho(

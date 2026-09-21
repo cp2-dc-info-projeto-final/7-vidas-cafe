@@ -37,7 +37,7 @@
             if (window.history.length > 1) {
                 window.history.back();
             } else {
-                window.location.href = '/cardapio';
+                window.location.href = '/Cardapio';
             }
         }
     }
@@ -79,7 +79,7 @@
     onMount(async () => {
         try {
             const id = page.params.id || page.params.item;
-            const res = await api.get(`/cardapio/${id}`);
+            const res = await api.get(`/Cardapio/${id}`);
             const body = res.data as ApiResponse<MenuItem>;
             
             if (body.success && body.data) {
@@ -239,7 +239,7 @@
                 </button>
                 <button
                     type="button"
-                    on:click={() => { mostrarModal = false; goto('/cardapio'); }}
+                    on:click={() => { mostrarModal = false; goto('/Cardapio'); }}
                     class="w-full bg-primary-950 hover:bg-primary-800 text-tertiary-300 border border-primary-800 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors"
                 >
                     Continuar Comprando

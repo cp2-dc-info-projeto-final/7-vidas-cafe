@@ -292,11 +292,10 @@ router.get('/usuario/meus-enderecos', verifyToken, async (req, res) => {
 
     try {
         const query = `
-            SELECT DISTINCT endereco 
-            FROM pedidos 
-            WHERE comprador = $1 
-              AND endereco != 'Retirada no Local'
-            ORDER BY data_compra DESC 
+            SELECT endereco_completo as endereco 
+            FROM enderecos_usuario 
+            WHERE usuario_id = $1 
+            ORDER BY criado_em DESC 
             LIMIT 5;
         `;
         const resultado = await pool.query(query, [userId]);
@@ -304,8 +303,31 @@ router.get('/usuario/meus-enderecos', verifyToken, async (req, res) => {
 
         return res.json({ success: true, enderecos });
     } catch (error) {
-        console.error('Erro ao buscar endereços anteriores:', error);
+        console.error('Erro ao buscar endereços:', error);
         return res.status(500).json({ success: false, message: 'Erro ao buscar endereços.' });
+    }
+});
+
+// ==========================================
+// CADASTRAR NOVO ENDEREÇO DO USUÁRIO
+// ==========================================
+router.post('/usuario/meus-enderecos', verifyToken, async (req, res) => {
+    const userId = req.user.id;
+    const { endereco } = req.body;
+
+    if (!endereco) {
+        return res.status(400).json({ success: false, message: 'O endereço é obrigatório.' });
+    }
+
+    try {
+        await pool.query(
+            'INSERT INTO enderecos_usuario (usuario_id, endereco_completo) VALUES ($1, $2)',
+            [userId, endereco]
+        );
+        return res.status(201).json({ success: true, message: 'Endereço salvo com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao salvar endereço:', error);
+        return res.status(500).json({ success: false, message: 'Erro ao salvar endereço.' });
     }
 });
 
