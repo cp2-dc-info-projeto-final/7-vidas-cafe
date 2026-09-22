@@ -14,6 +14,9 @@
     categoria: string;
     resumo: string;
     descricao: string;
+    promocao?: number | null;
+    iniciopromocao?: string | null;
+    fimpromocao?: string | null;
     imagem?: string | null;
   }
 
@@ -58,6 +61,22 @@
   // Reatividade para verificação de Admin
   $: isAdmin = currentUser?.role?.toLowerCase() === 'admin' || 
               (currentUser as any)?.type?.toLowerCase() === 'admin';
+
+  // Função para verificar se a promoção está ativa no momento atual
+  function isPromocaoAtiva(item: MenuItem): boolean {
+    if (!item.promocao) return false;
+    const agora = new Date();
+    const inicioValid = !item.iniciopromocao || agora >= new Date(item.iniciopromocao);
+    const fimValid = !item.fimpromocao || agora <= new Date(item.fimpromocao);
+    return inicioValid && fimValid;
+  }
+
+  function calcularPrecoFinal(item: MenuItem): number {
+    if (isPromocaoAtiva(item) && item.promocao) {
+      return Number(item.preco) * (1 - item.promocao / 100);
+    }
+    return Number(item.preco);
+  }
 
   function openDetailsModal(item: MenuItem) {
     selectedItem = item;
@@ -111,84 +130,83 @@
   }
 
   function openAddModal() {
-  isEditing = false;
-  formId = null;
-  formNome = '';
-  formPreco = '';
-  formCategoria = categoriaSelecionada || 'Salgados';
-  formResumo = '';
-  formDescricao = '';
-  formImagem = '';
-  formFile = null; // Limpa o arquivo anterior
-  formError = '';
-  modalFormOpen = true;
-}
+    isEditing = false;
+    formId = null;
+    formNome = '';
+    formPreco = '';
+    formCategoria = categoriaSelecionada || 'Salgados';
+    formResumo = '';
+    formDescricao = '';
+    formImagem = '';
+    formFile = null; // Limpa o arquivo anterior
+    formError = '';
+    modalFormOpen = true;
+  }
 
-function openEditModal(item: MenuItem) {
-  isEditing = true;
-  formId = item.id;
-  formNome = item.nome;
-  formPreco = item.preco;
-  formCategoria = item.categoria || 'Salgados';
-  formResumo = item.resumo;
-  formDescricao = item.descricao;
-  formImagem = item.imagem || '';
-  formFile = null; // Reseta o arquivo (se não trocar, o backend mantém a imagem antiga)
-  formError = '';
-  modalFormOpen = true;
-}
+  function openEditModal(item: MenuItem) {
+    isEditing = true;
+    formId = item.id;
+    formNome = item.nome;
+    formPreco = item.preco;
+    formCategoria = item.categoria || 'Salgados';
+    formResumo = item.resumo;
+    formDescricao = item.descricao;
+    formImagem = item.imagem || '';
+    formFile = null; // Reseta o arquivo (se não trocar, o backend mantém a imagem antiga)
+    formError = '';
+    modalFormOpen = true;
+  }
 
   async function handleSubmit() {
-  formError = '';
-  formSubmitting = true;
+    formError = '';
+    formSubmitting = true;
 
-  // Usamos FormData para suportar envio de arquivos e textos juntos
-  const formData = new FormData();
-  formData.append('nome', formNome);
-  formData.append('preco', String(formPreco));
-  formData.append('categoria', formCategoria);
-  formData.append('resumo', formResumo);
-  formData.append('descricao', formDescricao);
-  
-  if (formFile) {
-    formData.append('imagem', formFile); // O arquivo selecionado
-  }
-
-  try {
-    // Dica: Certifique-se de que seu backend aceita multipart/form-data nas rotas POST e PUT /cardapio
-    const config = {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    };
-
-    if (isEditing && formId !== null) {
-      const res = await api.put(`/cardapio/${formId}`, formData, config);
-      const body = res.data as ApiResponse<MenuItem>;
-      if (body.success && body.data) {
-        items = items.map((i) => (i.id === formId ? body.data : i));
-        modalFormOpen = false;
-        await buscarCardapio();
-      } else {
-        formError = body.message || 'Erro ao atualizar item.';
-      }
-    } else {
-      const res = await api.post('/cardapio', formData, config);
-      const body = res.data as ApiResponse<MenuItem>;
-      if (body.success && body.data) {
-        items = [body.data, ...items];
-        modalFormOpen = false;
-        await buscarCardapio();
-      } else {
-        formError = body.message || 'Erro ao cadastrar item.';
-      }
+    // Usamos FormData para suportar envio de arquivos e textos juntos
+    const formData = new FormData();
+    formData.append('nome', formNome);
+    formData.append('preco', String(formPreco));
+    formData.append('categoria', formCategoria);
+    formData.append('resumo', formResumo);
+    formData.append('descricao', formDescricao);
+    
+    if (formFile) {
+      formData.append('imagem', formFile); // O arquivo selecionado
     }
-  } catch (e: any) {
-    console.error('Erro no salvamento:', e);
-    const body = e.response?.data as ApiResponse<null> | undefined;
-    formError = body?.message || 'Erro de comunicação com o servidor.';
-  } finally {
-    formSubmitting = false;
+
+    try {
+      const config = {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      };
+
+      if (isEditing && formId !== null) {
+        const res = await api.put(`/cardapio/${formId}`, formData, config);
+        const body = res.data as ApiResponse<MenuItem>;
+        if (body.success && body.data) {
+          items = items.map((i) => (i.id === formId ? body.data : i));
+          modalFormOpen = false;
+          await buscarCardapio();
+        } else {
+          formError = body.message || 'Erro ao atualizar item.';
+        }
+      } else {
+        const res = await api.post('/cardapio', formData, config);
+        const body = res.data as ApiResponse<MenuItem>;
+        if (body.success && body.data) {
+          items = [body.data, ...items];
+          modalFormOpen = false;
+          await buscarCardapio();
+        } else {
+          formError = body.message || 'Erro ao cadastrar item.';
+        }
+      }
+    } catch (e: any) {
+      console.error('Erro no salvamento:', e);
+      const body = e.response?.data as ApiResponse<null> | undefined;
+      formError = body?.message || 'Erro de comunicação com o servidor.';
+    } finally {
+      formSubmitting = false;
+    }
   }
-}
 
   onMount(async () => {
     loading = true;
@@ -278,20 +296,19 @@ function openEditModal(item: MenuItem) {
     {:else}
       <!-- Barra de Categorias -->
       <div class="hidden xl:block max-w-7xl bg-tertiary-200/40 border border-primary-400/40 p-3">
-        
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-xs font-bold uppercase tracking-wider text-tertiary-400 mr-2 flex items-center gap-1">
             Categorias:
          </span>
-          <button
+         <button
             type="button"
             class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${!categoriaSelecionada ? 'bg-tertiary-500 text-primary-950 border-tertiary-500' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-tertiary-400'}`}
             on:click={() => { categoriaSelecionada = ''; }}
-          >
+         >
             Todas
-          </button>
+         </button>
 
-          {#each categoriasList as cat}
+         {#each categoriasList as cat}
             <button
               type="button"
               class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${categoriaSelecionada === cat ? 'bg-tertiary-500 text-primary-950 border-tertiary-500' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-tertiary-400'}`}
@@ -299,10 +316,9 @@ function openEditModal(item: MenuItem) {
             >
               {cat}
             </button>
-          {/each}
+         {/each}
         </div>
       </div>
-
 
       <div class="block xl:hidden w-full bg-tertiary-200/40 border-y border-primary-400/40 py-2.5 px-3">
         <span class="text-xs font-bold uppercase tracking-wider text-tertiary-900 mr-2 flex items-center gap-1">
@@ -365,6 +381,7 @@ function openEditModal(item: MenuItem) {
       <div class="hidden xl:block max-w-7xl">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
           {#each items as item}
+            {@const promoAtiva = isPromocaoAtiva(item)}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
@@ -384,6 +401,12 @@ function openEditModal(item: MenuItem) {
                   {#if item.categoria}
                     <Badge class="absolute top-3 left-3 bg-tertiary-600 text-primary-50 border border-tertiary-400 rounded-full text-[10px] font-bold uppercase tracking-widest px-3 py-1 shadow-md">
                        {item.categoria}
+                    </Badge>
+                  {/if}
+
+                  {#if promoAtiva}
+                    <Badge class="absolute top-3 right-3 bg-red-600 text-white border border-red-400 rounded-full text-[10px] font-black uppercase tracking-widest px-2.5 py-1 shadow-lg animate-pulse">
+                      🔥 -{item.promocao}%
                     </Badge>
                   {/if}
                 </div>
@@ -425,9 +448,16 @@ function openEditModal(item: MenuItem) {
 
               <div class="px-5 pb-4 pt-3 flex justify-between items-center mt-auto border-t border-primary-700/80 mx-3">
                 <span class="text-xs text-primary-300 font-bold uppercase tracking-wider">Valor</span>
-                <span class="text-lg font-black text-primary-950 bg-tertiary-400 px-3.5 py-1 rounded-2xl border border-tertiary-300 shadow-md">
-                  {formatarPreco(item.preco)}
-                </span>
+                <div class="text-right">
+                  {#if promoAtiva}
+                    <span class="block text-[10px] text-gray-400 line-through">
+                      {formatarPreco(item.preco)}
+                    </span>
+                  {/if}
+                  <span class="text-lg font-black text-primary-950 bg-tertiary-400 px-3.5 py-1 rounded-2xl border border-tertiary-300 shadow-md inline-block">
+                    {formatarPreco(calcularPrecoFinal(item))}
+                  </span>
+                </div>
               </div>
             </div>
           {/each}
@@ -437,6 +467,7 @@ function openEditModal(item: MenuItem) {
       <div class="block xl:hidden px-2">
         <div class="grid grid-cols-2 gap-3 w-full">
           {#each items as item}
+            {@const promoAtiva = isPromocaoAtiva(item)}
             <!-- svelte-ignore a11y_click_events_have_key_events -->
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
@@ -444,7 +475,6 @@ function openEditModal(item: MenuItem) {
               on:click={() => window.location.href = `/Cardapio/${item.id}`}
             >
               <div>
-                <!-- Altura da imagem reduzida para h-32 para manter proporção retangular -->
                 <div class="relative w-full h-32 bg-primary-900/60 border-b-2 border-tertiary-600/50 overflow-hidden flex items-center justify-center rounded-t-2xl">
                   {#if item.imagem}
                     <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
@@ -459,10 +489,15 @@ function openEditModal(item: MenuItem) {
                       {item.categoria}
                     </Badge>
                   {/if}
+
+                  {#if promoAtiva}
+                    <Badge class="absolute top-2 right-2 bg-red-600 text-white border border-red-400 rounded-full text-[9px] font-black uppercase tracking-widest px-2 py-0.5 shadow-md">
+                      -{item.promocao}%
+                    </Badge>
+                  {/if}
                 </div>
        
                 <div class="px-3 pt-3 pb-1 flex items-start justify-between">
-                  <!-- Título um pouco mais compacto -->
                   <h3 class="text-sm md:text-base font-black text-primary-50 text-left leading-tight group-hover:text-tertiary-300 transition-colors line-clamp-2">
                     {item.nome}
                   </h3>
@@ -499,9 +534,16 @@ function openEditModal(item: MenuItem) {
        
               <div class="px-3 pb-3 pt-2 flex justify-between items-center mt-auto border-t border-primary-700/80 mx-2">
                 <span class="text-[10px] text-primary-300 font-bold uppercase tracking-wider">Valor</span>
-                <span class="text-sm md:text-base font-black text-primary-950 bg-tertiary-400 px-2.5 py-0.5 rounded-xl border border-tertiary-300 shadow-md">
-                  {formatarPreco(item.preco)}
-                </span>
+                <div class="text-right">
+                  {#if promoAtiva}
+                    <span class="block text-[9px] text-gray-400 line-through">
+                      {formatarPreco(item.preco)}
+                    </span>
+                  {/if}
+                  <span class="text-sm md:text-base font-black text-primary-950 bg-tertiary-400 px-2.5 py-0.5 rounded-xl border border-tertiary-300 shadow-md inline-block">
+                    {formatarPreco(calcularPrecoFinal(item))}
+                  </span>
+                </div>
               </div>
             </div>
           {/each}
@@ -534,9 +576,16 @@ function openEditModal(item: MenuItem) {
             {selectedItem.categoria}
           </Badge>
         {/if}
-        <span class="text-2xl font-black text-amber-500">
-          {formatarPreco(selectedItem.preco)}
-        </span>
+        <div class="text-right">
+          {#if isPromocaoAtiva(selectedItem)}
+            <span class="block text-xs text-neutral-400 line-through">
+              {formatarPreco(selectedItem.preco)}
+            </span>
+          {/if}
+          <span class="text-2xl font-black text-amber-500">
+            {formatarPreco(calcularPrecoFinal(selectedItem))}
+          </span>
+        </div>
       </div>
 
       <div>
@@ -664,7 +713,6 @@ function openEditModal(item: MenuItem) {
       <Label class="text-[11px] font-bold uppercase tracking-widest text-tertiary-300 mb-1">Imagem do Produto *</Label>
       
       <div class="flex items-center gap-3">
-        <!-- Botão estilizado que abre o explorador de arquivos -->
         <label class="cursor-pointer bg-primary-950/80 hover:bg-primary-950 text-tertiary-300 hover:text-tertiary-200 border border-tertiary-600/60 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm">
           <span>📁 Selecionar Arquivo</span>
           <input 
@@ -675,14 +723,12 @@ function openEditModal(item: MenuItem) {
               const target = e.target as HTMLInputElement;
               if (target.files && target.files[0]) {
                 formFile = target.files[0];
-                // Cria a URL temporária apenas para mostrar o preview na hora
                 formImagem = URL.createObjectURL(target.files[0]);
               }
             }}
           />
         </label>
     
-        <!-- Nome do arquivo selecionado para o usuário saber que escolheu -->
         {#if formFile}
           <span class="text-xs text-primary-200 truncate max-w-[200px]" title={formFile.name}>
             {formFile.name}
@@ -693,7 +739,6 @@ function openEditModal(item: MenuItem) {
       </div>
     </div>
     
-    <!-- Pré-visualização da imagem selecionada -->
     {#if formImagem}
       <div class="mt-3 p-2 bg-primary-950/40 border border-tertiary-600/30 rounded-xl flex items-center gap-3">
         <img src={formImagem} alt="Pré-visualização" class="w-14 h-14 rounded-lg object-cover border border-tertiary-500/50 shadow-md" />

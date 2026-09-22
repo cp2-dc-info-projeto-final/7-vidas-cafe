@@ -211,7 +211,6 @@ router.patch('/:id/status', verifyToken, isAdmin, async (req, res) => {
     }
 
     try {
-        // CORRIGIDO AQUI: mudado de 'status = $1' para 'status_pedido = $1'
         const updateRes = await pool.query(
             'UPDATE pedidos SET status_pedido = $1 WHERE id = $2 RETURNING *',
             [status, pedidoId]
@@ -230,6 +229,7 @@ router.patch('/:id/status', verifyToken, isAdmin, async (req, res) => {
         return res.status(500).json({ message: 'Erro interno ao atualizar status.' });
     }
 });
+
 // ==========================================
 // 6. CANCELAR PEDIDO
 // ==========================================

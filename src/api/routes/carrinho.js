@@ -38,7 +38,7 @@ async function atualizarTotaisCarrinho(client, carrinhoId) {
 /* GET - Buscar o carrinho do usuário logado */
 router.get('/', verifyToken, async function(req, res) {
     try {
-        const usuarioId = req.user.id; // Ajustado para req.user.id
+        const usuarioId = req.user.id;
 
         let carrinhoResult = await pool.query('SELECT * FROM carrinho WHERE usuario_id = $1', [usuarioId]);
         
@@ -57,7 +57,8 @@ router.get('/', verifyToken, async function(req, res) {
 
         const itensResult = await pool.query(`
             SELECT ic.id, ic.cardapio_id, ic.quantidade, ic.subtotal, ic.preco_unitario,
-                   c.nome, c.preco, c.imagem, c.resumo
+                   c.nome, c.preco, c.imagem, c.resumo,
+                   c.promocao, c.iniciopromocao, c.fimpromocao
             FROM itens_carrinho ic
             JOIN cardapio c ON ic.cardapio_id = c.id
             WHERE ic.carrinho_id = $1
@@ -80,11 +81,11 @@ router.get('/', verifyToken, async function(req, res) {
     }
 });
 
-/* POST - Adicionar item ao carrinho */
+/* POST - Adicionar item ao carrinho (Considerando preço promocional se vigente) */
 router.post('/adicionar', verifyToken, async function(req, res) {
     const client = await pool.connect();
     try {
-        const usuarioId = req.user.id; // Ajustado para req.user.id
+        const usuarioId = req.user.id;
         const { cardapio_id, quantidade } = req.body;
         const qtd = quantidade && quantidade > 0 ? parseInt(quantidade) : 1;
 
@@ -92,11 +93,26 @@ router.post('/adicionar', verifyToken, async function(req, res) {
             return sendError(res, 400, 'O ID do item do cardápio é obrigatório.');
         }
 
-        const itemCardapio = await client.query('SELECT id, preco FROM cardapio WHERE id = $1', [cardapio_id]);
+        // Busca o item e calcula se está em promoção no momento atual
+        const itemCardapioQuery = `
+            SELECT id, preco, promocao, iniciopromocao, fimpromocao,
+                   CASE 
+                       WHEN promocao IS NOT NULL 
+                            AND (iniciopromocao IS NULL OR CURRENT_TIMESTAMP >= iniciopromocao) 
+                            AND (fimpromocao IS NULL OR CURRENT_TIMESTAMP <= fimpromocao) 
+                       THEN ROUND(preco * (1 - promocao / 100.0), 2)
+                       ELSE preco
+                   END AS preco_efetivo
+            FROM cardapio 
+            WHERE id = $1
+        `;
+        const itemCardapio = await client.query(itemCardapioQuery, [cardapio_id]);
+        
         if (itemCardapio.rows.length === 0) {
             return sendError(res, 404, 'Item não encontrado no cardápio.');
         }
-        const precoUnitario = Number(itemCardapio.rows[0].preco);
+        
+        const precoUnitario = Number(itemCardapio.rows[0].preco_efetivo);
 
         let carrinhoResult = await client.query('SELECT id FROM carrinho WHERE usuario_id = $1', [usuarioId]);
         let carrinhoId;
@@ -147,7 +163,7 @@ router.post('/adicionar', verifyToken, async function(req, res) {
 router.put('/item/:id', verifyToken, async function(req, res) {
     const client = await pool.connect();
     try {
-        const usuarioId = req.user.id; // Ajustado para req.user.id
+        const usuarioId = req.user.id;
         const itemId = req.params.id;
         const { quantidade } = req.body;
 
@@ -157,7 +173,14 @@ router.put('/item/:id', verifyToken, async function(req, res) {
         }
 
         const checkItem = await client.query(`
-            SELECT ic.id, ic.carrinho_id, c.preco 
+            SELECT ic.id, ic.carrinho_id, 
+                   CASE 
+                       WHEN c.promocao IS NOT NULL 
+                            AND (c.iniciopromocao IS NULL OR CURRENT_TIMESTAMP >= c.iniciopromocao) 
+                            AND (c.fimpromocao IS NULL OR CURRENT_TIMESTAMP <= c.fimpromocao) 
+                       THEN ROUND(c.preco * (1 - c.promocao / 100.0), 2)
+                       ELSE c.preco
+                   END AS preco_efetivo
             FROM itens_carrinho ic
             JOIN carrinho car ON ic.carrinho_id = car.id
             JOIN cardapio c ON ic.cardapio_id = c.id
@@ -169,12 +192,12 @@ router.put('/item/:id', verifyToken, async function(req, res) {
         }
 
         const carrinhoId = checkItem.rows[0].carrinho_id;
-        const precoUnitario = Number(checkItem.rows[0].preco);
+        const precoUnitario = Number(checkItem.rows[0].preco_efetivo);
         const novoSubtotal = qtd * precoUnitario;
 
         await client.query(
-            'UPDATE itens_carrinho SET quantidade = $1, subtotal = $2 WHERE id = $3',
-            [qtd, novoSubtotal, itemId]
+            'UPDATE itens_carrinho SET quantidade = $1, preco_unitario = $2, subtotal = $3 WHERE id = $4',
+            [qtd, precoUnitario, novoSubtotal, itemId]
         );
 
         await atualizarTotaisCarrinho(client, carrinhoId);
@@ -192,7 +215,7 @@ router.put('/item/:id', verifyToken, async function(req, res) {
 router.delete('/item/:id', verifyToken, async function(req, res) {
     const client = await pool.connect();
     try {
-        const usuarioId = req.user.id; // Ajustado para req.user.id
+        const usuarioId = req.user.id;
         const itemId = req.params.id;
 
         const checkItem = await client.query(`
@@ -224,7 +247,7 @@ router.delete('/item/:id', verifyToken, async function(req, res) {
 router.delete('/limpar', verifyToken, async function(req, res) {
     const client = await pool.connect();
     try {
-        const usuarioId = req.user.id; // Ajustado para req.user.id
+        const usuarioId = req.user.id;
 
         const carrinhoResult = await client.query('SELECT id FROM carrinho WHERE usuario_id = $1', [usuarioId]);
         if (carrinhoResult.rows.length === 0) {

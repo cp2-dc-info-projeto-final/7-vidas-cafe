@@ -51,12 +51,34 @@ function sendError(res, status, message, errors = []) {
   });
 }
 
-/* GET - Buscar todos os itens do cardápio */
+/* GET - Buscar todos os itens do cardápio (incluindo cálculo de preço promocional se ativo) */
 router.get('/', async function(req, res) {
   try {
-    const result = await pool.query(
-      'SELECT id, nome, preco, categoria, resumo, descricao, imagem FROM cardapio ORDER BY id'
-    );
+    const apenasPromocoes = req.query.promocao === 'true';
+
+    let queryText = `
+      SELECT id, nome, preco, categoria, resumo, descricao, imagem,
+             promocao, iniciopromocao, fimpromocao,
+             CASE 
+                 WHEN promocao IS NOT NULL 
+                      AND (iniciopromocao IS NULL OR CURRENT_TIMESTAMP >= iniciopromocao) 
+                      AND (fimpromocao IS NULL OR CURRENT_TIMESTAMP <= fimpromocao) 
+                 THEN ROUND(preco * (1 - promocao / 100.0), 2)
+                 ELSE preco
+             END AS preco_atual
+      FROM cardapio
+    `;
+
+    const params = [];
+    if (apenasPromocoes) {
+      queryText += ` WHERE promocao IS NOT NULL 
+                     AND (iniciopromocao IS NULL OR CURRENT_TIMESTAMP >= iniciopromocao) 
+                     AND (fimpromocao IS NULL OR CURRENT_TIMESTAMP <= fimpromocao)`;
+    }
+
+    queryText += ` ORDER BY id`;
+
+    const result = await pool.query(queryText, params);
     return sendSuccess(res, 200, null, result.rows);
   } catch (error) {
     console.error('Erro ao buscar itens do cardápio:', error);
@@ -69,7 +91,15 @@ router.get('/busca/:filtro', async function(req, res) {
   try {
     const { filtro } = req.params;
     const queryText = `
-      SELECT id, nome, preco, categoria, resumo, descricao, imagem 
+      SELECT id, nome, preco, categoria, resumo, descricao, imagem,
+             promocao, iniciopromocao, fimpromocao,
+             CASE 
+                 WHEN promocao IS NOT NULL 
+                      AND (iniciopromocao IS NULL OR CURRENT_TIMESTAMP >= iniciopromocao) 
+                      AND (fimpromocao IS NULL OR CURRENT_TIMESTAMP <= fimpromocao) 
+                 THEN ROUND(preco * (1 - promocao / 100.0), 2)
+                 ELSE preco
+             END AS preco_atual
       FROM cardapio 
       WHERE nome ILIKE $1 OR categoria ILIKE $1 
       ORDER BY id
@@ -86,10 +116,20 @@ router.get('/busca/:filtro', async function(req, res) {
 router.get('/:id', async function(req, res) {
   try {
     const { id } = req.params;
-    const result = await pool.query(
-      'SELECT id, nome, preco, categoria, resumo, descricao, imagem FROM cardapio WHERE id = $1',
-      [id]
-    );
+    const queryText = `
+      SELECT id, nome, preco, categoria, resumo, descricao, imagem,
+             promocao, iniciopromocao, fimpromocao,
+             CASE 
+                 WHEN promocao IS NOT NULL 
+                      AND (iniciopromocao IS NULL OR CURRENT_TIMESTAMP >= iniciopromocao) 
+                      AND (fimpromocao IS NULL OR CURRENT_TIMESTAMP <= fimpromocao) 
+                 THEN ROUND(preco * (1 - promocao / 100.0), 2)
+                 ELSE preco
+             END AS preco_atual
+      FROM cardapio 
+      WHERE id = $1
+    `;
+    const result = await pool.query(queryText, [id]);
 
     if (result.rows.length === 0) {
       return sendError(res, 404, 'Item não encontrado no cardápio');
@@ -102,12 +142,72 @@ router.get('/:id', async function(req, res) {
   }
 });
 
+/* PUT - Adicionar ou Atualizar Promoção de um Item (Apenas Admin) */
+router.put('/:id/promocao', verifyToken, isAdmin, async function(req, res) {
+  try {
+    const { id } = req.params;
+    const { promocao, iniciopromocao, fimpromocao } = req.body;
+
+    if (promocao === undefined || promocao === null || isNaN(promocao) || promocao <= 0 || promocao > 100) {
+      return sendError(res, 400, 'A porcentagem de promoção deve ser um valor entre 1 e 100.');
+    }
+
+    const checkItem = await pool.query('SELECT id FROM cardapio WHERE id = $1', [id]);
+    if (checkItem.rows.length === 0) {
+      return sendError(res, 404, 'Item não encontrado no cardápio.');
+    }
+
+    const query = `
+      UPDATE cardapio
+      SET promocao = $1, iniciopromocao = $2, fimpromocao = $3
+      WHERE id = $4
+      RETURNING id, nome, preco, categoria, resumo, descricao, imagem, promocao, iniciopromocao, fimpromocao
+    `;
+    const params = [
+      Number(promocao),
+      iniciopromocao ? new Date(iniciopromocao) : null,
+      fimpromocao ? new Date(fimpromocao) : null,
+      Number(id)
+    ];
+
+    const result = await pool.query(query, params);
+    return sendSuccess(res, 200, 'Promoção atualizada com sucesso!', result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao atualizar promoção do item:', error);
+    return sendError(res, 500, 'Erro interno do servidor');
+  }
+});
+
+/* DELETE - Cancelar/Remover Promoção de um Item (Apenas Admin) */
+router.delete('/:id/promocao', verifyToken, isAdmin, async function(req, res) {
+  try {
+    const { id } = req.params;
+
+    const checkItem = await pool.query('SELECT id FROM cardapio WHERE id = $1', [id]);
+    if (checkItem.rows.length === 0) {
+      return sendError(res, 404, 'Item não encontrado no cardápio.');
+    }
+
+    const query = `
+      UPDATE cardapio
+      SET promocao = NULL, iniciopromocao = NULL, fimpromocao = NULL
+      WHERE id = $1
+      RETURNING id, nome, preco, categoria, resumo, descricao, imagem
+    `;
+    const result = await pool.query(query, [id]);
+
+    return sendSuccess(res, 200, 'Promoção cancelada com sucesso!', result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao cancelar promoção:', error);
+    return sendError(res, 500, 'Erro interno do servidor');
+  }
+});
+
 /* POST - Adicionar novo item ao cardápio com Upload de Imagem (Apenas Admin) */
 router.post('/', verifyToken, isAdmin, upload.single('imagem'), async function(req, res) {
   try {
     const { nome, preco, categoria, resumo, descricao } = req.body;
     
-    // Caminho relativo para o SvelteKit servir a imagem a partir de /images/
     const imagemPath = req.file ? `/images/${req.file.filename}` : null;
 
     const errors = [];
@@ -180,7 +280,6 @@ router.put('/:id', verifyToken, isAdmin, upload.single('imagem'), async function
     let finalImagem = atual.imagem;
     if (req.file) {
       finalImagem = `/images/${req.file.filename}`;
-      // Remove a imagem antiga da pasta do frontend se ela existir
       if (atual.imagem && atual.imagem.startsWith('/images/')) {
         const filename = atual.imagem.replace('/images/', '');
         const oldPath = path.join(uploadDir, filename);
@@ -243,7 +342,6 @@ router.delete('/:id', verifyToken, isAdmin, async function(req, res) {
 
     const item = checkItem.rows[0];
 
-    // Remove a imagem física do frontend ao deletar o item
     if (item.imagem && item.imagem.startsWith('/images/')) {
       const filename = item.imagem.replace('/images/', '');
       const filePath = path.join(uploadDir, filename);

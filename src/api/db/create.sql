@@ -34,10 +34,14 @@ CREATE TABLE cardapio (
     categoria TEXT NOT NULL,
     resumo TEXT NOT NULL,
     descricao TEXT NOT NULL,
+    promocao INTEGER, -- Porcentagem de desconto (ex: 15 para 15%)
+    iniciopromocao TIMESTAMP WITH TIME ZONE, -- Início da promoção
+    fimpromocao TIMESTAMP WITH TIME ZONE, -- Fim da promoção
     imagem TEXT,
     CONSTRAINT pk_cardapio PRIMARY KEY(id),
     CONSTRAINT uk_cardapio_nome UNIQUE (nome),
-    CONSTRAINT ck_cardapio_preco CHECK (preco >= 0)
+    CONSTRAINT ck_cardapio_preco CHECK (preco >= 0),
+    CONSTRAINT ck_cardapio_promocao CHECK (promocao IS NULL OR (promocao > 0 AND promocao <= 100))
 );
 
 DROP TABLE IF EXISTS gatos CASCADE;
@@ -70,7 +74,7 @@ CREATE TABLE pedidos (
     endereco TEXT NOT NULL,
     form_pag TEXT NOT NULL,
     cupom TEXT,
-    status_pedido TEXT NOT NULL DEFAULT 'pendente', -- Adicionado aqui!
+    status_pedido TEXT NOT NULL DEFAULT 'pendente', 
     comprador BIGINT NOT NULL,
     
     CONSTRAINT fk_pedidos_usuario
@@ -79,11 +83,10 @@ CREATE TABLE pedidos (
         ON DELETE CASCADE,
 
     CONSTRAINT ck_pedido_preco CHECK (preco_pedido >= 0),
-CONSTRAINT ck_pedido_status CHECK (status_pedido IN ('pendente', 'preparando', 'saiu para entrega', 'entregue', 'cancelado'))
+    CONSTRAINT ck_pedido_status CHECK (status_pedido IN ('pendente', 'preparando', 'saiu para entrega', 'entregue', 'cancelado'))
 );
 
 DROP TABLE IF EXISTS enderecos_usuario CASCADE;
-
 
 CREATE TABLE enderecos_usuario (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -113,7 +116,9 @@ CREATE TABLE carrinho(
     CONSTRAINT uk_carrinho_usuario UNIQUE (usuario_id),
     CONSTRAINT ck_carrinho_preco CHECK (preco_total >= 0)
 );
+
 DROP TABLE IF EXISTS itens_carrinho CASCADE;
+
 CREATE TABLE itens_carrinho (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   carrinho_id BIGINT DEFAULT NULL,
@@ -122,7 +127,8 @@ CREATE TABLE itens_carrinho (
   quantidade INT NOT NULL,
   preco_unitario DECIMAL(10, 2) NOT NULL,
   subtotal DECIMAL(10, 2) NOT NULL,
-CONSTRAINT fk_item_cardapio
+  
+  CONSTRAINT fk_item_cardapio
     FOREIGN KEY (cardapio_id) 
     REFERENCES cardapio(id)
     ON DELETE CASCADE,
@@ -132,7 +138,7 @@ CONSTRAINT fk_item_cardapio
         REFERENCES pedidos(id)
         ON DELETE SET NULL,
     
- CONSTRAINT fk_item_carrinho
+  CONSTRAINT fk_item_carrinho
     FOREIGN KEY (carrinho_id) 
     REFERENCES carrinho(id)
     ON DELETE CASCADE,
@@ -142,7 +148,6 @@ CONSTRAINT fk_item_cardapio
     CONSTRAINT ck_subtotal CHECK (subtotal >= 0)
 );
 
-
 SET datestyle = 'ISO, DMY';
 
 INSERT INTO usuario (login, email, senha, cpf, dat_nas, num_tel, role) VALUES
@@ -151,46 +156,46 @@ INSERT INTO usuario (login, email, senha, cpf, dat_nas, num_tel, role) VALUES
 ('zoroastra', 'zoroastra@gmail.com', '$2a$12$f2c.uHGHS4drfaz6HR870OLamkarD57kI.gkr4//Vbbp0vN9IrFfG','123.466.789-00', '29/03/2000', '(21)92345-6780', 'user'),
 ('Asafesseidon', 'sasafe@gmail.com', '$2a$12$e9VZ0uhJkKK84IygXLzMz.OVtGXGtQjVzp5Dg6Zf/vBApveWz088a', '123.456.789-67', '06/07/1967', '(21)96767-6767', 'admin');
 
-INSERT INTO cardapio (nome, preco, categoria, resumo, descricao, imagem) VALUES
--- Bebidas e Cafés
-('Café Expresso', 7.50, 'Bebidas', 'Café expresso encorpado com notas de chocolate amargo.', 'Nosso clássico expresso feito com grãos 100% arábica selecionados.', '/images/expresso.jpg'),
-('Macchiato', 9.00, 'Bebidas', 'Expresso manchado com uma camada cremosa de leite vaporizado.', 'O equilíbrio perfeito entre a intensidade do café e a suavidade do leite.', '/images/Macchiato.jpg'),
-('Café com Leite', 8.50, 'Bebidas', 'A clássica combinação de café fresco e leite quente.', 'Quentinho e reconfortante, perfeito para começar o dia.', '/images/cafécomleite.jpg'),
-('Café Latte com Arte de Gato', 11.00, 'Bebidas', 'Latte cremoso com desenho especial de gatinho na espuma.', 'Arte em latte feita à mão pelos nossos baristas para alegrar sua visita.', '/images/cafecomlatteartdegato.jpg'),
-('Mocha', 13.50, 'Bebidas', 'Café expresso, calda de chocolate rica, leite vaporizado e chantilly.', 'Para os amantes de café e chocolate em uma única xícara.', '/images/Mocha.jpg'),
-('Frappuccino', 14.00, 'Bebidas', 'Bebida gelada batida com café, leite, gelo e cobertura de chantilly.', 'Refrescante, doce e cheio de energia para dias quentes.', '/images/Frappucino.jpg'),
-('Iced Cocoa', 12.00, 'Bebidas', 'Cacau gelado cremoso com toque de baunilha.', 'Deliciosa bebida gelada à base de chocolate cremoso.', '/images/icedcocoa.jpg'),
-('Chai Latte', 12.50, 'Bebidas', 'Chá preto aromático com especiarias indianas e leite vaporizado.', 'Especiarias quentinhas como canela, cardamomo e gengibre.', '/images/Chai latte.jpg'),
-('Chá Verde', 9.50, 'Bebidas', 'Infusão revigorante de chá verde (Matcha ou folhas selecionadas).', 'Leve, saudável e cheio de antioxidantes.', '/images/chaverde.jpg'),
-('Chá Preto', 9.00, 'Bebidas', 'Chá preto tradicional servido quente ou gelado.', 'Sabor marcante e revigorante.', '/images/chapreto.jpg'),
-('Suco de Laranja', 10.00, 'Bebidas', 'Suco 100% natural espremido na hora.', 'Vitamina C pura, refrescante e sem aditivos.', '/images/sucolaranj.jpg'),
-('Suco de Uva', 10.00, 'Bebidas', 'Suco de uva integral e saboroso.', 'Rico em sabor e nutrientes.', '/images/sucouva.jpg'),
-('Guarana', 6.50, 'Bebidas', 'Refrigerante de guaraná geladinho.', 'O clássico refresco brasileiro.', '/images/Guaraná.jpg'),
-('Guaravita', 4.50, 'Bebidas', 'O tradicional e amado mate/guaraná natural gelado.', 'Geladinho e perfeito para qualquer hora.', '/images/guaravita.jpg'),
-('Coca-Cola', 7.00, 'Bebidas', 'Refrigerante Coca-Cola bem gelado.', 'Acompanha perfeitamente qualquer salgado.', '/images/Coca cola.jpg'),
+INSERT INTO cardapio (nome, preco, categoria, resumo, descricao, promocao, iniciopromocao, fimpromocao, imagem) VALUES
+-- Bebidas e Cafés (Com um exemplo de item em promoção para testar a página nova)
+('Café Expresso', 7.50, 'Bebidas', 'Café expresso encorpado com notas de chocolate amargo.', 'Nosso clássico expresso feito com grãos 100% arábica selecionados.', 15, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '7 days', '/images/expresso.jpg'),
+('Macchiato', 9.00, 'Bebidas', 'Expresso manchado com uma camada cremosa de leite vaporizado.', 'O equilíbrio perfeito entre a intensidade do café e a suavidade do leite.', NULL, NULL, NULL, '/images/Macchiato.jpg'),
+('Café com Leite', 8.50, 'Bebidas', 'A clássica combinação de café fresco e leite quente.', 'Quentinho e reconfortante, perfeito para começar o dia.', NULL, NULL, NULL, '/images/cafécomleite.jpg'),
+('Café Latte com Arte de Gato', 11.00, 'Bebidas', 'Latte cremoso com desenho especial de gatinho na espuma.', 'Arte em latte feita à mão pelos nossos baristas para alegrar sua visita.', NULL, NULL, NULL, '/images/cafecomlatteartdegato.jpg'),
+('Mocha', 13.50, 'Bebidas', 'Café expresso, calda de chocolate rica, leite vaporizado e chantilly.', 'Para os amantes de café e chocolate em uma única xícara.', NULL, NULL, NULL, '/images/Mocha.jpg'),
+('Frappuccino', 14.00, 'Bebidas', 'Bebida gelada batida com café, leite, gelo e cobertura de chantilly.', 'Refrescante, doce e cheio de energia para dias quentes.', NULL, NULL, NULL, '/images/Frappucino.jpg'),
+('Iced Cocoa', 12.00, 'Bebidas', 'Cacau gelado cremoso com toque de baunilha.', 'Deliciosa bebida gelada à base de chocolate cremoso.', NULL, NULL, NULL, '/images/icedcocoa.jpg'),
+('Chai Latte', 12.50, 'Bebidas', 'Chá preto aromático com especiarias indianas e leite vaporizado.', 'Especiarias quentinhas como canela, cardamomo e gengibre.', NULL, NULL, NULL, '/images/Chai latte.jpg'),
+('Chá Verde', 9.50, 'Bebidas', 'Infusão revigorante de chá verde (Matcha ou folhas selecionadas).', 'Leve, saudável e cheio de antioxidantes.', NULL, NULL, NULL, '/images/chaverde.jpg'),
+('Chá Preto', 9.00, 'Bebidas', 'Chá preto tradicional servido quente ou gelado.', 'Sabor marcante e revigorante.', NULL, NULL, NULL, '/images/chapreto.jpg'),
+('Suco de Laranja', 10.00, 'Bebidas', 'Suco 100% natural espremido na hora.', 'Vitamina C pura, refrescante e sem aditivos.', NULL, NULL, NULL, '/images/sucolaranj.jpg'),
+('Suco de Uva', 10.00, 'Bebidas', 'Suco de uva integral e saboroso.', 'Rico em sabor e nutrientes.', NULL, NULL, NULL, '/images/sucouva.jpg'),
+('Guarana', 6.50, 'Bebidas', 'Refrigerante de guaraná geladinho.', 'O clássico refresco brasileiro.', NULL, NULL, NULL, '/images/Guaraná.jpg'),
+('Guaravita', 4.50, 'Bebidas', 'O tradicional e amado mate/guaraná natural gelado.', 'Geladinho e perfeito para qualquer hora.', NULL, NULL, NULL, '/images/guaravita.jpg'),
+('Coca-Cola', 7.00, 'Bebidas', 'Refrigerante Coca-Cola bem gelado.', 'Acompanha perfeitamente qualquer salgado.', NULL, NULL, NULL, '/images/Coca cola.jpg'),
 
 -- Salgados e Lanches
-('Pão de Queijo', 8.00, 'Salgados', 'Pãezinhos de queijo artesanais quentinhos (porção).', 'Feitos com queijo minas curado, crocantes por fora e macios por dentro.', '/images/paodequeijo.jpg'),
-('Misto Quente', 9.50, 'Salgados', 'Pão na chapa tostado com presunto e queijo derretido.', 'Clássico da lanchonete, crocante e quentinho.', '/images/misto quente.jpg'),
-('Croissant', 10.50, 'Salgados', 'Croissant amanteigado, leve e folhado.', 'Massa francesa artesanal derretendo na boca.', '/images/croassaint.jpg'),
-('Coxinha', 9.00, 'Salgados', 'Coxinha de frango desfiado com catupiry bem crocante.', 'Massa sequinha e recheio extremamente suculento.', '/images/coxinhars.jpg'),
-('Empadão de Frango', 11.00, 'Salgados', 'Fatia de empadão de frango com massa podre que desfaz.', 'Recheio cremoso e generoso.', '/images/empadaofrang.jpg'),
-('Joelho de Queijo e Presunto', 9.00, 'Salgados', 'Salgado assado recheado com queijo e presunto.', 'Massa macia e recheio farto.', '/images/joelhodequeijocompresunto.jpg'),
-('Pão com Mortadela', 10.00, 'Salgados', 'Pão francês fresquinho com camadas generosas de mortadela.', 'Estilo clássico de mercado, muito recheado.', '/images/pao com mortadela.jpg'),
-('Sanduíche Natural', 12.00, 'Salgados', 'Sanduíche natural de frango desfiado com cenoura ralada e maionese leve.', 'Opção leve e saudável.', '/images/sanduiche.jpg'),
-('Pastel com Caldo de Cana', 14.00, 'Salgados', 'Pastel crocante acompanhado de um copo de caldo de cana fresco.', 'A dupla perfeita da feira direto para o nosso café.', '/images/pastel com caldo de cana.jpg'),
+('Pão de Queijo', 8.00, 'Salgados', 'Pãezinhos de queijo artesanais quentinhos (porção).', 'Feitos com queijo minas curado, crocantes por fora e macios por dentro.', NULL, NULL, NULL, '/images/paodequeijo.jpg'),
+('Misto Quente', 9.50, 'Salgados', 'Pão na chapa tostado com presunto e queijo derretido.', 'Clássico da lanchonete, crocante e quentinho.', NULL, NULL, NULL, '/images/misto quente.jpg'),
+('Croissant', 10.50, 'Salgados', 'Croissant amanteigado, leve e folhado.', 'Massa francesa artesanal derretendo na boca.', NULL, NULL, NULL, '/images/croassaint.jpg'),
+('Coxinha', 9.00, 'Salgados', 'Coxinha de frango desfiado com catupiry bem crocante.', 'Massa sequinha e recheio extremamente suculento.', 20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '3 days', '/images/coxinhars.jpg'),
+('Empadão de Frango', 11.00, 'Salgados', 'Fatia de empadão de frango com massa podre que desfaz.', 'Recheio cremoso e generoso.', NULL, NULL, NULL, '/images/empadaofrang.jpg'),
+('Joelho de Queijo e Presunto', 9.00, 'Salgados', 'Salgado assado recheado com queijo e presunto.', 'Massa macia e recheio farto.', NULL, NULL, NULL, '/images/joelhodequeijocompresunto.jpg'),
+('Pão com Mortadela', 10.00, 'Salgados', 'Pão francês fresquinho com camadas generosas de mortadela.', 'Estilo clássico de mercado, muito recheado.', NULL, NULL, NULL, '/images/pao com mortadela.jpg'),
+('Sanduíche Natural', 12.00, 'Salgados', 'Sanduíche natural de frango desfiado com cenoura ralada e maionese leve.', 'Opção leve e saudável.', NULL, NULL, NULL, '/images/sanduiche.jpg'),
+('Pastel com Caldo de Cana', 14.00, 'Salgados', 'Pastel crocante acompanhado de um copo de caldo de cana fresco.', 'A dupla perfeita da feira direto para o nosso café.', NULL, NULL, NULL, '/images/pastel com caldo de cana.jpg'),
 
 -- Sobremesas e Doces
-('Bolo de Chocolate', 12.00, 'Doces', 'Fatia de bolo de chocolate fofinho com cobertura cremosa.', 'Para os verdadeiros chocólatras.', '/images/chocolate cake.jpg'),
-('Bolo de Morango', 13.00, 'Doces', 'Bolo recheado com creme leve e morangos frescos.', 'Doce na medida certa com frutas selecionadas.', '/images/cakemoranguis.jpg'),
-('Red Velvet Cake', 13.50, 'Doces', 'Fatia do clássico bolo avermelhado com cobertura de cream cheese.', 'Textura aveludada e sabor inconfundível.', '/images/red velvet  cake.jpg'),
-('Tiramisu', 14.00, 'Doces', 'Tradicional sobremesa italiana com café, mascarpone e cacau.', 'Delicadamente cremoso e com toque marcante de café.', '/images/tiramisu.jpg'),
-('Cheesecake', 13.00, 'Doces', 'Cheesecake cremoso com calda de frutas vermelhas.', 'Base de biscoito crocante com cobertura agridoce.', '/images/cheeseckae.jpg'),
-('Pudim', 9.00, 'Doces', 'Pudim de leite condensado lisinho com calda de caramelo.', 'Receita tradicional que derrete na boca.', '/images/pudim.jpg'),
-('Brownie', 10.00, 'Doces', 'Brownie de chocolate meio amargo com casquinha crocante.', 'Molhadinho por dentro e intenso.', '/images/brownie.jpg'),
-('Torta de Cookie', 11.00, 'Doces', 'Fatia de torta com base de cookie recheada com gotas de chocolate.', 'Crocante por fora e macia por dentro.', '/images/torta de cookie.jpg'),
-('Cookie', 6.00, 'Doces', 'Cookie artesanal com gotas de chocolate belga.', 'Assado na hora para manter a maciez.', '/images/cookie.jpg'),
-('Donut', 8.50, 'Doces', 'Donut fofinho com cobertura de chocolate e confeitos.', 'Doce, divertido e delicioso.', '/images/donut.jpg');
+('Bolo de Chocolate', 12.00, 'Doces', 'Fatia de bolo de chocolate fofinho com cobertura cremosa.', 'Para os verdadeiros chocólatras.', NULL, NULL, NULL, '/images/chocolate cake.jpg'),
+('Bolo de Morango', 13.00, 'Doces', 'Bolo recheado com creme leve e morangos frescos.', 'Doce na medida certa com frutas selecionadas.', NULL, NULL, NULL, '/images/cakemoranguis.jpg'),
+('Red Velvet Cake', 13.50, 'Doces', 'Fatia do clássico bolo avermelhado com cobertura de cream cheese.', 'Textura aveludada e sabor inconfundível.', NULL, NULL, NULL, '/images/red velvet  cake.jpg'),
+('Tiramisu', 14.00, 'Doces', 'Tradicional sobremesa italiana com café, mascarpone e cacau.', 'Delicadamente cremoso e com toque marcante de café.', NULL, NULL, NULL, '/images/tiramisu.jpg'),
+('Cheesecake', 13.00, 'Doces', 'Cheesecake cremoso com calda de frutas vermelhas.', 'Base de biscoito crocante com cobertura agridoce.', NULL, NULL, NULL, '/images/cheeseckae.jpg'),
+('Pudim', 9.00, 'Doces', 'Pudim de leite condensado lisinho com calda de caramelo.', 'Receita tradicional que derrete na boca.', NULL, NULL, NULL, '/images/pudim.jpg'),
+('Brownie', 10.00, 'Doces', 'Brownie de chocolate meio amargo com casquinha crocante.', 'Molhadinho por dentro e intenso.', NULL, NULL, NULL, '/images/brownie.jpg'),
+('Torta de Cookie', 11.00, 'Doces', 'Fatia de torta com base de cookie recheada com gotas de chocolate.', 'Crocante por fora e macia por dentro.', NULL, NULL, NULL, '/images/torta de cookie.jpg'),
+('Cookie', 6.00, 'Doces', 'Cookie artesanal com gotas de chocolate belga.', 'Assado na hora para manter a maciez.', NULL, NULL, NULL, '/images/cookie.jpg'),
+('Donut', 8.50, 'Doces', 'Donut fofinho com cobertura de chocolate e confeitos.', 'Doce, divertido e delicioso.', NULL, NULL, NULL, '/images/donut.jpg');
 
 INSERT INTO gatos (nome, idade, raca, castracao, personalidade, adocao, tutor, imagem) VALUES
 ('Bey', 2, 'SRD (Pelo Longo)', TRUE, 'Elegante, calmo e adora observar o movimento do café de cima da bancada.', TRUE, NULL, '/images/bey.jpg'),
