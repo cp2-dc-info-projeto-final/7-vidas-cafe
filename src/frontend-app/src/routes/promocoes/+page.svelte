@@ -219,7 +219,7 @@
       <!-- Cabeçalho da Página -->
       <div class="max-w-7xl mx-auto px-4 mb-6 text-center">
         <h1 class="text-3xl md:text-4xl font-black uppercase tracking-wider text-tertiary-300 font-serif">
-          🔥 Ofertas e Promoções Especiais
+           Ofertas e Promoções Especiais
         </h1>
         <p class="text-xs text-primary-200 mt-2">Aproveite os descontos imperdíveis do nosso cardápio!</p>
       </div>

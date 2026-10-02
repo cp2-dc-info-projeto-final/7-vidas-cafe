@@ -149,7 +149,7 @@ async function alterarStatusPedido(pedidoId: number, novoStatus: string) {
                         <!-- Topo do Card do Pedido -->
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-primary-800 pb-3 gap-2 text-xs">
                             <div class="flex items-center gap-3">
-                                <span class="font-black text-tertiary-400 tracking-wider text-sm">PEDIDO #{pedido.id}</span>
+                                <span class="font-black text-tertiary-400 tracking-wider text-sm">PEDIDO</span>
                                 {#if pedido.status_pedido}
                                     <span class={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${corStatus(pedido.status_pedido)}`}>
                                         {pedido.status_pedido}
