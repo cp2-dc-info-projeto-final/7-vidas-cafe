@@ -7,6 +7,7 @@
     import { page } from '$app/state';
     import { getToken, getCurrentUser } from '$lib/auth';
     import { goto } from '$app/navigation';
+    import { fade } from 'svelte/transition'; // <--- Importado para o efeito de fade
     
     interface MenuItem {
         id: number;
@@ -35,6 +36,9 @@
     let dataInicio = '';
     let dataFim = '';
     let salvandoPromo = false;
+
+    // Estado para o Modal de Sucesso da Promoção
+    let mostrarModalSucessoPromo = false;
 
     function formatarPreco(valor: number): string {
         return new Intl.NumberFormat('pt-BR', {
@@ -137,11 +141,15 @@
             });
 
             if (res.data.success || res.status === 200) {
-                alert('Promoção atualizada com sucesso!');
                 item.promocao = Number(novaPromocao);
                 item.iniciopromocao = dataInicio ? new Date(dataInicio).toISOString() : null;
                 item.fimpromocao = dataFim ? new Date(dataFim).toISOString() : null;
                 mostrarModalPromo = false;
+                
+                // Pequeno atraso para fechar o modal anterior com fluidez e abrir o de sucesso
+                setTimeout(() => {
+                    mostrarModalSucessoPromo = true;
+                }, 150);
             }
         } catch (e: any) {
             console.error('Erro ao salvar promoção:', e);
@@ -398,7 +406,35 @@
     </div>
 {/if}
 
-<!-- Modal de Sucesso / Escolha -->
+<!-- Modal de Sucesso Customizado (Promoção Salva) -->
+{#if mostrarModalSucessoPromo}
+    <div transition:fade class="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-primary-900 border border-primary-700 rounded-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4 shadow-2xl text-center">
+            
+            <div class="w-16 h-16 bg-tertiary-500/20 text-tertiary-400 rounded-full flex items-center justify-center text-3xl mb-1">
+                ✓
+            </div>
+
+            <h3 class="font-serif font-bold text-tertiary-400 text-xl uppercase tracking-wider">
+                Promoção Salva!
+            </h3>
+
+            <p class="text-xs text-primary-200 leading-relaxed">
+                A promoção do item foi atualizada com sucesso no cardápio.
+            </p>
+
+            <button 
+                type="button" 
+                on:click={() => (mostrarModalSucessoPromo = false)}
+                class="w-full mt-2 py-3 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-black rounded-xl uppercase tracking-widest transition-all shadow-md cursor-pointer text-xs"
+            >
+                Entendido
+            </button>
+        </div>
+    </div>
+{/if}
+
+<!-- Modal de Sucesso / Escolha (Carrinho) -->
 {#if mostrarModal}
     <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-primary-900 border border-primary-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl space-y-4">
