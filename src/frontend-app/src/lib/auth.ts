@@ -102,12 +102,39 @@ export async function getCurrentUser(): Promise<User | null> {
   } catch (error) {
     console.error('Erro ao carregar usuário:', error);
     // Só remove token se for erro 401 (não autorizado)
-    if ((error as any)?.response?.status === 401) {
+    if ((error as any)?.response?.status === 401) { 
       removeToken();
     }
     return null;
   }
 }
+
+export async function getCurrentUser2(): Promise<User | null> {
+  try {
+    const token = getToken();
+    if (token) {
+      // O interceptor já adiciona o token automaticamente se existir
+      const response = await api.get('/users/me');
+      const body = response.data as ApiResponse<User>;
+
+      if (body.success) {
+        return body.data ?? null;
+      }
+
+      removeToken();
+    }
+    return null;
+  } catch (error) {
+    console.error('Erro ao carregar usuário:', error);
+    // Só remove token se for erro 401 (não autorizado)
+    if ((error as any)?.response?.status === 401) { 
+      removeToken();
+    }
+    return null;
+  }
+}
+
+
 
 export function isAuthenticated(): boolean {
   return getToken() !== null;

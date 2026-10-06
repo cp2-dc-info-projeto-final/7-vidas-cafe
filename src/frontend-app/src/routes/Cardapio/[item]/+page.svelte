@@ -5,7 +5,7 @@
     import { onMount } from 'svelte';
     import Menu from '../../../components/Menu.svelte';
     import { page } from '$app/state';
-    import { getToken, getCurrentUser } from '$lib/auth';
+    import { getToken, getCurrentUser, getCurrentUser2 } from '$lib/auth';
     import { goto } from '$app/navigation';
     import { fade } from 'svelte/transition'; // <--- Importado para o efeito de fade
     
@@ -161,7 +161,7 @@
 
     onMount(async () => {
         try {
-            const user = await getCurrentUser();
+            const user = await getCurrentUser2();
             if (user && user.role?.toLowerCase() === 'admin') {
                 isAdmin = true;
             }

@@ -6,6 +6,7 @@
   import type { ApiResponse } from '$lib/api';
   import { onMount } from 'svelte';
   import Menu from '../../components/Menu.svelte';
+  import { page } from '$app/stores';
 
   interface MenuItem {
     id: number;
@@ -207,9 +208,18 @@
       formSubmitting = false;
     }
   }
-
   onMount(async () => {
     loading = true;
+
+    // 1. Lê o parâmetro da URL (ex: /Cardapio?categoria=Doces)
+    const categoriaUrl = $page.url.searchParams.get('categoria');
+    if (categoriaUrl) {
+      const catEncontrada = categoriasList.find(c => c.toLowerCase() === categoriaUrl.toLowerCase());
+      if (catEncontrada) {
+        categoriaSelecionada = catEncontrada;
+      }
+    }
+
     const token = typeof window !== 'undefined' ? sessionStorage.getItem('auth_token') : null;
 
     if (token) {
@@ -231,23 +241,15 @@
     }
 
     try {
-      const res = await api.get('/cardapio');
-      const body = res.data as ApiResponse<MenuItem[]>;
-      if (body?.success) {
-        items = body.data ?? [];
-      } else if (Array.isArray(res.data)) {
-        items = res.data;
-      } else {
-        error = body?.message || 'Erro ao carregar o cardápio.';
-      }
+      // Se já houver uma categoria vinda da URL, a função buscarCardapio() rodará com ela. 
+      // Mas para garantir o primeiro carregamento com o filtro aplicado, podemos deixar como está ou chamar direto:
+      await buscarCardapio();
     } catch (e: any) {
-      const body = e.response?.data as ApiResponse<MenuItem[]> | undefined;
-      error = body?.message || 'Erro ao carregar cardápio.';
+      error = 'Erro ao carregar cardápio.';
     } finally {
       loading = false;
     }
   });
-
   $: filtro, categoriaSelecionada, buscarCardapio();
 
   async function buscarCardapio() {
@@ -320,24 +322,24 @@
         </div>
       </div>
 
-      <div class="block xl:hidden w-full bg-tertiary-200/40 border-y border-primary-400/40 py-2.5 px-3">
-        <span class="text-xs font-bold uppercase tracking-wider text-tertiary-900 mr-2 flex items-center gap-1">
-          Categorias:
-       </span> 
-        <div class="flex items-center gap-2 overflow-x-auto scrollbar-none no-scrollbar whitespace-nowrap -mx-3 px-3">
-          <!-- Botão Todas -->
-          <button
-            type="button"
-            class={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer rounded-full shrink-0 border ${
-              !categoriaSelecionada 
-                ? 'bg-tertiary-500 text-primary-950 border-tertiary-500 shadow-sm' 
-                : 'bg-primary-350 text-primary-900 border-primary-500/60 hover:border-tertiary-400'
-            }`}
-            on:click={() => { categoriaSelecionada = ''; }}
-          >
-            Todas
-          </button>
-      
+      <div class="block xl:hidden w-full bg-secondary-900/40 border-y border-primary-500/40 py-2.5 px-3">
+  <span class="text-xs font-bold uppercase tracking-wider text-secondary-100 mr-2 flex items-center gap-1">
+    Categorias:
+  </span> 
+
+  <div class="flex items-center gap-2 overflow-x-auto scrollbar-none no-scrollbar whitespace-nowrap -mx-3 px-3">
+    <!-- Botão Todas -->
+    <button
+      type="button"
+      class={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer rounded-full shrink-0 border ${
+        !categoriaSelecionada 
+          ? 'bg-tertiary-500 text-primary-950 border-tertiary-500 shadow-sm' 
+          : 'bg-primary-800 text-secondary-100 border-primary-600/60 hover:border-tertiary-400'
+      }`}
+      on:click={() => { categoriaSelecionada = ''; }}
+    >
+      Todas
+    </button>
           <!-- Lista de Categorias -->
           {#each categoriasList as cat}
             <button

@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import Menu from '../components/Menu.svelte';
   import api from '$lib/api';
-  import { TagOutline, ArrowRightOutline, ChevronLeftOutline, ChevronRightOutline } from 'flowbite-svelte-icons';
+  import { TagOutline, ArrowRightOutline, ChevronLeftOutline, ChevronRightOutline, MusicOutline, HeartOutline } from 'flowbite-svelte-icons';
 
   interface MenuItem {
     id: number;
@@ -101,26 +101,21 @@
     }
   }
 
-  // --- Permitir scroll com a roda do mouse horizontalmente (sem Shift) ---
   function handleWheel(e: WheelEvent) {
     if (promoCarouselRef) {
-      // Se o usuário mexer a roda do mouse vertical ou horizontalmente, movemos na horizontal
       const delta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
       promoCarouselRef.scrollLeft += delta;
-      e.preventDefault(); // Impede a página de subir/descer
+      e.preventDefault();
     }
   }
 
-  // --- Carrossel de Ofertas em Loop Infinito Contínuo ---
   function iniciarGiroPromocoes() {
     detorgaGiroPromocoes();
     promoInterval = setInterval(() => {
       if (promoCarouselRef && !isDown) {
-        const itemWidth = 240; // Largura do card + gap
+        const itemWidth = 240;
         promoCarouselRef.scrollBy({ left: itemWidth, behavior: 'smooth' });
 
-        // Se chegou na metade (onde os itens duplicados começam), 
-        // ele teleporta instantaneamente para o início sem o usuário perceber.
         setTimeout(() => {
           if (promoCarouselRef) {
             const metadeLargura = promoCarouselRef.scrollWidth / 2;
@@ -128,7 +123,7 @@
               promoCarouselRef.scrollTo({ left: 0, behavior: 'auto' });
             }
           }
-        }, 400); // tempo para esperar terminar o scroll smooth
+        }, 400);
       }
     }, 3500);
   }
@@ -136,7 +131,7 @@
   function detorgaGiroPromocoes() {
     if (promoInterval) clearInterval(promoInterval);
   }
-  // --- Funções de Arrastar com o Mouse (Drag to Scroll) ---
+
   function handleMouseDown(e: MouseEvent) {
     isDown = true;
     detorgaGiroPromocoes();
@@ -162,7 +157,7 @@
     if (!isDown) return;
     e.preventDefault();
     const x = e.pageX - promoCarouselRef.offsetLeft;
-    const walk = (x - startX) * 2; // Velocidade do arraste
+    const walk = (x - startX) * 2;
     promoCarouselRef.scrollLeft = scrollLeft - walk;
   }
 
@@ -187,7 +182,6 @@
   }
 
   function irParaCardapioCategoria(catName: string) {
-    // Certifique-se de que a página /Cardapio lê os parâmetros da URL (ex: usando page.url.searchParams.get('categoria'))
     window.location.href = `/Cardapio?categoria=${encodeURIComponent(catName)}`;
   }
 
@@ -208,6 +202,9 @@
 <main class="mx-auto pt-32 md:pt-40 pb-16 px-4 max-w-7xl text-primary-50">
   
   <header class="text-center mb-10 md:mb-14">
+    <span class="inline-block text-tertiary-300 font-bold uppercase tracking-[0.25em] text-xs mb-3 bg-primary-900/60 px-4 py-1.5 rounded-full border border-tertiary-600/40">
+      Café & Atmosfera
+    </span>
     <h1 class="text-4xl md:text-6xl font-black uppercase tracking-wider text-tertiary-300 font-serif drop-shadow-md">
       Bem-vindos ao 7 Vidas Café
     </h1>
@@ -244,7 +241,6 @@
         Nenhuma promoção ativa no momento. Fique de olho em breve!
       </div>
     {:else}
-      <!-- Carrossel com suporte a Mouse Drag e Scroll -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
       bind:this={promoCarouselRef}
@@ -256,13 +252,11 @@
       on:wheel={handleWheel}
       class="flex gap-4 overflow-x-auto scrollbar-none scroll-smooth py-2 px-1 no-scrollbar cursor-grab active:cursor-grabbing select-none"
     >
-      <!-- Itens duplicados -->
       {#each [...promoItems, ...promoItems] as item, index}
           <div
             on:click={() => window.location.href = `/Cardapio/${item.id}`}
             class="min-w-[220px] max-w-[220px] bg-primary-800 border-2 border-tertiary-600/70 hover:border-tertiary-400 rounded-2xl overflow-hidden shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 flex flex-col justify-between shrink-0 group relative"
           >
-            <!-- Imagem e Tag -->
             <div class="relative h-32 bg-primary-950 overflow-hidden flex items-center justify-center pointer-events-none">
               {#if item.imagem}
                 <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -275,7 +269,6 @@
               </div>
             </div>
 
-            <!-- Dados do Item -->
             <div class="p-3 flex-1 flex flex-col justify-between">
               <div>
                 <h3 class="font-black text-sm text-primary-50 line-clamp-1 group-hover:text-tertiary-300 transition-colors">
@@ -286,7 +279,6 @@
                 </p>
               </div>
 
-              <!-- Preço -->
               <div class="mt-3 pt-2 border-t border-primary-700/80 flex items-center justify-between">
                 <span class="text-[10px] text-gray-400 line-through">
                   {formatarPreco(item.preco)}
@@ -303,7 +295,7 @@
   </section>
 
   <!-- Categorias -->
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-14">
     
     <div class="relative bg-gradient-to-br from-primary-800 to-primary-900 border-2 border-tertiary-600/80 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-between min-h-[320px] md:min-h-[380px] group overflow-hidden">
       <div 
@@ -387,6 +379,52 @@
           </div>
         {/if}
       {/each}
+    </div>
+  </section>
+
+  <!-- Seção Spotify & Vibe do Café (Estilo We Coffee) -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-stretch">
+    
+    <!-- Bloco de Experiência / Estilo -->
+    <div class="lg:col-span-1 bg-primary-950 border-2 border-tertiary-600/60 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-between">
+      <div>
+        <div class="inline-flex items-center gap-2 bg-tertiary-950 text-tertiary-300 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-tertiary-600/50 mb-4">
+          <HeartOutline class="w-3.5 h-3.5 text-tertiary-400" />
+          <span>Atmosfera 7 Vidas</span>
+        </div>
+        <h3 class="text-2xl font-black uppercase tracking-wider text-tertiary-300 font-serif mb-3">
+          Sua Pausa com Estilo
+        </h3>
+        <p class="text-xs md:text-sm text-primary-200 leading-relaxed">
+          Mais que um café, um refúgio visual e sensorial. Curta nossa curadoria musical exclusiva para acompanhar o seu momento de leitura, trabalho ou bate-papo.
+        </p>
+      </div>
+      <div class="mt-6 pt-4 border-t border-primary-800 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-tertiary-500/20 flex items-center justify-center text-tertiary-400 border border-tertiary-500/30">
+          ☕
+        </div>
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-primary-50">Curtiu o som?</h4>
+          <p class="text-[11px] text-primary-300">Dê o play ao lado e leve o clima com você.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Spotify Widget Incorporado com as Cores e Estilo Customizado -->
+    <div class="lg:col-span-2 bg-primary-900 border-2 border-tertiary-600/60 rounded-3xl p-4 md:p-6 shadow-2xl flex items-center justify-center overflow-hidden">
+      <!-- Substitua o link do src do iframe abaixo pela playlist oficial do seu Spotify -->
+      <iframe 
+        style="border-radius:16px" 
+        src="https://open.spotify.com/embed/album/5QSWmnTnWNAwOwIB0cOrLW?utm_source=generator&si=fe213dc2b0374915" 
+        width="100%" 
+        height="152" 
+        frameBorder="0" 
+        allowfullscreen="" 
+        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+        loading="lazy"
+        title="Playlist 7 Vidas Café"
+        class="w-full shadow-lg"
+      ></iframe>
     </div>
 
   </section>

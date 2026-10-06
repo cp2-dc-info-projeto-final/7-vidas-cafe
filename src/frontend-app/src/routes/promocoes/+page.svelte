@@ -7,7 +7,7 @@
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition'; // <--- Importado para a transição
   import Menu from '../../components/Menu.svelte';
-  import { getCurrentUser } from '$lib/auth';
+  import { getCurrentUser2 } from '$lib/auth';
 
   interface MenuItem {
     id: number;
@@ -169,7 +169,7 @@
   onMount(async () => {
     loading = true;
     try {
-      currentUser = await getCurrentUser();
+      currentUser = await getCurrentUser2();
     } catch (err) {
       currentUser = null;
     }
