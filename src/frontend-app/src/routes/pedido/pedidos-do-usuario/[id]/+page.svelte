@@ -1,6 +1,6 @@
 <script lang="ts">
     import { Heading, P } from 'flowbite-svelte';
-    import Menu from '../../../components/Menu.svelte';
+    import Menu from '../../../../components/Menu.svelte';
     import { goto } from "$app/navigation";
     import { page } from "$app/stores";
     import { getToken, getCurrentUser, type User } from "$lib/auth";
@@ -51,7 +51,8 @@
     async function carregarPedidosDoUsuario() {
         try {
             const response = await api.get(`/pedido/usuario/${userId}`);
-            pedidosUsuario = response.data.pedidos || response.data || [];
+            // Ajustado para ler o array dentro de response.data.data (conforme o back-end envia)
+            pedidosUsuario = response.data.data || response.data.pedidos || response.data || [];
         } catch (err: any) {
             console.error('Erro ao carregar pedidos do usuário:', err);
             error = err.response?.data?.message || 'Não foi possível carregar os pedidos deste usuário.';

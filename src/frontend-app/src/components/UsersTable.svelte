@@ -137,7 +137,6 @@
                           <TableBodyRow class="bg-primary-950/20 hover:bg-primary-950/50 transition-colors border-b border-primary-800/80 last:border-b-0">
                               <TableBodyCell class="text-primary-300 text-xs font-medium py-4">{user.id}</TableBodyCell>
                               
-                              <!-- LOGIN CLICÁVEL (DESKTOP) -->
                               <TableBodyCell class="py-4">
                                   <button 
                                       type="button"
