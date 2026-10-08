@@ -118,34 +118,52 @@ router.get('/meus-pedidos', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 3. LISTAR TODOS OS PEDIDOS (Área Admin)
+// 3. BUSCAR TODOS OS PEDIDOS DE UM USUÁRIO ESPECÍFICO (ADMIN)
+// POSICIONADA AQUI ANTES DE /:id PARA EVITAR CONFLITO
 // ==========================================
-router.get('/admin/todos', verifyToken, isAdmin, async (req, res) => {
-    try {
-        const pedidosRes = await pool.query(
-            `SELECT p.*, u.login as nome_comprador, u.email as email_comprador,
-                COALESCE(
-                    json_agg(
-                        json_build_object(
-                            'nome_produto', c.nome,
-                            'quantidade', ic.quantidade,
-                            'subtotal', ic.subtotal
-                        )
-                    ) FILTER (WHERE ic.id IS NOT NULL), '[]'
-                ) as itens
-             FROM pedidos p
-             JOIN usuario u ON p.comprador = u.id
-             LEFT JOIN itens_carrinho ic ON p.id = ic.pedido_id
-             LEFT JOIN cardapio c ON ic.cardapio_id = c.id
-             GROUP BY p.id, u.login, u.email
-             ORDER BY p.data_compra DESC`
-        );
+router.get('/usuario/:id', verifyToken, isAdmin, async function(req, res) {
+    console.log("--> ROTA /usuario/:id FOI ATINGIDA! ID recebido:", req.params.id);
+  try {
+    const usuarioId = req.params.id;
 
-        return res.json(pedidosRes.rows);
-    } catch (error) {
-        console.error('Erro ao listar todos os pedidos:', error);
-        return res.status(500).json({ message: 'Erro ao carregar pedidos para administração.' });
+    const userResult = await pool.query('SELECT login FROM usuario WHERE id = $1', [usuarioId]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Usuário não encontrado' });
     }
+    const nomeUsuario = userResult.rows[0].login;
+
+    // CORRIGIDO: de 'pedido p' para 'pedidos p' e de 'p.usuario_id' para 'p.comprador'
+    const pedidosResult = await pool.query(`
+      SELECT p.id, p.comprador as usuario_id, p.preco_pedido, p.status_pedido, p.endereco, p.form_pag, p.cupom, p.data_compra
+      FROM pedidos p
+      WHERE p.comprador = $1
+      ORDER BY p.data_compra DESC
+    `, [usuarioId]);
+
+    const pedidos = [];
+
+    for (const pedido of pedidosResult.rows) {
+      // CORRIGIDO: buscando da tabela correta de itens do carrinho/pedido
+      const itensResult = await pool.query(`
+        SELECT ip.id, ip.cardapio_id, ip.quantidade, ip.preco_unitario, ip.subtotal,
+               c.nome AS nome_produto, c.imagem
+        FROM itens_carrinho ip
+        LEFT JOIN cardapio c ON ip.cardapio_id = c.id
+        WHERE ip.pedido_id = $1
+      `, [pedido.id]);
+
+      pedidos.push({
+        ...pedido,
+        nome_usuario: nomeUsuario,
+        itens: itensResult.rows
+      });
+    }
+
+    return res.json({ success: true, data: pedidos });
+  } catch (error) { // ou apenas catch (error)
+    console.error('Erro ao buscar pedidos do usuário:', error);
+    return res.status(500).json({ message: 'Erro interno do servidor' });
+  }
 });
 
 // ==========================================
@@ -187,7 +205,6 @@ router.get('/:id', verifyToken, async (req, res) => {
 
         const pedido = pedidoRes.rows[0];
 
-        // Valida se o pedido pertence ao usuário ou se é admin
         if (pedido.comprador !== userId && !isAdminUser) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
@@ -309,7 +326,7 @@ router.get('/usuario/meus-enderecos', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// CADASTRAR NOVO ENDEREÇO DO USUÁRIO
+// 8. CADASTRAR NOVO ENDEREÇO DO USUÁRIO
 // ==========================================
 router.post('/usuario/meus-enderecos', verifyToken, async (req, res) => {
     const userId = req.user.id;

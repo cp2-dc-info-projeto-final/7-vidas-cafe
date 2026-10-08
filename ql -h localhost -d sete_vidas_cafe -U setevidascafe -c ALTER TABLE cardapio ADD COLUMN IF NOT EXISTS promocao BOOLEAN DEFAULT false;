@@ -1,0 +1,19 @@
+                             Table "public.cardapio"
+  Column   |     Type      | Collation | Nullable |           Default            
+-----------+---------------+-----------+----------+------------------------------
+ id        | bigint        |           | not null | generated always as identity
+ nome      | text          |           | not null | 
+ preco     | numeric(10,2) |           | not null | 
+ categoria | text          |           | not null | 
+ resumo    | text          |           | not null | 
+ descricao | text          |           | not null | 
+ imagem    | text          |           |          | 
+ promocao  | boolean       |           |          | false
+Indexes:
+    "pk_cardapio" PRIMARY KEY, btree (id)
+    "uk_cardapio_nome" UNIQUE CONSTRAINT, btree (nome)
+Check constraints:
+    "ck_cardapio_preco" CHECK (preco >= 0::numeric)
+Referenced by:
+    TABLE "itens_carrinho" CONSTRAINT "fk_item_cardapio" FOREIGN KEY (cardapio_id) REFERENCES cardapio(id) ON DELETE CASCADE
+

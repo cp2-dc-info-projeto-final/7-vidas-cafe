@@ -136,7 +136,19 @@
                       {#each users as user}
                           <TableBodyRow class="bg-primary-950/20 hover:bg-primary-950/50 transition-colors border-b border-primary-800/80 last:border-b-0">
                               <TableBodyCell class="text-primary-300 text-xs font-medium py-4">{user.id}</TableBodyCell>
-                              <TableBodyCell class="text-primary-50 text-xs font-semibold py-4">{user.login}</TableBodyCell>
+                              
+                              <!-- LOGIN CLICÁVEL (DESKTOP) -->
+                              <TableBodyCell class="py-4">
+                                  <button 
+                                      type="button"
+                                      on:click={() => goto(`/pedido/pedidos-do-usuario/${user.id}`)}
+                                      class="text-tertiary-400 hover:text-tertiary-300 font-semibold text-xs underline cursor-pointer text-left transition-colors"
+                                      title="Ver pedidos deste usuário"
+                                  >
+                                      {user.login}
+                                  </button>
+                              </TableBodyCell>
+
                               <TableBodyCell class="truncate max-w-64 text-primary-200 text-xs py-4">{user.email}</TableBodyCell>
                               <TableBodyCell class="text-primary-200 text-xs py-4">{user.cpf}</TableBodyCell>
                               <TableBodyCell class="text-primary-200 text-xs py-4">{user.num_tel || 'Não informado'}</TableBodyCell>
@@ -174,10 +186,20 @@
       <div class="block xl:hidden w-full max-w-3xl">
           <div class="flex flex-col gap-4">
               {#each users as user}
+              
                   <div class="bg-primary-900/90 backdrop-blur-xl border border-primary-700/60 shadow-xl rounded-2xl p-5 flex flex-col gap-4">
                       <div class="flex items-start justify-between border-b border-primary-800 pb-3 gap-3">
                           <div>
-                              <div class="text-sm font-black text-primary-50 tracking-wide">{user.login}</div>
+                              <!-- LOGIN CLICÁVEL (MOBILE) -->
+                              <button 
+                                  type="button"
+                                
+                                  on:click={() => goto(`/pedido/pedidos-do-usuario/${user.id}`)}
+                                  class="text-sm font-black text-tertiary-400 hover:text-tertiary-300 underline tracking-wide text-left cursor-pointer transition-colors"
+                              >
+                                  {user.login}
+                              </button>
+                              
                               <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-400 mt-0.5">ID: {user.id}</div>
                               <Badge class="bg-primary-950 text-tertiary-300 border border-primary-700 rounded-lg text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 shadow-inner mt-2 inline-block">
                                   {user.role}
@@ -199,6 +221,7 @@
                               >
                                   <TrashBinOutline class="w-4 h-4" />
                               </button>
+                              
                           </div>
                       </div>
 
