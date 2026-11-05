@@ -13,7 +13,7 @@
 
 <Menu />
 
-<main class="max-w-5xl mx-auto px-6 md:px-12 pt-32 md:pt-40 pb-16 text-neutral-100">
+<main class="max-w-5xl mx-auto px-6 md:px-12 pt-40 md:pt-52 pb-16 text-neutral-100">
   
   <section class="text-center mb-20">
     <span class="text-xs font-bold tracking-[0.5em] text-amber-500 uppercase block mb-3">Nossa Essência</span>

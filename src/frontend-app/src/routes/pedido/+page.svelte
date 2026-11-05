@@ -119,7 +119,7 @@
 
 <Menu />
 
-<main class="max-w-4xl mx-auto px-4 md:px-8 pt-32 md:pt-40 pb-20 text-primary-50 relative z-30 flex flex-col gap-10">
+<main class="max-w-4xl mx-auto px-4 md:px-8 pt-40 md:pt-53 pb-20 text-primary-50 relative z-30 flex flex-col gap-10">
     
     <!-- Cabeçalho -->
     <section class="text-center space-y-3">

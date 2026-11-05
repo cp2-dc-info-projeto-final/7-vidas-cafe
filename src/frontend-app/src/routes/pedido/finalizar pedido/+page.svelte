@@ -11,21 +11,35 @@
     let loading = true;
     let error = '';
     let actionLoading = false;
-  
+ 
     let carrinho: any = null;
-  
+ 
     // Tipo de Envio
     let tipoEnvio = 'entrega'; // 'entrega' ou 'retirada'
-  
+ 
     // Endereços Anteriores e Controle do Modal de Endereço
     let enderecosSalvos: string[] = [];
     let enderecoSelecionado = '';
     let modalAberto = false;
     let modoNovoEndereco = false;
-  
+ 
     // Controle do Modal de Sucesso (Pedido Finalizado)
     let pedidoFinalizadoModal = false;
-  
+
+    // Sistema de Avisos Detalhados (Toast Notification)
+    let avisoMensagem = '';
+    let avisoTipo = 'erro'; // 'erro' ou 'sucesso'
+    let mostrarAviso = false;
+
+    function dispararAviso(msg: string, tipo: 'erro' | 'sucesso' = 'erro') {
+        avisoMensagem = msg;
+        avisoTipo = tipo;
+        mostrarAviso = true;
+        setTimeout(() => {
+            mostrarAviso = false;
+        }, 4500);
+    }
+ 
     // Dados de Endereço (ViaCEP)
     let cep = '';
     let rua = '';
@@ -35,7 +49,7 @@
     let uf = '';
     let complemento = '';
     let erroCep = '';
-  
+ 
     // Dados de Pagamento
     let form_pag = 'Cartão de Crédito';
     let cupom = '';
@@ -44,20 +58,74 @@
     let validadeCartao = '';
     let cvvCartao = '';
     let trocoPara = '';
-  
+ 
+    // Formatação e Máscaras Automáticas com verificação de letras
+    function tratarNumeroCartao(e: Event) {
+        const input = e.target as HTMLInputElement;
+        const valorDigitado = input.value;
+        
+        if (/[a-zA-ZÀ-ÿ]/.test(valorDigitado)) {
+            dispararAviso('Não são aceitas letras no número do cartão!', 'erro');
+        }
+
+        // Remove tudo que não for número
+        let apenasNums = valorDigitado.replace(/\D/g, '').substring(0, 16);
+        // Formata automaticamente com espaços a cada 4 números
+        numeroCartao = apenasNums.replace(/(\d{4})(?=\d)/g, '$1 ');
+    }
+
+    function tratarValidade(e: Event) {
+        const input = e.target as HTMLInputElement;
+        const valorDigitado = input.value;
+
+        if (/[a-zA-ZÀ-ÿ]/.test(valorDigitado)) {
+            dispararAviso('Não são aceitas letras na validade do cartão!', 'erro');
+        }
+
+        let apenasNums = valorDigitado.replace(/\D/g, '').substring(0, 4);
+        if (apenasNums.length >= 3) {
+            validadeCartao = apenasNums.substring(0, 2) + '/' + apenasNums.substring(2, 4);
+        } else {
+            validadeCartao = apenasNums;
+        }
+    }
+
+    function tratarCvv(e: Event) {
+        const input = e.target as HTMLInputElement;
+        const valorDigitado = input.value;
+
+        if (/[a-zA-ZÀ-ÿ]/.test(valorDigitado)) {
+            dispararAviso('Não são aceitas letras no CVV do cartão!', 'erro');
+        }
+
+        cvvCartao = valorDigitado.replace(/\D/g, '').substring(0, 4);
+    }
+
+    function tratarTroco(e: Event) {
+        const input = e.target as HTMLInputElement;
+        const valorDigitado = input.value;
+
+        if (/[a-zA-ZÀ-ÿ]/.test(valorDigitado)) {
+            dispararAviso('Não são aceitas letras no campo de troco!', 'erro');
+        }
+
+        // Permite apenas números e vírgula
+        trocoPara = valorDigitado.replace(/[^0-9,]/g, '');
+    }
+ 
     // Formatação BRL segura
     function formatarMoeda(valor: number | string | null | undefined): string {
       const num = typeof valor === 'string' ? parseFloat(valor) : (valor || 0);
       return isNaN(num) ? '0,00' : num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
-  
+ 
     onMount(async () => {
         const token = getToken();
         if (!token) {
             goto('/login');
             return;
         }
-  
+ 
         try {
             user = await getCurrentUser();
             
@@ -65,49 +133,74 @@
             if (response.data?.success) {
                 carrinho = response.data.data.carrinho;
             }
-  
+ 
+            // BUSCA DO BANCO DE DADOS
             try {
                 const resEnderecos = await api.get('/pedido/usuario/meus-enderecos');
-                if (resEnderecos.data?.success) {
-                    enderecosSalvos = resEnderecos.data.enderecos || [];
-                    if (enderecosSalvos.length > 0) {
-                        enderecoSelecionado = enderecosSalvos[0];
+                let listaDoBanco: string[] = [];
+                if (resEnderecos.data) {
+                    if (Array.isArray(resEnderecos.data)) {
+                        listaDoBanco = resEnderecos.data;
+                    } else if (resEnderecos.data.enderecos && Array.isArray(resEnderecos.data.enderecos)) {
+                        listaDoBanco = resEnderecos.data.enderecos;
+                    } else if (resEnderecos.data.data && Array.isArray(resEnderecos.data.data)) {
+                        listaDoBanco = resEnderecos.data.data;
+                    } else if (resEnderecos.data.data?.enderecos && Array.isArray(resEnderecos.data.data.enderecos)) {
+                        listaDoBanco = resEnderecos.data.data.enderecos;
                     }
                 }
+
+                if (listaDoBanco.length > 0) {
+                    enderecosSalvos = listaDoBanco;
+                }
             } catch (err) {
-                console.log('Nenhum endereço anterior encontrado.');
+                console.log('Erro ao buscar do backend, usando cache local...');
             }
-  
+
+            // Sincroniza com LocalStorage
+            const locaisSalvos = localStorage.getItem('meus_enderecos_cache');
+            if (locaisSalvos) {
+                const parsed = JSON.parse(locaisSalvos);
+                enderecosSalvos = Array.from(new Set([...enderecosSalvos, ...parsed]));
+            }
+
+            if (enderecosSalvos.length > 0) {
+                enderecoSelecionado = enderecosSalvos[0];
+            }
+ 
         } catch (e) {
             error = 'Erro ao carregar dados do pedido.';
+            dispararAviso('Erro ao carregar dados do checkout.', 'erro');
         } finally {
             loading = false;
         }
     });
-  
+ 
     async function buscarCep() {
         const cepLimpo = cep.replace(/\D/g, '');
         if (cepLimpo.length !== 8) return;
-  
+ 
         try {
             erroCep = '';
             const res = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
             const data = await res.json();
-  
+ 
             if (data.erro) {
                 erroCep = 'CEP não encontrado.';
+                dispararAviso('CEP não encontrado na base de dados.', 'erro');
                 return;
             }
-  
+ 
             rua = data.logradouro || '';
             bairro = data.bairro || '';
             cidade = data.localidade || '';
             uf = data.uf || '';
         } catch (e) {
             erroCep = 'Erro ao consultar o CEP.';
+            dispararAviso('Erro de conexão ao consultar o CEP.', 'erro');
         }
     }
-  
+ 
     function limparCamposEndereco() {
         cep = '';
         rua = '';
@@ -118,56 +211,71 @@
         complemento = '';
         erroCep = '';
     }
-  
+ 
     async function confirmarNovoEndereco() {
         if (!cep.trim() || !rua.trim() || !numero.trim() || !bairro.trim() || !cidade.trim() || !uf.trim()) {
-            alert('Por favor, preencha todos os campos obrigatórios do endereço.');
+            dispararAviso('Por favor, preencha todos os campos obrigatórios do endereço.', 'erro');
             return;
         }
-  
-        const novo = `CEP: ${cep}, ${rua}, nº ${numero}${complemento ? ' - ' + complemento : ''}, ${bairro} - ${cidade}/${uf}`;
+ 
+        const novo = `CEP: ${cep}, ${rua}, nº ${numero}${complemento ? ' - ' + complemento : ''}, ${bairro}\n${cidade}/${uf}`;
         
         try {
             await api.post('/pedido/usuario/meus-enderecos', { endereco: novo });
-  
-            enderecosSalvos = [novo, ...enderecosSalvos];
-            enderecoSelecionado = novo;
-            modoNovoEndereco = false;
-            modalAberto = false;
-            limparCamposEndereco();
         } catch (e) {
-            alert('Erro ao salvar o endereço no perfil.');
+            console.log('Erro ao salvar no backend, mantendo localmente...');
         }
+
+        enderecosSalvos = [novo, ...enderecosSalvos.filter(e => e !== novo)];
+        localStorage.setItem('meus_enderecos_cache', JSON.stringify(enderecosSalvos));
+
+        enderecoSelecionado = novo;
+        modoNovoEndereco = false;
+        modalAberto = false;
+        limparCamposEndereco();
+        dispararAviso('Endereço salvo com sucesso!', 'sucesso');
     }
-  
+ 
     async function finalizarPedido() {
         let enderecoCompleto = 'Retirada no Local';
-  
+ 
         if (tipoEnvio === 'entrega') {
             if (!enderecoSelecionado && enderecosSalvos.length === 0) {
-                alert('Por favor, cadastre ou selecione um endereço de entrega.');
+                dispararAviso('Por favor, selecione ou cadastre um endereço de entrega válido.', 'erro');
                 return;
             }
-            enderecoCompleto = enderecoSelecionado || `CEP: ${cep}, ${rua}, nº ${numero}, ${bairro} - ${cidade}/${uf}`;
+            enderecoCompleto = enderecoSelecionado || enderecosSalvos[0] || `CEP: ${cep}, ${rua}, nº ${numero}, ${bairro}\n${cidade}/${uf}`;
         }
-  
+ 
         if (form_pag === 'Cartão de Crédito' || form_pag === 'Cartão de Débito') {
-            if (!numeroCartao.trim() || !nomeTitular.trim() || !validadeCartao.trim() || !cvvCartao.trim()) {
-                alert('Por favor, preencha todos os dados do cartão de pagamento.');
+            if (!numeroCartao.trim() || numeroCartao.replace(/\D/g, '').length < 16) {
+                dispararAviso('O número do cartão de crédito/débito está incompleto ou inválido.', 'erro');
+                return;
+            }
+            if (!nomeTitular.trim()) {
+                dispararAviso('Por favor, preencha o nome do titular do cartão.', 'erro');
+                return;
+            }
+            if (!validadeCartao.trim() || validadeCartao.length < 5) {
+                dispararAviso('A validade do cartão está incompleta (Use o formato MM/AA).', 'erro');
+                return;
+            }
+            if (!cvvCartao.trim() || cvvCartao.length < 3) {
+                dispararAviso('O código CVV do cartão está incompleto.', 'erro');
                 return;
             }
         }
-  
+ 
         let detalhesPagamento = form_pag;
         if (form_pag.includes('Cartão')) {
-            const ultimosDigitos = numeroCartao.slice(-4);
+            const ultimosDigitos = numeroCartao.replace(/\D/g, '').slice(-4);
             detalhesPagamento = `${form_pag} (Final ${ultimosDigitos})`;
         } else if (form_pag === 'Dinheiro' && trocoPara) {
             detalhesPagamento = `Dinheiro (Troco para: R$ ${trocoPara})`;
         }
-  
+ 
         actionLoading = true;
-  
+ 
         try {
             await api.post('/pedido', {
                 tipo_envio: tipoEnvio,
@@ -175,32 +283,42 @@
                 form_pag: detalhesPagamento,
                 cupom: cupom || null
             });
-  
-            // Exibe o modal de sucesso
+ 
             pedidoFinalizadoModal = true;
         } catch (e: any) {
-            alert(e.response?.data?.message || 'Erro ao processar o pedido.');
+            dispararAviso(e.response?.data?.message || 'Erro ao processar o pedido no servidor.', 'erro');
         } finally {
             actionLoading = false;
         }
     }
-  
+ 
     function fecharEIrParaPedidos() {
         pedidoFinalizadoModal = false;
         goto('/pedido');
     }
-  </script>
-  
-  <Menu />
-  
-  <main class="max-w-4xl mx-auto px-4 md:px-8 pt-32 md:pt-40 pb-20 text-primary-50 relative z-30">
+</script>
+ 
+<Menu />
+ 
+<main class="max-w-4xl mx-auto px-4 md:px-8 pt-40 md:pt-50 pb-20 text-primary-50 relative z-30 overflow-x-hidden">
+    
+   <!-- AVISO / TOAST FLUTUANTE DE ERROS OU SUCESSO -->
+   {#if mostrarAviso}
+   <div transition:fade class="fixed top-40 left-1/2 -translate-x-1/2 z-[999] w-11/12 max-w-md px-4 pointer-events-none">
+       <div class={`pointer-events-auto border rounded-2xl p-4 shadow-2xl flex items-center gap-3 backdrop-blur-md text-xs font-bold transition-all ${avisoTipo === 'erro' ? 'bg-red-950/95 border-red-700 text-red-200' : 'bg-emerald-950/95 border-emerald-700 text-emerald-200'}`}>
+           <span class="text-base">{avisoTipo === 'erro' ? '⚠️' : '✅'}</span>
+           <p class="flex-1">{avisoMensagem}</p>
+       </div>
+   </div>
+{/if}
+
     <section class="text-center mb-12 space-y-3">
         <Heading tag="h1" class="text-3xl md:text-5xl font-black tracking-[0.15em] text-primary-50 uppercase font-serif">
             Finalizar Pedido
         </Heading>
         <div class="w-16 h-0.5 bg-tertiary-500 mx-auto"></div>
     </section>
-  
+ 
     {#if loading}
         <div class="text-center text-primary-300 font-medium uppercase tracking-widest py-16 text-xs">
             Carregando checkout...
@@ -210,19 +328,19 @@
             {error}
         </div>
     {:else}
-        <div class="w-full bg-primary-900/90 backdrop-blur-md border border-primary-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col gap-6">
+        <div class="w-full bg-primary-900/90 backdrop-blur-md border border-primary-800 rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8 flex flex-col gap-6">
             
             <!-- Resumo rápido do valor -->
             <div class="bg-primary-950/60 p-4 rounded-xl flex justify-between items-center border border-primary-800">
                 <span class="text-xs uppercase tracking-wider text-primary-300 font-bold">Total a pagar:</span>
                 <span class="text-lg font-black text-tertiary-400">R$ {formatarMoeda(carrinho?.preco_total)}</span>
             </div>
-  
+ 
             <!-- Formulário de Tipo de Envio -->
             <div class="flex flex-col gap-4 text-xs">
                 <h3 class="font-serif font-bold text-tertiary-400 text-sm">Forma de Recebimento</h3>
                 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-2 gap-3 sm:gap-4">
                     <button 
                         type="button" 
                         on:click={() => tipoEnvio = 'entrega'}
@@ -238,7 +356,7 @@
                         Retirar no Local
                     </button>
                 </div>
-  
+ 
                 {#if tipoEnvio === 'entrega'}
                     <div transition:slide class="flex flex-col gap-3 pt-2">
                         <h3 class="font-serif font-bold text-tertiary-400 text-sm">Endereço de Entrega</h3>
@@ -246,22 +364,22 @@
                         <button 
                             type="button"
                             on:click={() => { modalAberto = true; modoNovoEndereco = false; }}
-                            class="bg-primary-950 hover:bg-primary-950/80 border border-primary-700 p-4 rounded-xl flex items-center justify-between text-left transition-all cursor-pointer shadow-md"
+                            class="bg-primary-950 hover:bg-primary-950/80 border border-primary-700 p-3 sm:p-4 rounded-xl flex items-center justify-between text-left transition-all cursor-pointer shadow-md gap-3 w-full"
                         >
-                            <div class="flex items-center gap-3">
-                                <div class="text-tertiary-400 text-xl">📍</div>
-                                <div>
-                                    <p class="text-[10px] uppercase tracking-widest text-primary-400 font-bold">Enviar para {user?.login || 'Você'}</p>
-                                    <p class="text-xs text-primary-50 font-medium mt-0.5 truncate max-w-md">
+                            <div class="flex items-center gap-3 min-w-0 flex-1">
+                                <div class="text-tertiary-400 text-xl shrink-0">📍</div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-[10px] uppercase tracking-widest text-primary-400 font-bold truncate">Enviar para {user?.login || 'Você'}</p>
+                                    <p class="text-xs text-primary-50 font-medium mt-0.5 truncate w-full">
                                         {enderecoSelecionado || 'Nenhum endereço selecionado. Clique para escolher.'}
                                     </p>
                                 </div>
                             </div>
-                            <span class="text-tertiary-400 text-xs font-bold uppercase underline">Alterar</span>
+                            <span class="text-tertiary-400 text-xs font-bold uppercase underline shrink-0 ml-2">Alterar</span>
                         </button>
                     </div>
                 {/if}
-  
+ 
                 <h3 class="font-serif font-bold text-tertiary-400 text-sm pt-4">Forma de Pagamento</h3>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -279,18 +397,18 @@
                         <input id="cupom" type="text" bind:value={cupom} placeholder="Ex: SETEVIDAS" class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500" />
                     </div>
                 </div>
-  
+ 
                 {#if form_pag === 'Cartão de Crédito' || form_pag === 'Cartão de Débito'}
                     <div transition:slide class="bg-primary-950 p-4 rounded-xl border border-primary-800 flex flex-col gap-3">
                         <p class="text-[11px] font-bold text-tertiary-400">Insira os dados do {form_pag}:</p>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="sm:col-span-2 flex flex-col gap-1">
                                 <label class="text-[9px] uppercase tracking-wider text-primary-400">Número do Cartão</label>
-                                <input type="text" bind:value={numeroCartao} maxlength="19" placeholder="0000 0000 0000 0000" class="bg-primary-900 border border-primary-700 rounded-lg p-2.5 text-primary-50 text-xs" />
+                                <input type="text" value={numeroCartao} on:input={tratarNumeroCartao} maxlength="19" placeholder="0000 0000 0000 0000" class="bg-primary-900 border border-primary-700 rounded-lg p-2.5 text-primary-50 text-xs" />
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="text-[9px] uppercase tracking-wider text-primary-400">CVV</label>
-                                <input type="text" bind:value={cvvCartao} maxlength="4" placeholder="123" class="bg-primary-900 border border-primary-700 rounded-lg p-2.5 text-primary-50 text-xs" />
+                                <input type="text" value={cvvCartao} on:input={tratarCvv} maxlength="4" placeholder="123" class="bg-primary-900 border border-primary-700 rounded-lg p-2.5 text-primary-50 text-xs" />
                             </div>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -300,48 +418,48 @@
                             </div>
                             <div class="flex flex-col gap-1">
                                 <label class="text-[9px] uppercase tracking-wider text-primary-400">Validade</label>
-                                <input type="text" bind:value={validadeCartao} maxlength="5" placeholder="MM/AA" class="bg-primary-900 border border-primary-700 rounded-lg p-2.5 text-primary-50 text-xs" />
+                                <input type="text" value={validadeCartao} on:input={tratarValidade} maxlength="5" placeholder="MM/AA" class="bg-primary-900 border border-primary-700 rounded-lg p-2.5 text-primary-50 text-xs" />
                             </div>
                         </div>
                     </div>
                 {/if}
-  
+ 
                 {#if form_pag === 'Pix'}
                     <div transition:slide class="bg-primary-950 p-4 rounded-xl border border-primary-800 text-primary-300 text-xs flex flex-col gap-1">
                         <p class="font-bold text-tertiary-400">Instruções de Pagamento via Pix:</p>
                         <p>Ao confirmar o pedido, será gerado o QR Code e a chave Pix "Copia e Cola" na próxima tela.</p>
                     </div>
                 {/if}
-  
+ 
                 {#if form_pag === 'Dinheiro'}
                     <div transition:slide class="bg-primary-950 p-4 rounded-xl border border-primary-800 flex flex-col gap-2">
                         <label class="text-[10px] uppercase tracking-wider text-primary-300 font-bold">Precisa de troco para quanto? (Opcional)</label>
-                        <input type="text" bind:value={trocoPara} placeholder="Ex: 50.00" class="bg-primary-900 border border-primary-700 rounded-lg p-2.5 text-primary-50 text-xs w-full sm:w-1/3" />
+                        <input type="text" value={trocoPara} on:input={tratarTroco} placeholder="Ex: 50,00" class="bg-primary-900 border border-primary-700 rounded-lg p-2.5 text-primary-50 text-xs w-full sm:w-1/3" />
                     </div>
                 {/if}
-  
+ 
                 <div class="flex gap-3 pt-4">
-                    <button on:click={() => goto('/carrinho')} class="w-1/3 py-3 bg-primary-800 hover:bg-primary-700 text-primary-200 font-bold rounded-xl uppercase tracking-wider transition-colors cursor-pointer">
+                    <button on:click={() => goto('/carrinho')} class="w-1/3 py-3 bg-primary-800 hover:bg-primary-700 text-primary-200 font-bold rounded-xl uppercase tracking-wider transition-colors cursor-pointer text-[11px] sm:text-xs">
                         Voltar ao Carrinho
                     </button>
-                    <button on:click={finalizarPedido} disabled={actionLoading} class="w-2/3 py-3 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-black rounded-xl uppercase tracking-widest transition-all shadow-md cursor-pointer disabled:opacity-50">
+                    <button on:click={finalizarPedido} disabled={actionLoading} class="w-2/3 py-3 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-black rounded-xl uppercase tracking-widest transition-all shadow-md cursor-pointer disabled:opacity-50 text-[11px] sm:text-xs">
                         {actionLoading ? 'Enviando Pedido...' : 'Confirmar e Finalizar'}
                     </button>
                 </div>
             </div>
         </div>
     {/if}
-  
+ 
     <!-- MODAL DE SELEÇÃO DE ENDEREÇO -->
     {#if modalAberto}
         <div transition:fade class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div class="bg-primary-900 border border-primary-700 rounded-2xl w-full max-w-lg p-6 flex flex-col gap-5 shadow-2xl relative text-xs">
+            <div class="bg-primary-900 border border-primary-700 rounded-2xl w-full max-w-lg p-5 sm:p-6 flex flex-col gap-5 shadow-2xl relative text-xs">
                 
                 <div class="flex justify-between items-center border-b border-primary-800 pb-3">
-                    <h3 class="font-serif font-bold text-tertiary-400 text-base">Escolha um endereço de entrega</h3>
+                    <h3 class="font-serif font-bold text-tertiary-400 text-sm sm:text-base">Escolha um endereço de entrega</h3>
                     <button on:click={() => modalAberto = false} class="text-primary-400 hover:text-primary-50 font-bold text-base cursor-pointer">✕</button>
                 </div>
-  
+ 
                 {#if !modoNovoEndereco}
                     <div class="flex flex-col gap-3 max-h-60 overflow-y-auto pr-1">
                         {#if enderecosSalvos.length === 0}
@@ -349,13 +467,13 @@
                         {:else}
                             {#each enderecosSalvos as end}
                                 <label class={`border rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all ${enderecoSelecionado === end ? 'border-tertiary-500 bg-primary-950 shadow-md' : 'border-primary-800 bg-primary-950/40 hover:bg-primary-950/80'}`}>
-                                    <input type="radio" name="enderecoModal" value={end} bind:group={enderecoSelecionado} class="mt-0.5 accent-tertiary-500" />
-                                    <span class="text-primary-50 font-medium leading-relaxed">{end}</span>
+                                    <input type="radio" name="enderecoModal" value={end} bind:group={enderecoSelecionado} class="mt-0.5 accent-tertiary-500 shrink-0" />
+                                    <span class="text-primary-50 font-medium leading-relaxed break-words">{end}</span>
                                 </label>
                             {/each}
                         {/if}
                     </div>
-  
+ 
                     <div class="flex flex-col gap-3 pt-3 border-t border-primary-800">
                         <button 
                             type="button" 
@@ -364,7 +482,7 @@
                         >
                             + Adicionar novo endereço
                         </button>
-  
+ 
                         <button 
                             type="button" 
                             on:click={() => modalAberto = false}
@@ -389,7 +507,7 @@
                                 <input type="text" bind:value={rua} placeholder="Rua" class="bg-primary-950 border border-primary-700 rounded-lg p-2.5 text-primary-50" />
                             </div>
                         </div>
-  
+ 
                         <div class="grid grid-cols-3 gap-3">
                             <div class="flex flex-col gap-1">
                                 <label class="text-[9px] uppercase tracking-widest text-primary-300 font-bold">Número</label>
@@ -400,7 +518,7 @@
                                 <input type="text" bind:value={complemento} placeholder="Apto, Bloco..." class="bg-primary-950 border border-primary-700 rounded-lg p-2.5 text-primary-50" />
                             </div>
                         </div>
-  
+ 
                         <div class="grid grid-cols-3 gap-3">
                             <div class="flex flex-col gap-1">
                                 <label class="text-[9px] uppercase tracking-widest text-primary-300 font-bold">Bairro</label>
@@ -416,7 +534,7 @@
                             </div>
                         </div>
                     </div>
-  
+ 
                     <div class="flex gap-3 pt-2 border-t border-primary-800">
                         <button 
                             type="button" 
@@ -434,11 +552,11 @@
                         </button>
                     </div>
                 {/if}
-  
+ 
             </div>
         </div>
     {/if}
-  
+ 
     <!-- MODAL DE PEDIDO FINALIZADO COM SUCESSO -->
     {#if pedidoFinalizadoModal}
         <div transition:fade class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
@@ -447,15 +565,15 @@
                 <div class="w-16 h-16 bg-tertiary-500/20 text-tertiary-400 rounded-full flex items-center justify-center text-3xl mb-1">
                     ✓
                 </div>
-  
+ 
                 <h3 class="font-serif font-bold text-tertiary-400 text-xl uppercase tracking-wider">
                     Pedido Realizado!
                 </h3>
-  
+ 
                 <p class="text-xs text-primary-200 leading-relaxed">
                     Seu pedido foi registrado com sucesso e já está em processamento.
                 </p>
-  
+ 
                 <button 
                     type="button" 
                     on:click={fecharEIrParaPedidos}
@@ -466,9 +584,9 @@
             </div>
         </div>
     {/if}
-  </main>
-  
-  <style>
+</main>
+ 
+<style>
     input:-webkit-autofill,
     input:-webkit-autofill:hover, 
     input:-webkit-autofill:focus, 
@@ -477,4 +595,4 @@
       -webkit-text-fill-color: #F5F2EF !important;
       transition: background-color 5000s ease-in-out 0s;
     }
-  </style>
+</style>

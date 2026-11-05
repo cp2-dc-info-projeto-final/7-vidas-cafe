@@ -199,7 +199,7 @@
 
 <Menu />
 
-<main class="mx-auto pt-32 md:pt-40 pb-16 px-4 max-w-7xl text-primary-50">
+<main class="mx-auto pt-40 md:pt-53 pb-16 px-4 max-w-7xl text-primary-50">
   
   <header class="text-center mb-10 md:mb-14">
     <span class="inline-block text-tertiary-300 font-bold uppercase tracking-[0.25em] text-xs mb-3 bg-primary-900/60 px-4 py-1.5 rounded-full border border-tertiary-600/40">
@@ -414,17 +414,17 @@
     <div class="lg:col-span-2 bg-primary-900 border-2 border-tertiary-600/60 rounded-3xl p-4 md:p-6 shadow-2xl flex items-center justify-center overflow-hidden">
       <!-- Substitua o link do src do iframe abaixo pela playlist oficial do seu Spotify -->
       <iframe 
-        style="border-radius:16px" 
-        src="https://open.spotify.com/embed/album/5QSWmnTnWNAwOwIB0cOrLW?utm_source=generator&si=fe213dc2b0374915" 
-        width="100%" 
-        height="152" 
-        frameBorder="0" 
-        allowfullscreen="" 
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-        loading="lazy"
-        title="Playlist 7 Vidas Café"
-        class="w-full shadow-lg"
-      ></iframe>
+      style="border-radius:16px" 
+      src="https://open.spotify.com/embed/album/5QSWmnTnWNAwOwIB0cOrLW?utm_source=generator&si=fe213dc2b0374915" 
+      width="100%" 
+      height="152" 
+      frameborder="0" 
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+      allowfullscreen
+      loading="lazy"
+      title="Playlist 7 Vidas Café"
+      class="w-full shadow-lg"
+  ></iframe>
     </div>
 
   </section>

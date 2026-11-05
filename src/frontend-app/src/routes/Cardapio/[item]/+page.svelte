@@ -188,7 +188,7 @@
 
 <Menu />
 
-<main class="max-w-2xl mx-auto min-h-screen pt-32 md:pt-40 text-primary-50 px-4 pb-20">
+<main class="max-w-2xl mx-auto min-h-screen pt-40 md:pt-53 text-primary-50 px-4 pb-20">
     {#if loading}
         <div class="py-24 text-center">
             <p class="text-tertiary-300 font-bold uppercase tracking-widest text-xs">

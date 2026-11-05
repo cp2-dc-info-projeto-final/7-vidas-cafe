@@ -63,6 +63,14 @@ router.post('/', verifyToken, async (req, res) => {
         // E. Zera o total e quantidade do carrinho principal do usuário
         await client.query('UPDATE carrinho SET quantidade = 0, preco_total = 0 WHERE id = $1', [carrinho.id]);
 
+        // F. SALVA AUTOMATICAMENTE O ENDEREÇO NA TABELA 'enderecos_usuario' PARA FUTURAS COMPRAS
+        await client.query(
+            `INSERT INTO enderecos_usuario (usuario_id, endereco_completo) 
+             VALUES ($1, $2) 
+             ON CONFLICT DO NOTHING`,
+            [userId, endereco]
+        );
+
         await client.query('COMMIT'); // Confirma todas as alterações no banco
 
         return res.status(201).json({
@@ -118,11 +126,56 @@ router.get('/meus-pedidos', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 3. BUSCAR TODOS OS PEDIDOS DE UM USUÁRIO ESPECÍFICO (ADMIN)
-// POSICIONADA AQUI ANTES DE /:id PARA EVITAR CONFLITO
+// 3. BUSCAR ENDEREÇOS ANTERIORES DO USUÁRIO (FIXO - ANTES DE /:id)
+// ==========================================
+router.get('/usuario/meus-enderecos', verifyToken, async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        const query = `
+            SELECT endereco_completo as endereco 
+            FROM enderecos_usuario 
+            WHERE usuario_id = $1 
+            ORDER BY criado_em DESC 
+            LIMIT 5;
+        `;
+        const resultado = await pool.query(query, [userId]);
+        const enderecos = resultado.rows.map(row => row.endereco);
+
+        return res.json({ success: true, enderecos });
+    } catch (error) {
+        console.error('Erro ao buscar endereços:', error);
+        return res.status(500).json({ success: false, message: 'Erro ao buscar endereços.' });
+    }
+});
+
+// ==========================================
+// 4. CADASTRAR NOVO ENDEREÇO DO USUÁRIO (FIXO - ANTES DE /:id)
+// ==========================================
+router.post('/usuario/meus-enderecos', verifyToken, async (req, res) => {
+    const userId = req.user.id;
+    const { endereco } = req.body;
+
+    if (!endereco) {
+        return res.status(400).json({ success: false, message: 'O endereço é obrigatório.' });
+    }
+
+    try {
+        await pool.query(
+            'INSERT INTO enderecos_usuario (usuario_id, endereco_completo) VALUES ($1, $2)',
+            [userId, endereco]
+        );
+        return res.status(201).json({ success: true, message: 'Endereço salvo com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao salvar endereço:', error);
+        return res.status(500).json({ success: false, message: 'Erro ao salvar endereço.' });
+    }
+});
+
+// ==========================================
+// 5. BUSCAR TODOS OS PEDIDOS DE UM USUÁRIO ESPECÍFICO (ADMIN)
 // ==========================================
 router.get('/usuario/:id', verifyToken, isAdmin, async function(req, res) {
-    console.log("--> ROTA /usuario/:id FOI ATINGIDA! ID recebido:", req.params.id);
   try {
     const usuarioId = req.params.id;
 
@@ -132,7 +185,6 @@ router.get('/usuario/:id', verifyToken, isAdmin, async function(req, res) {
     }
     const nomeUsuario = userResult.rows[0].login;
 
-    // CORRIGIDO: de 'pedido p' para 'pedidos p' e de 'p.usuario_id' para 'p.comprador'
     const pedidosResult = await pool.query(`
       SELECT p.id, p.comprador as usuario_id, p.preco_pedido, p.status_pedido, p.endereco, p.form_pag, p.cupom, p.data_compra
       FROM pedidos p
@@ -143,7 +195,6 @@ router.get('/usuario/:id', verifyToken, isAdmin, async function(req, res) {
     const pedidos = [];
 
     for (const pedido of pedidosResult.rows) {
-      // CORRIGIDO: buscando da tabela correta de itens do carrinho/pedido
       const itensResult = await pool.query(`
         SELECT ip.id, ip.cardapio_id, ip.quantidade, ip.preco_unitario, ip.subtotal,
                c.nome AS nome_produto, c.imagem
@@ -160,14 +211,14 @@ router.get('/usuario/:id', verifyToken, isAdmin, async function(req, res) {
     }
 
     return res.json({ success: true, data: pedidos });
-  } catch (error) { // ou apenas catch (error)
+  } catch (error) {
     console.error('Erro ao buscar pedidos do usuário:', error);
     return res.status(500).json({ message: 'Erro interno do servidor' });
   }
 });
 
 // ==========================================
-// 4. BUSCAR PEDIDO ESPECÍFICO POR ID
+// 6. BUSCAR PEDIDO ESPECÍFICO POR ID
 // ==========================================
 router.get('/:id', verifyToken, async (req, res) => {
     const pedidoId = req.params.id;
@@ -217,7 +268,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 
 // ==========================================
-// 5. ATUALIZAR STATUS DO PEDIDO (Área Admin)
+// 7. ATUALIZAR STATUS DO PEDIDO (Área Admin)
 // ==========================================
 router.patch('/:id/status', verifyToken, isAdmin, async (req, res) => {
     const pedidoId = req.params.id;
@@ -248,7 +299,7 @@ router.patch('/:id/status', verifyToken, isAdmin, async (req, res) => {
 });
 
 // ==========================================
-// 6. CANCELAR PEDIDO
+// 8. CANCELAR PEDIDO
 // ==========================================
 router.delete('/:id', verifyToken, async (req, res) => {
     const pedidoId = req.params.id;
@@ -298,53 +349,6 @@ router.delete('/:id', verifyToken, async (req, res) => {
         return res.status(500).json({ message: 'Erro interno ao cancelar o pedido: ' + error.message });
     } finally {
         client.release();
-    }
-});
-
-// ==========================================
-// 7. BUSCAR ENDEREÇOS ANTERIORES DO USUÁRIO
-// ==========================================
-router.get('/usuario/meus-enderecos', verifyToken, async (req, res) => {
-    const userId = req.user.id;
-
-    try {
-        const query = `
-            SELECT endereco_completo as endereco 
-            FROM enderecos_usuario 
-            WHERE usuario_id = $1 
-            ORDER BY criado_em DESC 
-            LIMIT 5;
-        `;
-        const resultado = await pool.query(query, [userId]);
-        const enderecos = resultado.rows.map(row => row.endereco);
-
-        return res.json({ success: true, enderecos });
-    } catch (error) {
-        console.error('Erro ao buscar endereços:', error);
-        return res.status(500).json({ success: false, message: 'Erro ao buscar endereços.' });
-    }
-});
-
-// ==========================================
-// 8. CADASTRAR NOVO ENDEREÇO DO USUÁRIO
-// ==========================================
-router.post('/usuario/meus-enderecos', verifyToken, async (req, res) => {
-    const userId = req.user.id;
-    const { endereco } = req.body;
-
-    if (!endereco) {
-        return res.status(400).json({ success: false, message: 'O endereço é obrigatório.' });
-    }
-
-    try {
-        await pool.query(
-            'INSERT INTO enderecos_usuario (usuario_id, endereco_completo) VALUES ($1, $2)',
-            [userId, endereco]
-        );
-        return res.status(201).json({ success: true, message: 'Endereço salvo com sucesso!' });
-    } catch (error) {
-        console.error('Erro ao salvar endereço:', error);
-        return res.status(500).json({ success: false, message: 'Erro ao salvar endereço.' });
     }
 });
 

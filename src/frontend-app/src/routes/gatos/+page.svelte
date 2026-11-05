@@ -214,7 +214,7 @@
 
 <Menu />
 
-<main class="max-w-6xl mx-auto px-6 md:px-12 pt-32 md:pt-40 pb-20 text-primary-50">
+<main class="max-w-6xl mx-auto px-6 md:px-12 pt-40 md:pt-53 pb-20 text-primary-50">
 
   <section class="text-center mb-16">
     <Heading tag="h1" class="text-4xl md:text-6xl font-black tracking-[0.2em] text-white uppercase font-serif">Gatos</Heading>

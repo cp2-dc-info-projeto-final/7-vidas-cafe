@@ -5,15 +5,27 @@
     import { page } from "$app/stores";
     import { getToken, getCurrentUser, type User } from "$lib/auth";
     import { onMount } from 'svelte';
+    import { fade } from 'svelte/transition';
     import api from '$lib/api';
 
     let user: User | null = null;
     let loading = true;
     let error = '';
     let pedidosUsuario: any[] = [];
+    
+    // Objeto para controlar o status selecionado em cada pedido durante a edição
+    let statusEditando: { [key: number]: string } = {};
+    let salvandoStatus: { [key: number]: boolean } = {};
+
+    // Estados para os Modais Customizados
+    let mostrarModalAlerta = false;
+    let mensagemAlerta = '';
+
+    let mostrarModalSucessoStatus = false;
+    let mensagemSucessoStatus = '';
 
     // Pega o id da URL de forma reativa e segura
-    $: userId =$page.params.id;
+    $: userId = $page.params.id;
 
     onMount(async () => {
         await inicializarInterface();
@@ -28,11 +40,12 @@
 
         try {
             const userData = await getCurrentUser();
+            
             if (!userData || userData.role?.toLowerCase() !== 'admin') {
-                error = 'Acesso negado. Apenas administradores podem ver pedidos de outros usuários.';
-                loading = false;
+                goto('/');
                 return;
             }
+            
             user = userData;
 
             if (userId) {
@@ -43,21 +56,49 @@
             }
         } catch (e: any) {
             console.error('Erro na inicialização:', e);
-            error = e.message || 'Erro ao carregar dados.';
-            loading = false;
+            goto('/');
         }
     }
 
     async function carregarPedidosDoUsuario() {
         try {
             const response = await api.get(`/pedido/usuario/${userId}`);
-            // Ajustado para ler o array dentro de response.data.data (conforme o back-end envia)
             pedidosUsuario = response.data.data || response.data.pedidos || response.data || [];
+            
+            pedidosUsuario.forEach(pedido => {
+                statusEditando[pedido.id] = pedido.status_pedido;
+            });
         } catch (err: any) {
             console.error('Erro ao carregar pedidos do usuário:', err);
             error = err.response?.data?.message || 'Não foi possível carregar os pedidos deste usuário.';
         } finally {
             loading = false;
+        }
+    }
+
+    async function atualizarStatus(pedidoId: number) {
+        const novoStatus = statusEditando[pedidoId];
+        if (!novoStatus) return;
+
+        salvandoStatus[pedidoId] = true;
+        try {
+            await api.patch(`/pedido/${pedidoId}/status`, { status: novoStatus });
+            
+            pedidosUsuario = pedidosUsuario.map(p => {
+                if (p.id === pedidoId) {
+                    return { ...p, status_pedido: novoStatus };
+                }
+                return p;
+            });
+
+            mensagemSucessoStatus = 'Status do pedido atualizado com sucesso!';
+            mostrarModalSucessoStatus = true;
+        } catch (err: any) {
+            console.error('Erro ao atualizar status:', err);
+            mensagemAlerta = err.response?.data?.message || 'Erro ao atualizar o status do pedido.';
+            mostrarModalAlerta = true;
+        } finally {
+            salvandoStatus[pedidoId] = false;
         }
     }
 
@@ -75,7 +116,7 @@
 
 <Menu />
 
-<main class="max-w-4xl mx-auto px-4 md:px-8 pt-32 md:pt-40 pb-20 text-primary-50 relative z-30 flex flex-col gap-10">
+<main class="max-w-4xl mx-auto px-4 md:px-8 pt-40 md:pt-55 pb-20 text-primary-50 relative z-30 flex flex-col gap-10">
     
     <section class="text-center space-y-3">
         <Heading tag="h1" class="text-3xl md:text-5xl font-black tracking-[0.15em] text-primary-50 uppercase font-serif">
@@ -124,6 +165,30 @@
                         </span>
                     </div>
 
+                    <!-- Bloco de Alteração de Status pelo Admin -->
+                    <div class="bg-primary-950/40 p-4 rounded-xl border border-primary-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                        <span class="font-bold uppercase tracking-wider text-primary-300">Alterar Status do Pedido:</span>
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <select 
+                                bind:value={statusEditando[pedido.id]} 
+                                class="bg-primary-900 border border-primary-700 text-primary-50 rounded-lg px-3 py-1.5 text-xs focus:ring-tertiary-500 focus:border-tertiary-500 w-full sm:w-auto"
+                            >
+                                <option value="pendente">Pendente</option>
+                                <option value="preparando">Preparando</option>
+                                <option value="saiu para entrega">Saiu para entrega</option>
+                                <option value="entregue">Entregue</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                            <button 
+                                on:click={() => atualizarStatus(pedido.id)}
+                                disabled={salvandoStatus[pedido.id]}
+                                class="px-4 py-1.5 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer disabled:opacity-50 whitespace-nowrap"
+                            >
+                                {salvandoStatus[pedido.id] ? 'Salvando...' : 'Salvar'}
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Itens do Pedido -->
                     <div class="flex flex-col gap-2.5 text-xs">
                         <span class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Itens:</span>
@@ -158,6 +223,54 @@
 
                 </div>
             {/each}
+        </div>
+    {/if}
+
+    <!-- MODAL DE ALERTA (ERRO) -->
+    {#if mostrarModalAlerta}
+        <div transition:fade class="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-primary-900 border border-primary-700 rounded-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4 shadow-2xl text-center">
+                <div class="w-16 h-16 bg-amber-500/20 text-amber-400 rounded-full flex items-center justify-center text-3xl mb-1">
+                    ⚠️
+                </div>
+                <h3 class="font-serif font-bold text-amber-400 text-xl uppercase tracking-wider">
+                    Aviso
+                </h3>
+                <p class="text-xs text-primary-200 leading-relaxed">
+                    {mensagemAlerta}
+                </p>
+                <button 
+                    type="button" 
+                    on:click={() => (mostrarModalAlerta = false)}
+                    class="w-full mt-2 py-3 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-black rounded-xl uppercase tracking-widest transition-all shadow-md cursor-pointer text-xs"
+                >
+                    Entendido
+                </button>
+            </div>
+        </div>
+    {/if}
+
+    <!-- MODAL DE SUCESSO (STATUS ATUALIZADO) -->
+    {#if mostrarModalSucessoStatus}
+        <div transition:fade class="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-primary-900 border border-primary-700 rounded-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4 shadow-2xl text-center">
+                <div class="w-16 h-16 bg-tertiary-500/20 text-tertiary-400 rounded-full flex items-center justify-center text-3xl mb-1">
+                    ✓
+                </div>
+                <h3 class="font-serif font-bold text-tertiary-400 text-xl uppercase tracking-wider">
+                    Sucesso!
+                </h3>
+                <p class="text-xs text-primary-200 leading-relaxed">
+                    {mensagemSucessoStatus}
+                </p>
+                <button 
+                    type="button" 
+                    on:click={() => (mostrarModalSucessoStatus = false)}
+                    class="w-full mt-2 py-3 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-black rounded-xl uppercase tracking-widest transition-all shadow-md cursor-pointer text-xs"
+                >
+                    Entendido
+                </button>
+            </div>
         </div>
     {/if}
 </main>

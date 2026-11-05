@@ -216,7 +216,7 @@
 
 <Menu />
 
-<main class="mx-auto pt-36 md:pt-48 text-primary-50">
+<main class="mx-auto pt-40 md:pt-54 text-primary-50">
   <div class="mx-auto">
     
     <div class="max-w-7xl mx-auto px-4 mb-6 text-center">
@@ -235,59 +235,39 @@
         {error}
       </div>
     {:else}
-      <div class="hidden xl:block max-w-7xl bg-tertiary-200/40 border border-primary-400/40 p-3 mb-6 mx-auto">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-tertiary-400 mr-2 flex items-center gap-1">
-            Categorias:
-         </span>
-         <button
-           type="button"
-           class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${!categoriaSelecionada ? 'bg-tertiary-500 text-primary-950 border-tertiary-500' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-tertiary-400'}`}
-           on:click={() => { categoriaSelecionada = ''; }}
-         >
-           Todas
-         </button>
+     <!-- Barra de Categorias Fixa (2 em cima e 2 embaixo) -->
+     <div class="w-full mb-8">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto px-2">
+        <!-- Botão "Todas" -->
+        <button
+          type="button"
+          class={`w-full py-2.5 px-3 text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-xl border cursor-pointer shadow-sm text-center ${
+            !categoriaSelecionada 
+              ? 'bg-tertiary-500 text-primary-950 border-tertiary-400 scale-[1.02] shadow-tertiary-500/20 shadow-md' 
+              : 'bg-primary-900/80 text-primary-200 border-primary-700/80 hover:border-tertiary-500 hover:text-white'
+          }`}
+          on:click={() => { categoriaSelecionada = ''; }}
+        >
+         Todas
+        </button>
 
-         {#each categoriasList as cat}
-           <button
-             type="button"
-             class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${categoriaSelecionada === cat ? 'bg-tertiary-500 text-primary-950 border-tertiary-500' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-tertiary-400'}`}
-             on:click={() => { categoriaSelecionada = cat; }}
-           >
-             {cat}
-           </button>
-         {/each}
-        </div>
-      </div>
-
-      <div class="block xl:hidden w-full bg-tertiary-200/40 border-y border-primary-400/40 py-2.5 px-3 mb-6">
-        <span class="text-xs font-bold uppercase tracking-wider text-tertiary-900 mr-2 flex items-center gap-1">
-          Categorias:
-       </span> 
-        <div class="flex items-center gap-2 overflow-x-auto scrollbar-none no-scrollbar whitespace-nowrap -mx-3 px-3">
+        <!-- Listagem Dinâmica das Categorias -->
+        {#each categoriasList as cat}
           <button
             type="button"
-            class={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer rounded-full shrink-0 border ${
-              !categoriaSelecionada ? 'bg-tertiary-500 text-primary-950 border-tertiary-500 shadow-sm' : 'bg-primary-350 text-primary-900 border-primary-500/60 hover:border-tertiary-400'
+            class={`w-full py-2.5 px-3 text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-xl border cursor-pointer shadow-sm text-center ${
+              categoriaSelecionada === cat 
+                ? 'bg-tertiary-500 text-primary-950 border-tertiary-400 scale-[1.02] shadow-tertiary-500/20 shadow-md' 
+                : 'bg-primary-900/80 text-primary-200 border-primary-700/80 hover:border-tertiary-500 hover:text-white'
             }`}
-            on:click={() => { categoriaSelecionada = ''; }}
+            on:click={() => { categoriaSelecionada = cat; }}
           >
-            Todas
+            {cat}
           </button>
-      
-          {#each categoriasList as cat}
-            <button
-              type="button"
-              class={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer rounded-full shrink-0 border ${
-                categoriaSelecionada === cat ? 'bg-tertiary-500 text-primary-950 border-tertiary-500 shadow-sm' : 'bg-primary-350 text-primary-900 border-primary-500/60 hover:border-tertiary-400'
-              }`}
-              on:click={() => { categoriaSelecionada = cat; }}
-            >
-              {cat}
-            </button>
-          {/each}
-        </div>
+        {/each}
       </div>
+    </div>
+      
 
       {#if items.length === 0}
         <div class="text-center py-16 text-primary-300 text-xs tracking-wider uppercase font-medium space-y-4">

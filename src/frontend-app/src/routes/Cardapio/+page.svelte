@@ -39,7 +39,7 @@
   let confirmTargetId: number | null = null;
   let filtro = '';
   let currentUser: UserAuth | null = null;
-  let mobileMenuOpen = false; // Estado do menu hambúrguer
+  let mobileMenuOpen = false;
 
   // Estado do Modal de Detalhes
   let modalDetailsOpen = false;
@@ -139,7 +139,7 @@
     formResumo = '';
     formDescricao = '';
     formImagem = '';
-    formFile = null; // Limpa o arquivo anterior
+    formFile = null;
     formError = '';
     modalFormOpen = true;
   }
@@ -153,7 +153,7 @@
     formResumo = item.resumo;
     formDescricao = item.descricao;
     formImagem = item.imagem || '';
-    formFile = null; // Reseta o arquivo (se não trocar, o backend mantém a imagem antiga)
+    formFile = null;
     formError = '';
     modalFormOpen = true;
   }
@@ -162,7 +162,6 @@
     formError = '';
     formSubmitting = true;
 
-    // Usamos FormData para suportar envio de arquivos e textos juntos
     const formData = new FormData();
     formData.append('nome', formNome);
     formData.append('preco', String(formPreco));
@@ -171,7 +170,7 @@
     formData.append('descricao', formDescricao);
     
     if (formFile) {
-      formData.append('imagem', formFile); // O arquivo selecionado
+      formData.append('imagem', formFile);
     }
 
     try {
@@ -208,10 +207,10 @@
       formSubmitting = false;
     }
   }
+
   onMount(async () => {
     loading = true;
 
-    // 1. Lê o parâmetro da URL (ex: /Cardapio?categoria=Doces)
     const categoriaUrl = $page.url.searchParams.get('categoria');
     if (categoriaUrl) {
       const catEncontrada = categoriasList.find(c => c.toLowerCase() === categoriaUrl.toLowerCase());
@@ -241,8 +240,6 @@
     }
 
     try {
-      // Se já houver uma categoria vinda da URL, a função buscarCardapio() rodará com ela. 
-      // Mas para garantir o primeiro carregamento com o filtro aplicado, podemos deixar como está ou chamar direto:
       await buscarCardapio();
     } catch (e: any) {
       error = 'Erro ao carregar cardápio.';
@@ -250,6 +247,7 @@
       loading = false;
     }
   });
+
   $: filtro, categoriaSelecionada, buscarCardapio();
 
   async function buscarCardapio() {
@@ -277,77 +275,60 @@
 </script>
 
 <style>
-  input::placeholder {
-    color: #8A5219;
-    opacity: 0.8;
+  /* Força absoluta para o placeholder obedecer o tom claro / tertiary-50 */
+  :global(.placeholder-claro::placeholder) {
+    color: var(--color-tertiary-100, #fdf8f6) !important;
+    opacity: 1 !important;
+  }
+  :global(.placeholder-claro::-webkit-input-placeholder) {
+    color: var(--color-tertiary-100, #fdf8f6) !important;
+    opacity: 1 !important;
+  }
+  :global(.placeholder-claro::-moz-placeholder) {
+    color: var(--color-tertiary-100, #fdf8f6) !important;
+    opacity: 1 !important;
   }
 </style>
 
+
 <Menu />
 
-<main class="mx-auto pt-36 md:pt-48 text-primary-50">
+<main class="mx-auto pt-36 md:pt-55 text-primary-50 max-w-7xl px-4 md:px-8">
   <div class="mx-auto">
     {#if loading}
-      <div class="my-8 text-center text-neutral-400 font-medium uppercase tracking-widest animate-pulse">
+      <div class="my-16 text-center text-neutral-400 font-medium uppercase tracking-widest animate-pulse text-sm">
         Carregando cardápio...
       </div>
     {:else if error}
-      <div class="my-8 text-center text-red-500 font-semibold text-sm tracking-wide max-w-xl mx-auto bg-red-950/10 p-3 border border-red-900/35">
+      <div class="my-8 text-center text-red-500 font-semibold text-sm tracking-wide max-w-xl mx-auto bg-red-950/20 p-4 border border-red-900/40 rounded-2xl">
         {error}
       </div>
     {:else}
-      <!-- Barra de Categorias -->
-      <div class="hidden xl:block max-w-7xl bg-tertiary-200/40 border border-primary-400/40 p-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-xs font-bold uppercase tracking-wider text-tertiary-400 mr-2 flex items-center gap-1">
-            Categorias:
-         </span>
-         <button
+      
+      <!-- Barra de Categorias Fixa (2 em cima e 2 embaixo) -->
+      <div class="w-full mb-8">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto px-2">
+          <!-- Botão "Todas" -->
+          <button
             type="button"
-            class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${!categoriaSelecionada ? 'bg-tertiary-500 text-primary-950 border-tertiary-500' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-tertiary-400'}`}
+            class={`w-full py-2.5 px-3 text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-xl border cursor-pointer shadow-sm text-center ${
+              !categoriaSelecionada 
+                ? 'bg-tertiary-500 text-primary-950 border-tertiary-400 scale-[1.02] shadow-tertiary-500/20 shadow-md' 
+                : 'bg-primary-900/80 text-primary-200 border-primary-700/80 hover:border-tertiary-500 hover:text-white'
+            }`}
             on:click={() => { categoriaSelecionada = ''; }}
-         >
-            Todas
-         </button>
+          >
+             Todas
+          </button>
 
-         {#each categoriasList as cat}
-            <button
-              type="button"
-              class={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border ${categoriaSelecionada === cat ? 'bg-tertiary-500 text-primary-950 border-tertiary-500' : 'bg-primary-350 text-primary-900 border-primary-500 hover:border-tertiary-400'}`}
-              on:click={() => { categoriaSelecionada = cat; }}
-            >
-              {cat}
-            </button>
-         {/each}
-        </div>
-      </div>
-
-      <div class="block xl:hidden w-full bg-secondary-900/40 border-y border-primary-500/40 py-2.5 px-3">
-  <span class="text-xs font-bold uppercase tracking-wider text-secondary-100 mr-2 flex items-center gap-1">
-    Categorias:
-  </span> 
-
-  <div class="flex items-center gap-2 overflow-x-auto scrollbar-none no-scrollbar whitespace-nowrap -mx-3 px-3">
-    <!-- Botão Todas -->
-    <button
-      type="button"
-      class={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer rounded-full shrink-0 border ${
-        !categoriaSelecionada 
-          ? 'bg-tertiary-500 text-primary-950 border-tertiary-500 shadow-sm' 
-          : 'bg-primary-800 text-secondary-100 border-primary-600/60 hover:border-tertiary-400'
-      }`}
-      on:click={() => { categoriaSelecionada = ''; }}
-    >
-      Todas
-    </button>
-          <!-- Lista de Categorias -->
+          <!-- Listagem Dinâmica das Categorias -->
           {#each categoriasList as cat}
             <button
               type="button"
-              class={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer rounded-full shrink-0 border ${
+              class={`w-full py-2.5 px-3 text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-xl border cursor-pointer shadow-sm text-center ${
                 categoriaSelecionada === cat 
-                  ? 'bg-tertiary-500 text-primary-950 border-tertiary-500 shadow-sm' 
-                  : 'bg-primary-350 text-primary-900 border-primary-500/60 hover:border-tertiary-400'
+                  ? 'bg-tertiary-500 text-primary-950 border-tertiary-400 scale-[1.02] shadow-tertiary-500/20 shadow-md' 
+                  : 'bg-primary-900/80 text-primary-200 border-primary-700/80 hover:border-tertiary-500 hover:text-white'
               }`}
               on:click={() => { categoriaSelecionada = cat; }}
             >
@@ -357,200 +338,121 @@
         </div>
       </div>
 
-      <!-- Topo: Campo de Pesquisa e Botão Novo Item -->
-      <div class="w-[98%] mx-auto py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <input
-          type="text"
-          placeholder="Pesquisar no Cardápio..."
-          style="padding: 12px; width: 300px; display: flex;"
-          class="bg-tertiary-100 border border-black rounded-none text-primary-900 text-sm tracking-wide focus:outline-none focus:border-tertiary-500 focus:ring-0"
-          bind:value={filtro}
-        />
+     <!-- Topo: Campo de Pesquisa e Botão Novo Item -->
+     <div class="w-full mx-auto pb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        
+   <!-- Input de Pesquisa Estilizado com Ícone de Lupa -->
+   <div class="relative w-full sm:w-96">
+    <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-tertiary-400">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+    </span>
+    <input
+      type="text"
+      placeholder="Pesquisar delícias no cardápio..."
+      style="color-scheme: dark;"
+      class="w-full bg-primary-900/90 border-2 border-tertiary-600/50 rounded-2xl text-white font-medium text-xs md:text-sm tracking-wide focus:outline-none focus:border-tertiary-400 focus:ring-2 focus:ring-tertiary-400/30 pl-11 pr-4 py-3 shadow-lg transition-all placeholder-claro"
+      bind:value={filtro}
+    />
+  </div>
+      {#if isAdmin}
+        <button
+          type="button"
+          class="flex items-center justify-center gap-2.5 bg-gradient-to-r from-tertiary-500 to-tertiary-600 hover:from-tertiary-400 hover:to-tertiary-500 text-primary-950 font-black px-6 py-3.5 rounded-2xl uppercase tracking-wider text-xs transition-all duration-300 border-2 border-tertiary-400 cursor-pointer shadow-xl hover:shadow-tertiary-500/30 hover:-translate-y-0.5 w-full sm:w-auto"
+          on:click={openAddModal}
+        >
+          <PlusOutline class="w-4 h-4 text-primary-950 stroke-[3]" />
+          Adicionar Item
+        </button>
+      {/if}
+    </div>
 
-        {#if isAdmin}
-          <button
-            type="button"
-            class="flex items-center gap-2 bg-tertiary-500 hover:bg-tertiary-600 text-primary-950 font-bold px-5 py-3 rounded-full uppercase tracking-wider text-xs transition-all duration-300 border border-black cursor-pointer shadow-md"
-            on:click={openAddModal}
+      <!-- Grid do Cardápio (Responsivo unificado e fluido) -->
+      <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 w-full">
+        {#each items as item}
+          {@const promoAtiva = isPromocaoAtiva(item)}
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="w-full p-0 overflow-hidden shadow-xl border-2 border-tertiary-600/60 bg-primary-800 rounded-2xl md:rounded-3xl flex flex-col justify-between cursor-pointer hover:border-tertiary-400 hover:scale-[1.02] transition-all duration-300 group relative"
+            on:click={() => window.location.href = `/Cardapio/${item.id}`}
           >
-            <PlusOutline class="w-5 h-5 text-primary-950" />
-            Adicionar Item
-          </button>
-        {/if}
-      </div>
+            <div>
+              <div class="relative w-full h-36 md:h-48 bg-primary-900/60 border-b-2 border-tertiary-600/40 overflow-hidden flex items-center justify-center">
+                {#if item.imagem}
+                  <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                {:else}
+                  <div class="text-tertiary-300 font-bold text-xs uppercase tracking-wider flex items-center gap-1">
+                    <span>Sem Imagem</span>
+                  </div>
+                {/if}
 
-      <!-- Grid do Cardápio -->
-      <div class="hidden xl:block max-w-7xl">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
-          {#each items as item}
-            {@const promoAtiva = isPromocaoAtiva(item)}
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="w-full max-w-none p-0 overflow-hidden shadow-2xl border-2 border-tertiary-600/70 bg-primary-800 rounded-3xl flex flex-col justify-between cursor-pointer hover:border-tertiary-400 hover:scale-[1.02] transition-all duration-300 group relative"
-              on:click={() => window.location.href = `/Cardapio/${item.id}`}
-            >
-              <div>
-                <div class="relative w-full h-48 bg-primary-900/60 border-b-2 border-tertiary-600/50 overflow-hidden flex items-center justify-center rounded-t-3xl">
-                  {#if item.imagem}
-                    <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  {:else}
-                    <div class="text-tertiary-300 font-bold text-xs uppercase tracking-wider flex items-center gap-1">
-                      <span> Sem Imagem</span>
-                    </div>
-                  {/if}
+                {#if item.categoria}
+                  <Badge class="absolute top-2.5 left-2.5 bg-tertiary-600/90 text-primary-50 border border-tertiary-400/80 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 shadow-md backdrop-blur-sm">
+                    {item.categoria}
+                  </Badge>
+                {/if}
 
-                  {#if item.categoria}
-                    <Badge class="absolute top-3 left-3 bg-tertiary-600 text-primary-50 border border-tertiary-400 rounded-full text-[10px] font-bold uppercase tracking-widest px-3 py-1 shadow-md">
-                       {item.categoria}
-                    </Badge>
-                  {/if}
-
-                  {#if promoAtiva}
-                    <Badge class="absolute top-3 right-3 bg-red-600 text-white border border-red-400 rounded-full text-[10px] font-black uppercase tracking-widest px-2.5 py-1 shadow-lg animate-pulse">
-                      🔥 -{item.promocao}%
-                    </Badge>
-                  {/if}
-                </div>
-
-                <div class="px-5 pt-4 pb-2 flex items-start justify-between">
-                  <h3 class="text-lg font-black text-primary-50 text-left leading-tight group-hover:text-tertiary-300 transition-colors">
-                    {item.nome}
-                  </h3>
-
-                  {#if isAdmin}
-                    <div class="flex gap-1.5 shrink-0 ml-2">
-                      <button
-                        type="button"
-                        class="p-2 rounded-full bg-primary-700 border border-primary-600 hover:bg-tertiary-500 hover:text-primary-950 text-tertiary-200 transition-all duration-200 shadow-sm z-10"
-                        title="Editar Item"
-                        on:click|stopPropagation={() => openEditModal(item)}
-                      >
-                        <EditOutline class="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Remover Item"
-                        class="p-2 rounded-full bg-primary-700 border border-primary-600 hover:bg-red-600 hover:text-white text-red-300 transition-all duration-200 shadow-sm z-10"
-                        on:click|stopPropagation={() => openConfirm(item.id)}
-                        disabled={deletingId === item.id || loading}
-                      >
-                        <TrashBinOutline class="w-4 h-4" />
-                      </button>
-                    </div>
-                  {/if}
-                </div>
-
-                <div class="px-5 py-2 text-left">
-                  <p class="text-primary-200 text-xs font-medium leading-relaxed line-clamp-2">
-                    {item.resumo}
-                  </p>
-                </div>
+                {#if promoAtiva}
+                  <Badge class="absolute top-2.5 right-2.5 bg-red-600 text-white border border-red-400 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest px-2.5 py-0.5 shadow-lg animate-pulse">
+                    🔥 -{item.promocao}%
+                  </Badge>
+                {/if}
               </div>
 
-              <div class="px-5 pb-4 pt-3 flex justify-between items-center mt-auto border-t border-primary-700/80 mx-3">
-                <span class="text-xs text-primary-300 font-bold uppercase tracking-wider">Valor</span>
-                <div class="text-right">
-                  {#if promoAtiva}
-                    <span class="block text-[10px] text-gray-400 line-through">
-                      {formatarPreco(item.preco)}
-                    </span>
-                  {/if}
-                  <span class="text-lg font-black text-primary-950 bg-tertiary-400 px-3.5 py-1 rounded-2xl border border-tertiary-300 shadow-md inline-block">
-                    {formatarPreco(calcularPrecoFinal(item))}
-                  </span>
-                </div>
+              <div class="px-3.5 md:px-5 pt-3 md:pt-4 pb-1.5 flex items-start justify-between">
+                <h3 class="text-sm md:text-lg font-black text-primary-50 text-left leading-tight group-hover:text-tertiary-300 transition-colors line-clamp-2">
+                  {item.nome}
+                </h3>
+
+                {#if isAdmin}
+                  <div class="flex gap-1 shrink-0 ml-1.5">
+                    <button
+                      type="button"
+                      class="p-1.5 md:p-2 rounded-full bg-primary-700 border border-primary-600 hover:bg-tertiary-500 hover:text-primary-950 text-tertiary-200 transition-all duration-200 shadow-sm z-10 cursor-pointer"
+                      title="Editar Item"
+                      on:click|stopPropagation={() => openEditModal(item)}
+                    >
+                      <EditOutline class="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Remover Item"
+                      class="p-1.5 md:p-2 rounded-full bg-primary-700 border border-primary-600 hover:bg-red-600 hover:text-white text-red-300 transition-all duration-200 shadow-sm z-10 cursor-pointer"
+                      on:click|stopPropagation={() => openConfirm(item.id)}
+                      disabled={deletingId === item.id || loading}
+                    >
+                      <TrashBinOutline class="w-3.5 h-3.5 md:w-4 md:h-4" />
+                    </button>
+                  </div>
+                {/if}
+              </div>
+
+              <div class="px-3.5 md:px-5 py-1 text-left">
+                <p class="text-primary-200 text-[11px] md:text-xs font-medium leading-relaxed line-clamp-2">
+                  {item.resumo}
+                </p>
               </div>
             </div>
-          {/each}
-        </div>
-      </div>
-      
-      <div class="block xl:hidden px-2">
-        <div class="grid grid-cols-2 gap-3 w-full">
-          {#each items as item}
-            {@const promoAtiva = isPromocaoAtiva(item)}
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="w-full max-w-none p-0 overflow-hidden shadow-xl border-2 border-tertiary-600/70 bg-primary-800 rounded-2xl flex flex-col justify-between cursor-pointer hover:border-tertiary-400 hover:scale-[1.02] transition-all duration-300 group relative"
-              on:click={() => window.location.href = `/Cardapio/${item.id}`}
-            >
-              <div>
-                <div class="relative w-full h-32 bg-primary-900/60 border-b-2 border-tertiary-600/50 overflow-hidden flex items-center justify-center rounded-t-2xl">
-                  {#if item.imagem}
-                    <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                  {:else}
-                    <div class="text-tertiary-300 font-bold text-[10px] uppercase tracking-wider flex items-center gap-1">
-                      <span>Sem Imagem</span>
-                    </div>
-                  {/if}
-       
-                  {#if item.categoria}
-                    <Badge class="absolute top-2 left-2 bg-tertiary-600 text-primary-50 border border-tertiary-400 rounded-full text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 shadow-md">
-                      {item.categoria}
-                    </Badge>
-                  {/if}
 
-                  {#if promoAtiva}
-                    <Badge class="absolute top-2 right-2 bg-red-600 text-white border border-red-400 rounded-full text-[9px] font-black uppercase tracking-widest px-2 py-0.5 shadow-md">
-                      -{item.promocao}%
-                    </Badge>
-                  {/if}
-                </div>
-       
-                <div class="px-3 pt-3 pb-1 flex items-start justify-between">
-                  <h3 class="text-sm md:text-base font-black text-primary-50 text-left leading-tight group-hover:text-tertiary-300 transition-colors line-clamp-2">
-                    {item.nome}
-                  </h3>
-       
-                  {#if isAdmin}
-                    <div class="flex gap-1 shrink-0 ml-1">
-                      <button
-                        type="button"
-                        class="p-1.5 rounded-full bg-primary-700 border border-primary-600 hover:bg-tertiary-500 hover:text-primary-950 text-tertiary-200 transition-all duration-200 shadow-sm z-10"
-                        title="Editar Item"
-                        on:click|stopPropagation={() => openEditModal(item)}
-                      >
-                        <EditOutline class="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Remover Item"
-                        class="p-1.5 rounded-full bg-primary-700 border border-primary-600 hover:bg-red-600 hover:text-white text-red-300 transition-all duration-200 shadow-sm z-10"
-                        on:click|stopPropagation={() => openConfirm(item.id)}
-                        disabled={deletingId === item.id || loading}
-                      >
-                        <TrashBinOutline class="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  {/if}
-                </div>
-       
-                <div class="px-3 py-1 text-left">
-                  <p class="text-primary-200 text-[11px] font-medium leading-relaxed line-clamp-2">
-                    {item.resumo}
-                  </p>
-                </div>
-              </div>
-       
-              <div class="px-3 pb-3 pt-2 flex justify-between items-center mt-auto border-t border-primary-700/80 mx-2">
-                <span class="text-[10px] text-primary-300 font-bold uppercase tracking-wider">Valor</span>
-                <div class="text-right">
-                  {#if promoAtiva}
-                    <span class="block text-[9px] text-gray-400 line-through">
-                      {formatarPreco(item.preco)}
-                    </span>
-                  {/if}
-                  <span class="text-sm md:text-base font-black text-primary-950 bg-tertiary-400 px-2.5 py-0.5 rounded-xl border border-tertiary-300 shadow-md inline-block">
-                    {formatarPreco(calcularPrecoFinal(item))}
+            <div class="px-3.5 md:px-5 pb-3.5 md:pb-4 pt-2.5 md:pt-3 flex justify-between items-center mt-auto border-t border-primary-700/80 mx-2.5 md:mx-3">
+              <span class="text-[10px] md:text-xs text-primary-300 font-bold uppercase tracking-wider">Valor</span>
+              <div class="text-right">
+                {#if promoAtiva}
+                  <span class="block text-[9px] md:text-[10px] text-gray-400 line-through">
+                    {formatarPreco(item.preco)}
                   </span>
-                </div>
+                {/if}
+                <span class="text-xs md:text-base font-black text-primary-950 bg-tertiary-400 px-2.5 md:px-3.5 py-0.5 md:py-1 rounded-xl md:rounded-2xl border border-tertiary-300 shadow-md inline-block">
+                  {formatarPreco(calcularPrecoFinal(item))}
+                </span>
               </div>
             </div>
-          {/each}
-        </div>
+          </div>
+        {/each}
       </div>
+
     {/if}
   </div>
 </main>
@@ -630,7 +532,7 @@
   </Modal>
 {/if}
 
-<!-- Modal de Adicionar / Editar Item (Design Reformulado) -->
+<!-- Modal de Adicionar / Editar Item -->
 <Modal 
   bind:open={modalFormOpen} 
   title={isEditing ? '✒️ Editar Item do Cardápio' : '➕ Adicionar Novo Item'} 
@@ -750,6 +652,7 @@
         </div>
       </div>
     {/if}
+
     <div class="flex justify-end gap-3 pt-4 border-t border-tertiary-600/40 mt-6">
       <button
         type="button"
