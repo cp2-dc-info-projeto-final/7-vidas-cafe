@@ -8,11 +8,13 @@
   
 #### Fluxo principal:
 
-- O cliente seleciona a opção “Criar conta”.
+- O cliente clica no botão "Login".
+
+- O cliente clica no link "Cadastre-se".
   
 - O sistema leva o cliente até a tela de registro contendo um formulário.
   
-- O cliente preenche os campos do formulário (informando e-mail e criando uma senha).
+- O cliente preenche os campos do formulário (informando nome de usuário, email, senha, cpf, data de nascimento e número de telefone).
   
 - O sistema consulta o banco de dados para verificar a disponibilidade das informações fornecidas.
   
@@ -38,7 +40,7 @@
 
 - O sistema registra as informações no banco de dados e informa usuário.
 
-#### Fluxo Alternativo B: Campo vazio
+#### Fluxo Alternativo A: Campo vazio
 
 - O sistema apresenta formulário de cadastro.
 
@@ -48,21 +50,6 @@
 
 - O usuário preenche todos os campos  e clica no botão de "Criar Conta".
 
-- O sistema registra as informações no banco de dados e informa usuário.
-
-
-#### Fluxo Alternativo C: Senha diferente dos padrões exigidos
-
-- O sistema apresenta formulário de cadastro.
-
-- O usuário insere uma senha.
-
-- O sistema analisa se a senha está dentro dos padrões exigidos  (mínimo 8 caracteres e 1 símbolo)
-
-- O sistema exibe uma mensagem de erro e informa ao usuário que a senha está fora dos padrões.
-
-- O sistema exibe uma mensagem sugerindo que o usuário coloque a senha correta.
-  
 - O sistema registra as informações no banco de dados e informa usuário.
 
 ### Caso de Uso 2: Login.
@@ -77,7 +64,7 @@
 
 - O sistema leva o cliente até a tela de preenchimento de senha e email.
 
-- cliente preenche os campos da tela.
+- cliente preenche os campos "Usuário ou E-mail" e "Senha".
 
 - O sistema consulta o banco de dados para a confirmação dos dados inseridos.
 
@@ -97,19 +84,7 @@
 
 - O sistema exibe uma mensagem dizendo que o email está inválido e sugere que o usuário digite outro email.
 
-#### Fluxo Alternativo B: Senha inválida
-
-- O sistema apresenta a página de formulário de Login.
-
-- O usuário insere uma senha.
-
-- O sistema consulta o banco de dados.
-
-- O banco de dados retorna que a senha informada está inválida.
-
-- O sistema exibe uma mensagem dizendo que a senha está invalida e sugere que o usuário insira uma senha correta.
-
-#### Fluxo Alternativo C: Campo vazio
+#### Fluxo Alternativo B: Campo vazio
 
 - O sistema apresenta a página de formulário de Login.
 
@@ -187,9 +162,7 @@
 
 - O cliente acessa o menu do seu perfil com as configurações da sua conta.
 
-- O cliente aperta o botão "editar dados de cadastro da conta".
-  
-- O sistema exibe os dados de cadastro do cliente.
+- O cliente aperta o botão "editar" no campo específico que deseja mudar.
 
 - O cliente edita dados do seu cadastro e aperta o botão confirmar.
   
@@ -199,13 +172,13 @@
 
 - O usuário acessa o menu do seu perfil com as configurações da sua conta.
 
-- O usuário aperta o botão "editar dados de cadastro da conta".
+- O cliente aperta o botão "editar" no campo específico que deseja mudar.
   
 - O sistema exibe os dados de cadastro do usuário.
 
 - O usuário decide que não quer mais editar e aperta o botão cancelar.
 
-- O sistema redireciona o usuário para o menu do seu perfil com  as configurações da sua conta.
+- O sistema redireciona o usuário para o menu do seu perfil com as configurações da sua conta.
 
 ### Caso de Uso 5: Logout
 
@@ -246,13 +219,11 @@
 
 - O sistema apresenta a página inicial do site.
 
-- O cliente aperta na barra de pesquisa.
+- O cliente aperta em "Cardápio" e é redirecionado para a aba de mesmo nome.
 
-- O cliente digita o tipo de refeição que deseja.
+- O cliente clica na barra de pesquisa e pesquisa pelo item desejado.
 
-- O cliente aperta no botão "Enter".
-
-- O sistema consulta o banco de dados.
+- O sistema consulta automaticamente no banco de dados.
 
 - O banco retorna a refeição desejada.
 
@@ -264,34 +235,16 @@
 
 - O sistema apresenta a página inicial do site.
 
-- O usuário aperta na barra de pesquisa.
+- O cliente aperta em "Cardápio" e é redirecionado para a aba de mesmo nome.
+
+- O cliente clica na barra de pesquisa.
 
 - O usuário não preenche o campo e aperta a barra de pesquisa.
 
-- O sistema analisa e pede que o usuário digite o tipo de refeição desejada.
+- O sistema automaticamente analisa o barra de pesquisa.
 
-- O usuário digita a refeição desejada e clica na barra de pesquisa.
+- O sistema nada retorna.
 
-- O sistema verifica no banco de dados se tem a refeição desejada.
-
-- O banco de dados retorna verdadeiro.
-
-- O sistema direciona o usuário para a página com a refeição desejada.
-
-
-#### Fluxo Alternativo B: Estoque vazio
-
-- O sistema apresenta a página inicial do site.
-
-- O usuário aperta na barra de pesquisa.
-
-- O usuário digita o tipo de refeição que deseja e aperta no botão "Enter".
-
-- O sistema consulta o banco de dados.
-
-- O banco de dados retorna negativo.
-
-- O sistema apresenta mensagem dizendo que a refeição digitada não tem no momento.
 
 ### Caso de uso 7: Carrinho de compras.
 
@@ -301,7 +254,11 @@
 
 #### Fluxo principal:  
 
-- O cliente clica no ícone do "carrinho de compras".
+- O cliente clica na aba "Cardápio".
+
+- O cliente scolhe os itens desejados.
+
+- O cliente clica no ícone de "Carrinho de Compras".
 
 - O sistema redireciona o cliente para a página contendo os itens desejados.
 
@@ -313,30 +270,6 @@
   
 - O cliente finaliza a compra e é redirecionado para a pagina inicial.
 
-#### Fluxo Alternativo A: Cliente não comprar o produto no carrinho
-
-- O cliente clica no ícone do "carrinho de compras".
-
-- O sistema redireciona o cliente para a página contendo os itens desejados.
-
-- O cliente não compra os itens desejados.
-
-- O item permanece no carrinho de compras.
-
-- O cliente vola para a pagina principal.
-
- #### Fluxo Alternativo B: Cliente não adicionar produtos no carrinho.
-
-- O cliente clica no ícone do "carrinho de compras".
-
-- O sistema redireciona o cliente para a página do carrinho.
-
-- O sistema não identifica nenhum item no carrinho de compras.
-
-- O sistema manda um texto avisando ao cliente que não tem itens no carrinho.
-
-- O sistema entrega a opção de adicionar itens ao carrinho e retorna a pagina "menu".
-
 ### Caso de Uso 8: Adoção de gatos.
 
 #### Atores:
@@ -345,7 +278,7 @@
 
 #### Fluxo Principal:
 
-- O cliente clica no ícone "Gatos".
+- O cliente clica na aba "Gatos".
 
 - O sistema redireciona o cliente para a página contendo vários gatos.
 
@@ -379,59 +312,12 @@
 
 - O sistema redireciona o cliente para a página contendo os itens desejados.
 
-- O cliente clica no botão "Editar Carrinho".
+- O cliente clica no botão "Remover produto" para remoção do iten ou modifica a quantidade de itens no carrinho clicando no "+" ou "-" para adicionar ou diminuir respectivamente.
 
-- O Cliente atualiza os campos do pedido (QTD de itens, ingredientes do item, tamanho do item).
+- O carrinho é atualizado. 
 
-- O cliente clica em "Confirmar".
 
-- O carrinho é atualizado.
-
-#### Fluxo Alternativo A: Cancelar Edição.
-
-- O cliente clica no ícone do "carrinho de compras".
-
-- O sistema redireciona o cliente para a página contendo os itens desejados.
-
-- O cliente clica no botão "Editar Carrinho".
-
-- O cliente clica em "cancelar edição".
-
-- O cliente é rediricionado para a pagina do carrinho. 
-
-### Caso de Uso 10: Excluir itens do carrinho de compras.
-
-#### Atores: 
-
-- Cliente
-
-#### Fluxo principal:  
-
-- O cliente clica no ícone do "carrinho de compras".
-
-- O sistema redireciona o cliente para a página contendo os itens desejados.
-
-- O cliente clica no botão "Excluir item".
-
-- O sistema envia uma pergunta de confirmação.
-
-- O cliente clica em "Confirmar".
-
-- O carrinho é atualizado.
-
-#### Fluxo Alternativo A: Cancelar exclusão
-
-- O cliente clica no ícone do "carrinho de compras".
-
-- O sistema redireciona o cliente para a página contendo os itens desejados.
-
-- O cliente clica no botão "Excluir item".
-
-- O cliente clica no botão "Cancelar exclusão".
-
-- O cliente é rediricionado na pagina do carrinho.
-
-### Caso de Uso 11: Gerenciar Catálogo de produtos.
+### Caso de Uso 10: Gerenciar Catálogo de produtos.
 
 #### Atores: 
 
@@ -439,9 +325,7 @@
 
 #### Fluxo principal: 
 
-- O administrador acessa o sistema.
-
-- Seleciona a opção "Catálogo de Produtos".
+- o Administrador clica na aba "Cardápio".
 
 - Visualiza a lista de produtos cadastrados.
 
@@ -455,21 +339,21 @@
 
 #### Fluxo Alternativo A: Editar Catálogo de produtos.
 
-- O administrador acessa o sistema.
+- O Administrador acessa o sistema.
 
 - Seleciona a opção "Catálogo de Produtos".
 
 - Visualiza a lista de produtos cadastrados.
 
-- O administrador clica em "Editar Catálogo de produtos".
+- O Administrador clica no item desejado para edição.
 
-- O Administrador clica no prdouto desejado.
+- O Administrador clica em "Editar item".
 
-- O administrador pode alterar as informações do prdouto (nome, descrição, preço, imagem, categoria).
+- O Administrador pode alterar as informações do prdouto (nome, descrição, preço, imagem, categoria).
 
-- O admnistrador clica em "salvar".
+- O Administrador clica em "salvar".
 
-- - O sistema retorna para o banco de dados.
+- O sistema retorna para o banco de dados.
 
 - O sistema atualiza a pagina.
 
@@ -477,15 +361,13 @@
 
 - O administrador acessa o sistema.
 
-- Seleciona a opção "Catálogo de Produtos".
+- Seleciona a aba "Cardápio".
 
 - Visualiza a lista de produtos cadastrados.
 
-- O administrador clica em "Editar Catálogo de produtos".
+- O administrador clica no item desejado para remoção.
 
-- O Administrador clica no prdouto desejado.
-
-- O admnistrador clica em "excluir produto".
+- O admnistrador clica em "Remover produto".
 
 - O administrador clica em "Confirmar Exclusão".
 
@@ -493,7 +375,7 @@
 
 - o sistema atualiza a pagina.
 
-### Caso de Uso 12: Editar pedidos.
+### Caso de Uso 11: Editar pedidos.
 
 #### Atores:
 
@@ -511,13 +393,13 @@
 
 - O sistema registra a atualização.
 
-### Caso de Uso 13: Administrar clientes. 
+### Caso de Uso 12: Administrar clientes. 
 
 #### Atores: 
 
 - Administrador
 
-#### Fluxo principal: 
+#### Fluxo principal: Visualizar Cliente
 
 - O administrador acessa o sistema.
 
@@ -537,11 +419,9 @@
 
 - O administrador visualiza a lista de clientes cadastrados.
 
-- O administrador clica sobre um cliente para ver detalhes.
+- O administrador clica em "Editar" no cliente desejado.
 
-- O administrador clica em "Editar".
-
-- O administrador modifica as informações do cliente(email, senha e etcetera).
+- O administrador modifica as informações do cliente(usuário, email, senha, cpf, data de nascimento e número de telefone).
 
 - O administrador clica em "Salvar".
 
@@ -563,7 +443,7 @@
 
 - O sistema atualiza.
 
-### Caso de Uso 14: Gerenciar Promoções.
+### Caso de Uso 13: Gerenciar Promoções.
 
 #### Atores:
 
@@ -577,37 +457,19 @@
 
 - Na página do item, o administrador clica em "Adicionar promoção".
 
-- Agora o Administrador escolhe qual a porcentagem da promoção.
-
-- Depois é redirecionado para a aba de "Tempo de Promoção".
-
-- O administrador escolhe o tempo da promoção.
+- Agora o Administrador escolhe qual a porcentagem da promoção e o tempo da promoção.
 
 - O administrador aperta em "Confirmar".
 
-- O item é atualizado com a novo valor e é adicionado na aba "Ofertas".
+- O item é atualizado com a novo valor e é adicionado na aba "Promoções".
 
-#### Fluxo Alternativo A: Editar Promoções.
+#### Fluxo Alternativo A: Exluir Promoções.
 
-- O administrador entra na aba "Promoções".
+- O administrador entra na aba "Promoções" ou "Cardápio.
 
-- O administrador clica em um produto.
+- O administrador clica em um produto em promoção.
 
-- O administrador clica em "Editar".
-
-- O administrador modifica as informaçoes da promoção(Porcentagem da promoção e tempo de promoção).
-
-- O administrador clica em "Salvar".
-
-- O sistema atualiza com as novas informações.
-
-#### Fluxo Alternativo B: Exluir Promoções.
-
-- O administrador entra na aba "Promoções".
-
-- O administrador clica em um produto.
-
-- O administrador clica em "Excluir"
+- O administrador clica em "Excluir promoção"
 
 - O sistema pergunta se o administrador tem certeza desta ação.
 
@@ -615,7 +477,7 @@
 
 - O sistema excluir a promoção e retira o produto da aba "Promoções".
 
-### Caso de Uso 15: Gerenciar Gatos a mostra.
+### Caso de Uso 14: Gerenciar Gatos a mostra.
 
 #### Atores:
 
@@ -624,8 +486,6 @@
 #### Fluxo principal:
 
 - O administrador clica na aba "Gatos".
-
-- O administrador clica em "Opções".
 
 - O administrador clica em "Adicionar gatos".
 
@@ -638,8 +498,6 @@
 #### Fluxo Alternativo A: Editar Gatos
 
 - O administra clica na aba "Gatos".
-
-- O administrador clica em "Opções".
 
 - O administrador clica no gato desejado.
 
