@@ -4,10 +4,10 @@
 
   // Array com os dados dos fundadores para o código ficar limpo e fácil de editar
   const fundadores = [
-    { nome: "Moidixmoitie", foto: "images/cule.jpeg" },
-    { nome: "Brznada", foto: "images/cucio.png" },
-    { nome: "Nickmaqueavelico", foto: "images/cunick.jpeg" },
-    { nome: "Sora", foto: "images/cututu.jpeg" }
+    { nome: "Alê Fontes", foto: "images/foto-ale.jpg" },
+    { nome: "Lúcio Flávio", foto: "images/foto-lucio.jpg" },
+    { nome: "Nick Borges", foto: "images/foto-nick.jpg" },
+    { nome: "Arthur do  vale", foto: "images/foto-arthur.png" }
   ];
 </script>
 

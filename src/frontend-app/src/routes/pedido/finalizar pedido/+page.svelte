@@ -392,10 +392,7 @@
                             <option value="Dinheiro">Dinheiro na Entrega</option>
                         </select>
                     </div>
-                    <div class="flex flex-col gap-1.5">
-                        <label for="cupom" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Cupom de Desconto (Opcional)</label>
-                        <input id="cupom" type="text" bind:value={cupom} placeholder="Ex: SETEVIDAS" class="bg-primary-900 border border-primary-700 rounded-xl p-3 text-primary-50 focus:outline-none focus:border-tertiary-500" />
-                    </div>
+                  
                 </div>
  
                 {#if form_pag === 'Cartão de Crédito' || form_pag === 'Cartão de Débito'}
