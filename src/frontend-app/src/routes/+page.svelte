@@ -30,9 +30,9 @@
 
   // Carrossel de promoções
   let promoCarouselRef: HTMLDivElement;
-  let promoInterval: any;
+  let animationFrameId: number;
 
-  // Controle de arrastar com o mouse (Drag to scroll)
+  // Controle de arrastar (Drag to scroll & Touch)
   let isDown = false;
   let startX: number;
   let scrollLeft: number;
@@ -99,34 +99,45 @@
     }
   }
 
-  function handleWheel(e: WheelEvent) {
-    if (promoCarouselRef) {
-      const delta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
-      promoCarouselRef.scrollLeft += delta;
-      e.preventDefault();
+  function verificarLoopInfinito() {
+    if (!promoCarouselRef) return;
+    const pontoDeReset = promoCarouselRef.scrollWidth / 2;
+
+    if (promoCarouselRef.scrollLeft >= pontoDeReset) {
+      promoCarouselRef.scrollLeft -= pontoDeReset;
+      if (isDown) startX -= pontoDeReset;
+    } else if (promoCarouselRef.scrollLeft <= 0 && isDown) {
+      promoCarouselRef.scrollLeft += pontoDeReset;
+      startX += pontoDeReset;
     }
   }
 
   function iniciarGiroPromocoes() {
     detorgaGiroPromocoes();
-    promoInterval = setInterval(() => {
+    let ultimoTempo = performance.now();
+
+    function animar(tempoAtual: number) {
       if (promoCarouselRef && !isDown) {
-        promoCarouselRef.scrollLeft += 1;
-        const metadeLargura = promoCarouselRef.scrollWidth / 2;
-        if (promoCarouselRef.scrollLeft >= metadeLargura) {
-          promoCarouselRef.scrollLeft -= metadeLargura;
+        const delta = tempoAtual - ultimoTempo;
+        if (delta >= 16) {
+          promoCarouselRef.scrollLeft += 0.8; 
+          verificarLoopInfinito();
+          ultimoTempo = tempoAtual;
         }
       }
-    }, 35);
+      animationFrameId = requestAnimationFrame(animar);
+    }
+
+    animationFrameId = requestAnimationFrame(animar);
   }
 
   function detorgaGiroPromocoes() {
-    if (promoInterval) {
-      clearInterval(promoInterval);
-      promoInterval = null;
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
     }
   }
 
+  // Eventos de Mouse
   function handleMouseDown(e: MouseEvent) {
     isDown = true;
     detorgaGiroPromocoes();
@@ -135,17 +146,12 @@
   }
 
   function handleMouseLeave() {
-    if (isDown) {
-      isDown = false;
-      iniciarGiroPromocoes();
-    }
+    isDown = false;
+    iniciarGiroPromocoes(); // Retorna o giro automático assim que o mouse sai de cima
   }
 
   function handleMouseUp() {
-    if (isDown) {
-      isDown = false;
-      iniciarGiroPromocoes();
-    }
+    isDown = false;
   }
 
   function handleMouseMove(e: MouseEvent) {
@@ -154,6 +160,37 @@
     const x = e.pageX - promoCarouselRef.offsetLeft;
     const walk = (x - startX) * 2;
     promoCarouselRef.scrollLeft = scrollLeft - walk;
+    verificarLoopInfinito();
+  }
+
+  // Eventos de Toque (Mobile)
+  function handleTouchStart(e: TouchEvent) {
+    isDown = true;
+    detorgaGiroPromocoes();
+    startX = e.touches[0].pageX - promoCarouselRef.offsetLeft;
+    scrollLeft = promoCarouselRef.scrollLeft;
+  }
+
+  function handleTouchMove(e: TouchEvent) {
+    if (!isDown) return;
+    const x = e.touches[0].pageX - promoCarouselRef.offsetLeft;
+    const walk = (x - startX) * 2;
+    promoCarouselRef.scrollLeft = scrollLeft - walk;
+    verificarLoopInfinito();
+  }
+
+  function handleTouchEnd() {
+    isDown = false;
+    iniciarGiroPromocoes();
+  }
+
+  function handleWheel(e: WheelEvent) {
+    if (promoCarouselRef) {
+      const delta = e.deltaY !== 0 ? e.deltaY : e.deltaX;
+      promoCarouselRef.scrollLeft += delta;
+      verificarLoopInfinito();
+      e.preventDefault();
+    }
   }
 
   function iniciarGiroCategorias() {
@@ -184,7 +221,7 @@
     await carregarPromocoes();
     setTimeout(() => {
       iniciarGiroPromocoes();
-    }, 100);
+    }, 150);
     iniciarGiroCategorias();
   });
 
@@ -247,15 +284,18 @@
     {:else}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
-      bind:this={promoCarouselRef}
-      on:mouseenter={detorgaGiroPromocoes}
-      on:mouseleave={iniciarGiroPromocoes}
-      on:mousedown={handleMouseDown}
-      on:mouseup={handleMouseUp}
-      on:mousemove={handleMouseMove}
-      on:wheel={handleWheel}
-      class="flex gap-5 overflow-x-auto scrollbar-none scroll-smooth py-3 px-1.5 no-scrollbar cursor-grab active:cursor-grabbing select-none"
-    >
+        bind:this={promoCarouselRef}
+        on:mouseenter={detorgaGiroPromocoes}
+        on:mouseleave={handleMouseLeave}
+        on:mousedown={handleMouseDown}
+        on:mouseup={handleMouseUp}
+        on:mousemove={handleMouseMove}
+        on:touchstart={handleTouchStart}
+        on:touchmove={handleTouchMove}
+        on:touchend={handleTouchEnd}
+        on:wheel={handleWheel}
+        class="flex gap-5 overflow-x-auto scrollbar-none py-3 px-1.5 no-scrollbar cursor-grab active:cursor-grabbing select-none"
+      >
       {#each [...promoItems, ...promoItems] as item, index}
           <div
             on:click={() => window.location.href = `/Cardapio/${item.id}`}
@@ -436,12 +476,12 @@
           </div>
         </div>
 
-        <!-- Coluna da Direita: Player do Spotify Maior (352px) -->
+     <!-- Coluna da Direita: Player do Spotify Maior (352px) -->
         <div class="lg:col-span-2 bg-primary-900/80 border border-tertiary-500/30 rounded-3xl p-4 md:p-6 shadow-2xl backdrop-blur-xl flex items-center justify-center">
-          <div class="w-full relative z-10 flex items-center justify-center">
+          <div class="w-full relative z-10 flex items-center justify-center pointer-events-auto">
             <iframe 
-              style="border-radius:20px" 
-              src="https://open.spotify.com/embed/album/5QSWmnTnWNAwOwIB0cOrLW?utm_source=generator&si=fe213dc2b0374915&theme=0" 
+              style="border-radius:20px; pointer-events: auto;" 
+              src="https://open.spotify.com/embed/playlist/5BKU7ORezQ8YpdbhkCc1NP?utm_source=generator&theme=0&si=fd2959e626eb43c6"  
               width="100%" 
               height="352" 
               frameborder="0" 
@@ -453,7 +493,6 @@
             ></iframe>
           </div>
         </div>
-
       </div>
 
     </div>
