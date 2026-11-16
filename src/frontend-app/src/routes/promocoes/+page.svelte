@@ -50,27 +50,89 @@
   $: isAdmin = currentUser?.role?.toLowerCase() === 'admin' || 
                (currentUser as any)?.type?.toLowerCase() === 'admin';
 
-  // Função para verificar se a promoção está ativa no momento atual
-  function isPromocaoAtiva(item: MenuItem): boolean {
-    if (!item.promocao) return false;
-    const agora = new Date().getTime();
-    const inicio = item.iniciopromocao ? new Date(item.iniciopromocao).getTime() : null;
-    const fim = item.fimpromocao ? new Date(item.fimpromocao).getTime() : null;
 
-    const inicioValid = !inicio || agora >= inicio;
-    const fimValid = !fim || agora <= fim;
+// Função blindada que aceita String, Objeto Date ou nulo sem dar erro
+  function parseDataSegura(val: any): number | null {
+    if (!val) return null;
+    
+    if (val instanceof Date) return val.getTime();
+    
+    if (typeof val === 'string') {
+      // Normaliza o formato do Postgres ('YYYY-MM-DD HH:mm:ss') para o padrão ISO
+      const cleanVal = val.replace(' ', 'T').replace(/\.\d+/, '');
+      const time = new Date(cleanVal).getTime();
+      return isNaN(time) ? null : time;
+    }
+
+    const time = new Date(val).getTime();
+    return isNaN(time) ? null : time;
+  }
+
+  function isPromocaoAtiva(item: MenuItem): boolean {
+    if (!item.promocao || Number(item.promocao) <= 0) return false;
+    
+    // Se o item tem promoção mas não tem data definida, fica ativo por padrão
+    if (!item.iniciopromocao && !item.fimpromocao) return true;
+
+    const agora = new Date().getTime();
+    const inicio = parseDataSegura(item.iniciopromocao);
+    const fim = parseDataSegura(item.fimpromocao);
+    
+    // Aumentamos a margem de segurança para 24h para evitar problemas de timezone em ambiente de testes/local
+    const margemSeguranca = 24 * 60 * 60 * 1000; 
+
+    const inicioValid = !inicio || (agora >= (inicio - margemSeguranca));
+    const fimValid = !fim || (agora <= (fim + margemSeguranca));
+
     return inicioValid && fimValid;
   }
 
-  // Função para verificar se a promoção está agendada para o futuro
   function isPromocaoAgendada(item: MenuItem): boolean {
-    if (!item.promocao) return false;
+    if (!item.promocao || !item.iniciopromocao) return false;
     const agora = new Date().getTime();
-    const inicio = item.iniciopromocao ? new Date(item.iniciopromocao).getTime() : null;
+    const inicio = parseDataSegura(item.iniciopromocao);
     
     return inicio !== null && agora < inicio;
   }
 
+  async function carregarPromocoes() {
+    try {
+      // Garante que o currentUser já foi buscado antes de decidir a rota
+      if (currentUser === undefined) return;
+
+      const url = isAdmin ? '/cardapio' : '/cardapio?promocao=true';
+      const res = await api.get(url);
+      let dados = res.data.data ?? res.data ?? [];
+
+      // Se for admin, garante que pegamos todos os itens que possuem valor de promoção maior que 0
+      if (isAdmin) {
+        dados = dados.filter((i: MenuItem) => i.promocao !== null && i.promocao !== undefined && Number(i.promocao) > 0);
+      }
+
+      if (categoriaSelecionada && categoriaSelecionada.trim() !== '') {
+        dados = dados.filter((i: MenuItem) => i.categoria?.toLowerCase() === categoriaSelecionada.toLowerCase());
+      }
+
+      items = dados;
+    } catch (e) {
+      console.error('Erro ao buscar promoções:', e);
+      error = 'Erro ao carregar itens em promoção.';
+    }
+  }
+
+  
+  function formatarDataLocal(isoString: string): string {
+    if (!isoString) return '';
+    const safeString = isoString.replace(' ', 'T').replace(/\.\d+/, '');
+    const date = new Date(safeString);
+    if (isNaN(date.getTime())) return '';
+    const ano = date.getFullYear();
+    const mes = String(date.getMonth() + 1).padStart(2, '0');
+    const dia = String(date.getDate()).padStart(2, '0');
+    const horas = String(date.getHours()).padStart(2, '0');
+    const minutos = String(date.getMinutes()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}T${horas}:${minutos}`;
+  }
   function calcularPrecoFinal(item: MenuItem): number {
     if (isPromocaoAtiva(item) && item.promocao) {
       return Number(item.preco) * (1 - item.promocao / 100);
@@ -117,17 +179,6 @@
     }
   }
 
-  function formatarDataLocal(isoString: string): string {
-    if (!isoString) return '';
-    const date = new Date(isoString);
-    const ano = date.getFullYear();
-    const mes = String(date.getMonth() + 1).padStart(2, '0');
-    const dia = String(date.getDate()).padStart(2, '0');
-    const horas = String(date.getHours()).padStart(2, '0');
-    const minutos = String(date.getMinutes()).padStart(2, '0');
-    return `${ano}-${mes}-${dia}T${horas}:${minutos}`;
-  }
-
   function formatarDataExibicao(isoString: string): string {
     if (!isoString) return '';
     const date = new Date(isoString);
@@ -147,16 +198,20 @@
     salvandoPromo = true;
 
     try {
+      // Garante que strings vazias viram null para o banco salvar corretamente
+      const inicioFormatado = dataInicio && dataInicio.trim() !== '' ? dataInicio : null;
+      const fimFormatado = dataFim && dataFim.trim() !== '' ? dataFim : null;
+
       const res = await api.put(`/cardapio/${itemSelecionadoPromo.id}/promocao`, {
         promocao: Number(novaPromocao),
-        iniciopromocao: dataInicio || null,
-        fimpromocao: dataFim || null
+        iniciopromocao: inicioFormatado,
+        fimpromocao: fimFormatado
       });
 
       if (res.data.success || res.status === 200) {
         modalPromoOpen = false;
         await carregarPromocoes();
-        sucessoModalOpen = true; // <--- Abre o modal de sucesso no lugar do alert
+        sucessoModalOpen = true; 
       }
     } catch (e: any) {
       console.error('Erro ao salvar promoção:', e);
@@ -166,7 +221,7 @@
     }
   }
 
-  onMount(async () => {
+ onMount(async () => {
     loading = true;
     try {
       currentUser = await getCurrentUser2();
@@ -177,30 +232,7 @@
     await carregarPromocoes();
     loading = false;
   });
-
   $: categoriaSelecionada, carregarPromocoes();
-
-  async function carregarPromocoes() {
-    try {
-      const res = await api.get('/cardapio');
-      let dados = res.data.data ?? res.data ?? [];
-
-      dados = dados.filter((i: MenuItem) => i.promocao && Number(i.promocao) > 0);
-
-      if (!isAdmin) {
-        dados = dados.filter((i: MenuItem) => isPromocaoAtiva(i));
-      }
-
-      if (categoriaSelecionada && categoriaSelecionada.trim() !== '') {
-        dados = dados.filter((i: MenuItem) => i.categoria?.toLowerCase() === categoriaSelecionada.toLowerCase());
-      }
-
-      items = dados;
-    } catch (e: any) {
-      console.error('Erro ao buscar promoções:', e);
-      error = 'Erro ao carregar itens em promoção.';
-    }
-  }
 
   function formatarPreco(valor: number): string {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(valor));

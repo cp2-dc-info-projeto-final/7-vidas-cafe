@@ -71,12 +71,19 @@
         }
     }
 
-    function cancelarPedido(id: number) {
+    async function cancelarPedido(id: number) {
         mensagemConfirmacao = 'Tem certeza que deseja cancelar este pedido?';
         acaoConfirmacao = async () => {
             try {
                 await api.delete(`/pedido/${id}`);
-                meusPedidos = meusPedidos.filter(p => p.id !== id);
+                // Atualiza o status localmente para 'cancelado' em vez de remover da lista, 
+                // para que o usuário veja que foi cancelado com sucesso.
+                meusPedidos = meusPedidos.map(p => {
+                    if (p.id === id) {
+                        return { ...p, status_pedido: 'cancelado' };
+                    }
+                    return p;
+                });
                 dispararAlerta('Pedido cancelado com sucesso.');
             } catch (err: any) {
                 dispararAlerta(err.response?.data?.message || 'Erro ao cancelar o pedido.');
@@ -165,7 +172,7 @@
                         <!-- Topo do Card do Pedido -->
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-primary-800 pb-3 gap-2 text-xs">
                             <div class="flex items-center gap-3">
-                                <span class="font-black text-tertiary-400 tracking-wider text-sm">PEDIDO</span>
+                                <span class="font-black text-tertiary-400 tracking-wider text-sm">PEDIDO #{pedido.id}</span>
                                 {#if pedido.status_pedido}
                                     <span class={`px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${corStatus(pedido.status_pedido)}`}>
                                         {pedido.status_pedido}
@@ -235,14 +242,24 @@
                             </div>
                         </div>
 
-                        <!-- Botão de Ação / Cancelar -->
+                        <!-- Botão de Ação / Cancelar (Apenas se o status for 'pendente') -->
                         <div class="flex justify-between items-center pt-4 border-t border-primary-800">
-                            <button 
-                                type="button"
-                                on:click={() => cancelarPedido(pedido.id)}
-                                class="px-4 py-2 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/50 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer">
-                                Cancelar Pedido
-                            </button>
+                            {#if pedido.status_pedido?.toLowerCase() === 'pendente'}
+                                <button 
+                                    type="button"
+                                    on:click={() => cancelarPedido(pedido.id)}
+                                    class="px-4 py-2 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/50 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer">
+                                    Cancelar Pedido
+                                </button>
+                            {:else if pedido.status_pedido?.toLowerCase() === 'cancelado'}
+                                <span class="text-[11px] font-bold text-red-400 uppercase tracking-wider">
+                                    ✕ Este pedido foi cancelado.
+                                </span>
+                            {:else}
+                                <span class="text-[11px] font-medium text-primary-400 uppercase tracking-wider">
+                                    ℹ️ Pedido em andamento (não pode mais ser cancelado pelo usuário).
+                                </span>
+                            {/if}
                         </div>
 
                     </div>
@@ -277,7 +294,7 @@
     </div>
 {/if}
 
-<!-- Modal de Confirmação Customizado (Substitui o Confirm nativo) -->
+<!-- Modal de Confirmação Customizado -->
 {#if mostrarModalConfirmacao}
     <div transition:fade class="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-primary-900 border border-primary-700 rounded-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4 shadow-2xl text-center">
@@ -313,7 +330,7 @@
     </div>
 {/if}
 
-<!-- Modal de Sucesso Customizado (Status Atualizado) -->
+<!-- Modal de Sucesso Customizado -->
 {#if mostrarModalSucessoStatus}
     <div transition:fade class="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-primary-900 border border-primary-700 rounded-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4 shadow-2xl text-center">

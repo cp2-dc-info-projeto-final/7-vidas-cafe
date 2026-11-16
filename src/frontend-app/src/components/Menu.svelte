@@ -11,6 +11,7 @@
   let hasToken = false;
   let loadingUser = false;
   let authRequestId = 0;
+  let showLogoutModal = false;
 
   async function updateAuthStatus() {
     hasToken = getToken() !== null;
@@ -37,8 +38,13 @@
   $: if ($page.url.pathname) { void updateAuthStatus(); }
   onMount(() => { void updateAuthStatus(); });
 
+  function confirmLogout() {
+    showLogoutModal = true;
+  }
+
   async function handleLogout() {
     try {
+      showLogoutModal = false;
       authRequestId += 1;
       await logout();
       user = null;
@@ -108,9 +114,6 @@
       <NavLi href="/promocoes" nonActiveClass="text-[15px] font-bold uppercase tracking-[0.18em] px-3.5 py-2 text-neutral-200 hover:text-amber-500 transition-all duration-300 rounded-none relative after:absolute after:bottom-0 after:left-3.5 after:right-3.5 after:h-[1px] after:bg-amber-500 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-300">
         Promoções
       </NavLi>
-
-      
-      
       
       {#if hasToken}
         {#if user}
@@ -142,7 +145,7 @@
             <div class="flex items-center">
               <button 
                 class="ml-2 px-3.5 py-2.5 bg-neutral-900/60 hover:bg-red-950/30 border border-neutral-800 hover:border-red-900/50 text-neutral-400 hover:text-red-400 rounded-none text-xs font-bold uppercase tracking-widest flex items-center gap-2 transition-all duration-300"
-                on:click={handleLogout}
+                on:click={confirmLogout}
               >
                 <ArrowRightToBracketOutline class="w-4 h-4" />
                 Sair
@@ -167,3 +170,33 @@
     </NavUl>
   </Navbar>
 </div>
+
+<!-- Modal de Confirmação de Logout -->
+{#if showLogoutModal}
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-primary-900 border border-primary-800 p-6 rounded-2xl max-w-sm w-full text-center shadow-2xl space-y-4">
+            <h3 class="text-base font-bold text-tertiary-100 uppercase tracking-wide">
+                Deseja mesmo sair?
+            </h3>
+            <p class="text-xs text-tertiary-200">
+                Você precisará fazer login novamente para acessar sua conta.
+            </p>
+            <div class="flex flex-col gap-2.5 pt-2">
+                <button
+                    type="button"
+                    on:click={handleLogout}
+                    class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors"
+                >
+                    Sim, Sair
+                </button>
+                <button
+                    type="button"
+                    on:click={() => showLogoutModal = false}
+                    class="w-full bg-primary-950 hover:bg-primary-800 text-tertiary-300 border border-primary-800 font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider transition-colors"
+                >
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+{/if}

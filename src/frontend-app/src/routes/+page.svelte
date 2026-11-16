@@ -65,19 +65,13 @@
   let categoryInterval: any;
 
   function isPromocaoAtiva(item: MenuItem): boolean {
-    if (!item.promocao || item.promocao <= 0) return false;
-    const agora = new Date().getTime();
-    const inicio = item.iniciopromocao ? new Date(item.iniciopromocao).getTime() : null;
-    const fim = item.fimpromocao ? new Date(item.fimpromocao).getTime() : null;
-
-    const inicioValid = !inicio || agora >= inicio;
-    const fimValid = !fim || agora <= fim;
-    return inicioValid && fimValid;
+    const valorPromo = Number(item.promocao);
+    return !isNaN(valorPromo) && valorPromo > 0;
   }
 
   function calcularPrecoFinal(item: MenuItem): number {
     if (isPromocaoAtiva(item) && item.promocao) {
-      return Number(item.preco) * (1 - item.promocao / 100);
+      return Number(item.preco) * (1 - Number(item.promocao) / 100);
     }
     return Number(item.preco);
   }
@@ -89,10 +83,14 @@
   async function carregarPromocoes() {
     loadingPromos = true;
     try {
-      const res = await api.get('/Cardapio');
+      const res = await api.get('/cardapio');
       let dados: MenuItem[] = res.data.data ?? res.data ?? [];
+
       promoItems = dados
-        .filter((item) => isPromocaoAtiva(item))
+        .filter((item) => {
+          const valorPromo = Number(item.promocao);
+          return !isNaN(valorPromo) && valorPromo > 0;
+        })
         .slice(0, MAX_PROMO_ITEMS);
     } catch (e) {
       console.error('Erro ao carregar promoções na Home:', e);
@@ -113,23 +111,20 @@
     detorgaGiroPromocoes();
     promoInterval = setInterval(() => {
       if (promoCarouselRef && !isDown) {
-        const itemWidth = 240;
-        promoCarouselRef.scrollBy({ left: itemWidth, behavior: 'smooth' });
-
-        setTimeout(() => {
-          if (promoCarouselRef) {
-            const metadeLargura = promoCarouselRef.scrollWidth / 2;
-            if (promoCarouselRef.scrollLeft >= metadeLargura) {
-              promoCarouselRef.scrollTo({ left: 0, behavior: 'auto' });
-            }
-          }
-        }, 400);
+        promoCarouselRef.scrollLeft += 1;
+        const metadeLargura = promoCarouselRef.scrollWidth / 2;
+        if (promoCarouselRef.scrollLeft >= metadeLargura) {
+          promoCarouselRef.scrollLeft -= metadeLargura;
+        }
       }
-    }, 3500);
+    }, 35);
   }
 
   function detorgaGiroPromocoes() {
-    if (promoInterval) clearInterval(promoInterval);
+    if (promoInterval) {
+      clearInterval(promoInterval);
+      promoInterval = null;
+    }
   }
 
   function handleMouseDown(e: MouseEvent) {
@@ -165,7 +160,7 @@
     detorgaGiroCategorias();
     categoryInterval = setInterval(() => {
       proximaCategoria();
-    }, 4500);
+    }, 5000);
   }
 
   function detorgaGiroCategorias() {
@@ -187,7 +182,9 @@
 
   onMount(async () => {
     await carregarPromocoes();
-    iniciarGiroPromocoes();
+    setTimeout(() => {
+      iniciarGiroPromocoes();
+    }, 100);
     iniciarGiroCategorias();
   });
 
@@ -199,33 +196,40 @@
 
 <Menu />
 
-<main class="mx-auto pt-40 md:pt-53 pb-16 px-4 max-w-7xl text-primary-50">
+<!-- Brilho ambiente decorativo de fundo -->
+<div class="fixed top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-tertiary-500/10 rounded-full blur-[120px] pointer-events-none z-10"></div>
+
+<main class="mx-auto pt-40 md:pt-53 pb-20 px-4 max-w-7xl text-primary-50 relative z-20">
   
-  <header class="text-center mb-10 md:mb-14">
-    <span class="inline-block text-tertiary-300 font-bold uppercase tracking-[0.25em] text-xs mb-3 bg-primary-900/60 px-4 py-1.5 rounded-full border border-tertiary-600/40">
-      Café & Atmosfera
-    </span>
-    <h1 class="text-4xl md:text-6xl font-black uppercase tracking-wider text-tertiary-300 font-serif drop-shadow-md">
+  <header class="text-center mb-12 md:mb-16">
+    <div class="inline-flex items-center gap-2 text-tertiary-300 font-bold uppercase tracking-[0.3em] text-[11px] mb-4 bg-primary-900/80 px-5 py-2 rounded-full border border-tertiary-500/30 shadow-lg shadow-black/20 backdrop-blur-md">
+      <span>✨</span> Café & Atmosfera <span>✨</span>
+    </div>
+    <h1 class="text-4xl md:text-6xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-tertiary-200 via-tertiary-300 to-tertiary-400 font-serif drop-shadow-sm">
       Bem-vindos ao 7 Vidas Café
     </h1>
-    <p class="text-sm md:text-base text-primary-200 mt-3 font-medium max-w-2xl mx-auto">
+    <p class="text-sm md:text-base text-primary-200 mt-4 font-medium max-w-2xl mx-auto leading-relaxed">
       O cantinho mais aconchegante para saborear cafés especiais, doces irresistíveis e momentos inesquecíveis!
     </p>
   </header>
 
   <!-- Promoções -->
-  <section class="mb-14 bg-primary-900/80 border-2 border-tertiary-600/60 rounded-3xl p-4 md:p-6 shadow-2xl backdrop-blur-sm">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-primary-700/80">
-      <div class="flex items-center gap-2">
-        <span class="text-2xl">🔥</span>
-        <h2 class="text-xl md:text-2xl font-black uppercase tracking-wider text-tertiary-300 font-serif">
-          Ofertas Imperdíveis
-        </h2>
+  <section class="mb-16 bg-primary-900/60 border border-tertiary-500/30 rounded-[2.5rem] p-5 md:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.4)] backdrop-blur-xl relative overflow-hidden">
+    <div class="absolute -right-20 -top-20 w-64 h-64 bg-tertiary-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-primary-700/60">
+      <div class="flex items-center gap-3">
+        <div>
+          <h2 class="text-xl md:text-2xl font-black uppercase tracking-wider text-tertiary-300 font-serif">
+            Ofertas Imperdíveis
+          </h2>
+          <p class="text-[11px] text-primary-300 tracking-wide uppercase font-medium">Delícias selecionadas com descontos especiais</p>
+        </div>
       </div>
 
       <a
         href="/promocoes"
-        class="inline-flex items-center gap-2 bg-tertiary-500 hover:bg-tertiary-400 text-primary-950 font-black px-4 py-2 rounded-xl text-xs uppercase tracking-wider transition-all duration-200 border border-tertiary-300 shadow-md self-start sm:self-auto hover:scale-105"
+        class="inline-flex items-center gap-2 bg-tertiary-500 hover:bg-tertiary-400 text-primary-950 font-black px-5 py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all duration-300 border border-tertiary-300 shadow-lg shadow-tertiary-500/20 self-start sm:self-auto hover:scale-105 active:scale-95"
       >
         <span>Ver Todas as Promoções</span>
         <ArrowRightOutline class="w-4 h-4" />
@@ -233,11 +237,11 @@
     </div>
 
     {#if loadingPromos}
-      <div class="py-12 text-center text-primary-300 font-bold uppercase tracking-widest animate-pulse text-xs">
+      <div class="py-16 text-center text-tertiary-300 font-bold uppercase tracking-widest animate-pulse text-xs">
         Buscando deliciosas promoções...
       </div>
     {:else if promoItems.length === 0}
-      <div class="py-8 text-center text-primary-300 text-xs uppercase font-medium tracking-wider">
+      <div class="py-10 text-center text-primary-300 text-xs uppercase font-medium tracking-wider">
         Nenhuma promoção ativa no momento. Fique de olho em breve!
       </div>
     {:else}
@@ -245,45 +249,47 @@
       <div
       bind:this={promoCarouselRef}
       on:mouseenter={detorgaGiroPromocoes}
-      on:mouseleave={handleMouseLeave}
+      on:mouseleave={iniciarGiroPromocoes}
       on:mousedown={handleMouseDown}
       on:mouseup={handleMouseUp}
       on:mousemove={handleMouseMove}
       on:wheel={handleWheel}
-      class="flex gap-4 overflow-x-auto scrollbar-none scroll-smooth py-2 px-1 no-scrollbar cursor-grab active:cursor-grabbing select-none"
+      class="flex gap-5 overflow-x-auto scrollbar-none scroll-smooth py-3 px-1.5 no-scrollbar cursor-grab active:cursor-grabbing select-none"
     >
       {#each [...promoItems, ...promoItems] as item, index}
           <div
             on:click={() => window.location.href = `/Cardapio/${item.id}`}
-            class="min-w-[220px] max-w-[220px] bg-primary-800 border-2 border-tertiary-600/70 hover:border-tertiary-400 rounded-2xl overflow-hidden shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 flex flex-col justify-between shrink-0 group relative"
+            class="min-w-[220px] max-w-[220px] bg-primary-950/80 border border-tertiary-500/30 hover:border-tertiary-400 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-tertiary-500/10 cursor-pointer transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between shrink-0 group relative"
           >
-            <div class="relative h-32 bg-primary-950 overflow-hidden flex items-center justify-center pointer-events-none">
+            <div class="relative h-36 bg-primary-900 overflow-hidden flex items-center justify-center pointer-events-none">
               {#if item.imagem}
-                <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <img src={item.imagem} alt={item.nome} class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
               {:else}
                 <span class="text-[10px] text-tertiary-300 uppercase font-bold">Sem imagem</span>
               {/if}
 
-              <div class="absolute top-2 right-2 bg-red-600 text-white font-black text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full border border-red-400 shadow-md animate-pulse">
+              <div class="absolute inset-0 bg-gradient-to-t from-primary-950/80 via-transparent to-transparent"></div>
+
+              <div class="absolute top-2.5 right-2.5 bg-red-600/90 backdrop-blur-md text-white font-black text-[10px] uppercase tracking-widest px-2.5 py-1 rounded-full border border-red-400/50 shadow-lg animate-pulse">
                 -{item.promocao}%
               </div>
             </div>
 
-            <div class="p-3 flex-1 flex flex-col justify-between">
+            <div class="p-3.5 flex-1 flex flex-col justify-between gap-3">
               <div>
                 <h3 class="font-black text-sm text-primary-50 line-clamp-1 group-hover:text-tertiary-300 transition-colors">
                   {item.nome}
                 </h3>
-                <p class="text-[11px] text-primary-200 line-clamp-2 mt-1 leading-snug">
+                <p class="text-[11px] text-primary-300 line-clamp-2 mt-1 leading-relaxed">
                   {item.resumo}
                 </p>
               </div>
 
-              <div class="mt-3 pt-2 border-t border-primary-700/80 flex items-center justify-between">
-                <span class="text-[10px] text-gray-400 line-through">
+              <div class="pt-2.5 border-t border-primary-800/80 flex items-center justify-between">
+                <span class="text-[10px] text-primary-400 line-through font-medium">
                   {formatarPreco(item.preco)}
                 </span>
-                <span class="text-sm font-black text-primary-950 bg-tertiary-400 px-2.5 py-0.5 rounded-lg border border-tertiary-300">
+                <span class="text-xs font-black text-primary-950 bg-tertiary-400 px-2.5 py-1 rounded-lg border border-tertiary-200 shadow-md">
                   {formatarPreco(calcularPrecoFinal(item))}
                 </span>
               </div>
@@ -295,23 +301,23 @@
   </section>
 
   <!-- Categorias -->
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-14">
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-16">
     
-    <div class="relative bg-gradient-to-br from-primary-800 to-primary-900 border-2 border-tertiary-600/80 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-between min-h-[320px] md:min-h-[380px] group overflow-hidden">
+    <div class="relative bg-gradient-to-br from-primary-900 via-primary-900/90 to-primary-950 border border-tertiary-500/30 rounded-[2.5rem] p-7 md:p-9 shadow-2xl flex flex-col justify-between min-h-[340px] md:min-h-[400px] group overflow-hidden">
       <div 
-        class="absolute inset-0 bg-cover bg-center opacity-25 group-hover:scale-105 transition-transform duration-700 pointer-events-none"
+        class="absolute inset-0 bg-cover bg-center opacity-20 group-hover:scale-110 transition-transform duration-1000 ease-out pointer-events-none"
         style="background-image: url('https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?q=80&w=1000&auto=format&fit=crop');"
       ></div>
-      <div class="absolute inset-0 bg-gradient-to-t from-primary-950 via-primary-900/60 to-transparent pointer-events-none"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-primary-950 via-primary-950/70 to-transparent pointer-events-none"></div>
 
       <div class="relative z-10">
-        <span class="inline-block bg-tertiary-600 text-primary-50 text-[10px] md:text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-tertiary-400 mb-3 shadow-md">
+        <span class="inline-block bg-tertiary-600/90 text-primary-50 text-[10px] md:text-xs font-bold uppercase tracking-widest px-3.5 py-1.5 rounded-full border border-tertiary-400/50 mb-4 shadow-md backdrop-blur-md">
           Cardápio Completo
         </span>
-        <h2 class="text-3xl md:text-4xl font-black text-primary-50 uppercase tracking-wider font-serif group-hover:text-tertiary-300 transition-colors">
+        <h2 class="text-3xl md:text-4xl font-black text-primary-50 uppercase tracking-wider font-serif group-hover:text-tertiary-300 transition-colors drop-shadow-md">
           Explore Nossas Delícias
         </h2>
-        <p class="text-xs md:text-sm text-primary-200 mt-2 max-w-md leading-relaxed">
+        <p class="text-xs md:text-sm text-primary-200 mt-3 max-w-md leading-relaxed font-medium">
           Conheça todas as opções de bebidas salgadas, quentes, doces e artesanais preparadas especialmente para o seu dia.
         </p>
       </div>
@@ -319,7 +325,7 @@
       <div class="relative z-10 pt-6">
         <a
           href="/Cardapio"
-          class="inline-flex items-center gap-3 bg-tertiary-500 hover:bg-tertiary-400 text-primary-950 font-black px-6 py-3 rounded-2xl text-xs md:text-sm uppercase tracking-wider transition-all duration-300 border border-tertiary-300 shadow-xl hover:scale-105"
+          class="inline-flex items-center gap-3 bg-tertiary-500 hover:bg-tertiary-400 text-primary-950 font-black px-7 py-3.5 rounded-2xl text-xs md:text-sm uppercase tracking-wider transition-all duration-300 border border-tertiary-200 shadow-xl shadow-tertiary-500/20 hover:scale-105 active:scale-95"
         >
           <span>Ver Cardápio Completo</span>
           <ArrowRightOutline class="w-5 h-5" />
@@ -328,26 +334,26 @@
     </div>
 
     <div 
-      class="relative bg-primary-900 border-2 border-tertiary-600/80 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-between min-h-[320px] md:min-h-[380px] overflow-hidden group"
+      class="relative bg-primary-900 border border-tertiary-500/30 rounded-[2.5rem] p-7 md:p-9 shadow-2xl flex flex-col justify-between min-h-[340px] md:min-h-[400px] overflow-hidden group"
       on:mouseenter={detorgaGiroCategorias}
       on:mouseleave={iniciarGiroCategorias}
     >
       {#each categoriasBanners as cat, index}
         {#if index === currentCatIndex}
           <div 
-            class="absolute inset-0 bg-cover bg-center transition-all duration-700 group-hover:scale-105 pointer-events-none"
+            class="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-out group-hover:scale-110 pointer-events-none"
             style={`background-image: url('${cat.imagem}');`}
           ></div>
           <div class="absolute inset-0 bg-gradient-to-t from-primary-950 via-primary-950/80 to-primary-900/40 pointer-events-none"></div>
 
           <div class="relative z-10">
-            <span class={`inline-block ${cat.corTag} text-white text-[10px] md:text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-white/20 mb-3 shadow-md`}>
+            <span class={`inline-block ${cat.corTag} text-white text-[10px] md:text-xs font-bold uppercase tracking-widest px-3.5 py-1.5 rounded-full border border-white/20 mb-4 shadow-md backdrop-blur-md`}>
               Categoria em Destaque
             </span>
-            <h2 class="text-3xl md:text-4xl font-black text-primary-50 uppercase tracking-wider font-serif">
+            <h2 class="text-3xl md:text-4xl font-black text-primary-50 uppercase tracking-wider font-serif drop-shadow-md">
               {cat.titulo}
             </h2>
-            <p class="text-xs md:text-sm text-primary-200 mt-2 max-w-md leading-relaxed">
+            <p class="text-xs md:text-sm text-primary-200 mt-3 max-w-md leading-relaxed font-medium">
               {cat.descricao}
             </p>
           </div>
@@ -356,22 +362,22 @@
             <button
               type="button"
               on:click={() => irParaCardapioCategoria(cat.id)}
-              class="inline-flex items-center gap-3 bg-tertiary-500 hover:bg-tertiary-400 text-primary-950 font-black px-6 py-3 rounded-2xl text-xs md:text-sm uppercase tracking-wider transition-all duration-300 border border-tertiary-300 shadow-xl hover:scale-105 cursor-pointer self-start"
+              class="inline-flex items-center gap-3 bg-tertiary-500 hover:bg-tertiary-400 text-primary-950 font-black px-7 py-3.5 rounded-2xl text-xs md:text-sm uppercase tracking-wider transition-all duration-300 border border-tertiary-200 shadow-xl shadow-tertiary-500/20 hover:scale-105 active:scale-95 cursor-pointer self-start"
             >
               <span>Ver {cat.id}</span>
               <ArrowRightOutline class="w-5 h-5" />
             </button>
 
-            <div class="flex items-center gap-2 self-center sm:self-auto bg-primary-950/70 px-3 py-1.5 rounded-full border border-tertiary-600/50 backdrop-blur-md">
+            <div class="flex items-center gap-2 self-center sm:self-auto bg-primary-950/80 px-3.5 py-2 rounded-full border border-tertiary-500/30 backdrop-blur-md shadow-inner">
               {#each categoriasBanners as _, bIndex}
                 <button
                   type="button"
                   aria-label={`Ir para categoria ${categoriasBanners[bIndex].id}`}
                   on:click={() => selecionarCategoriaIndex(bIndex)}
-                  class={`h-3 rounded-full transition-all duration-300 cursor-pointer ${
+                  class={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
                     bIndex === currentCatIndex 
-                      ? 'w-8 bg-tertiary-400 border border-tertiary-200' 
-                      : 'w-3 bg-primary-600 hover:bg-tertiary-500/60'
+                       ? 'w-8 bg-tertiary-400 border border-tertiary-200 shadow-sm' 
+                       : 'w-2.5 bg-primary-600 hover:bg-tertiary-500/60'
                   }`}
                 ></button>
               {/each}
@@ -382,51 +388,75 @@
     </div>
   </section>
 
-  <!-- Seção Spotify & Vibe do Café (Estilo We Coffee) -->
-  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-stretch">
+  <!-- SEÇÃO SETE VIDAS PLAYLIST -->
+  <section class="relative bg-primary-950 border border-tertiary-500/30 rounded-[2.5rem] p-8 md:p-14 shadow-2xl overflow-hidden">
     
-    <!-- Bloco de Experiência / Estilo -->
-    <div class="lg:col-span-1 bg-primary-950 border-2 border-tertiary-600/60 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-between">
-      <div>
-        <div class="inline-flex items-center gap-2 bg-tertiary-950 text-tertiary-300 text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-tertiary-600/50 mb-4">
-          <HeartOutline class="w-3.5 h-3.5 text-tertiary-400" />
-          <span>Atmosfera 7 Vidas</span>
-        </div>
-        <h3 class="text-2xl font-black uppercase tracking-wider text-tertiary-300 font-serif mb-3">
-          Sua Pausa com Estilo
-        </h3>
-        <p class="text-xs md:text-sm text-primary-200 leading-relaxed">
-          Mais que um café, um refúgio visual e sensorial. Curta nossa curadoria musical exclusiva para acompanhar o seu momento de leitura, trabalho ou bate-papo.
-        </p>
-      </div>
-      <div class="mt-6 pt-4 border-t border-primary-800 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-tertiary-500/20 flex items-center justify-center text-tertiary-400 border border-tertiary-500/30">
-          ☕
-        </div>
-        <div>
-          <h4 class="text-xs font-bold uppercase tracking-wider text-primary-50">Curtiu o som?</h4>
-          <p class="text-[11px] text-primary-300">Dê o play ao lado e leve o clima com você.</p>
-        </div>
-      </div>
-    </div>
+    <!-- Fundo texturizado com grãos de café imersivo -->
+    <div 
+      class="absolute inset-0 bg-cover bg-center opacity-25 pointer-events-none mix-blend-luminosity"
+      style="background-image: url('/images/cfeir.jpg');"
+    ></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-primary-950 via-primary-950/80 to-primary-900/60 pointer-events-none"></div>
 
-    <!-- Spotify Widget Incorporado com as Cores e Estilo Customizado -->
-    <div class="lg:col-span-2 bg-primary-900 border-2 border-tertiary-600/60 rounded-3xl p-4 md:p-6 shadow-2xl flex items-center justify-center overflow-hidden">
-      <!-- Substitua o link do src do iframe abaixo pela playlist oficial do seu Spotify -->
-      <iframe 
-      style="border-radius:16px" 
-      src="https://open.spotify.com/embed/album/5QSWmnTnWNAwOwIB0cOrLW?utm_source=generator&si=fe213dc2b0374915" 
-      width="100%" 
-      height="152" 
-      frameborder="0" 
-      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-      allowfullscreen
-      loading="lazy"
-      title="Playlist 7 Vidas Café"
-      class="w-full shadow-lg"
-  ></iframe>
-    </div>
+    <div class="relative z-10 flex flex-col gap-10">
+      
+      <!-- Cabeçalho da Seção (Título 7 Vidas Playlist centralizado no topo) -->
+      <div class="text-center space-y-2">
+        <span class="text-[10px] md:text-xs font-bold uppercase tracking-[0.3em] text-tertiary-400">
+          7 Vidas Café
+        </span>
+        <h2 class="text-3xl md:text-5xl font-black uppercase tracking-[0.15em] text-tertiary-300 font-serif drop-shadow-md">
+          Playlist
+        </h2>
+      </div>
 
+      <!-- Grid de Duas Colunas -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+        
+        <div class="lg:col-span-1 flex flex-col justify-between gap-6">
+          <div>
+            <div class="inline-flex items-center gap-2 bg-primary-900/90 text-tertiary-300 text-[10px] font-bold uppercase tracking-widest px-3.5 py-1.5 rounded-full border border-tertiary-500/30 mb-4 shadow-sm backdrop-blur-md">
+              <HeartOutline class="w-3.5 h-3.5 text-tertiary-400" />
+              <span>Atmosfera 7 Vidas</span>
+            </div>
+            <h3 class="text-2xl md:text-3xl font-black uppercase tracking-wider text-tertiary-300 font-serif mb-3 drop-shadow-md">
+              Sua Pausa com Estilo
+            </h3>
+            <p class="text-xs md:text-sm text-primary-200 leading-relaxed font-medium">
+              Mais que um café, um refúgio visual e sensorial. Curta nossa curadoria musical exclusiva para acompanhar o seu momento.
+            </p>
+          </div>
+
+          
+          <div class="bg-primary-900/80 border border-tertiary-500/20 p-4 rounded-2xl backdrop-blur-md shadow-lg">
+            <p class="text-[11px] md:text-xs text-tertiary-200 font-serif italic leading-relaxed">
+              "Mas alguns poucos encontram consolo no abraço de tijolos, madeira e vidro. As histórias são contadas entre bebidas e depois passam a morar nas memórias de estranhos."
+              <span class="block mt-1 text-[10px] text-tertiary-400 not-italic uppercase tracking-widest font-bold">— Coffee Talk</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Coluna da Direita: Player do Spotify Maior (352px) -->
+        <div class="lg:col-span-2 bg-primary-900/80 border border-tertiary-500/30 rounded-3xl p-4 md:p-6 shadow-2xl backdrop-blur-xl flex items-center justify-center">
+          <div class="w-full relative z-10 flex items-center justify-center">
+            <iframe 
+              style="border-radius:20px" 
+              src="https://open.spotify.com/embed/album/5QSWmnTnWNAwOwIB0cOrLW?utm_source=generator&si=fe213dc2b0374915&theme=0" 
+              width="100%" 
+              height="352" 
+              frameborder="0" 
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+              allowfullscreen
+              loading="lazy"
+              title="Playlist 7 Vidas Café"
+              class="w-full shadow-lg"
+            ></iframe>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
   </section>
 
 </main>

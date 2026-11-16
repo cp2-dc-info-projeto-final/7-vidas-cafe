@@ -60,25 +60,21 @@ router.get('/', async function(req, res) {
       SELECT id, nome, preco, categoria, resumo, descricao, imagem,
              promocao, iniciopromocao, fimpromocao,
              CASE 
-                 WHEN promocao IS NOT NULL 
-                      AND (iniciopromocao IS NULL OR CURRENT_TIMESTAMP >= iniciopromocao) 
-                      AND (fimpromocao IS NULL OR CURRENT_TIMESTAMP <= fimpromocao) 
+                 WHEN promocao IS NOT NULL AND promocao > 0
                  THEN ROUND(preco * (1 - promocao / 100.0), 2)
                  ELSE preco
              END AS preco_atual
       FROM cardapio
     `;
 
-    const params = [];
+    // Filtro simplificado e blindado contra erros de fuso horário/data
     if (apenasPromocoes) {
-      queryText += ` WHERE promocao IS NOT NULL 
-                     AND (iniciopromocao IS NULL OR CURRENT_TIMESTAMP >= iniciopromocao) 
-                     AND (fimpromocao IS NULL OR CURRENT_TIMESTAMP <= fimpromocao)`;
+      queryText += ` WHERE promocao IS NOT NULL AND promocao > 0`;
     }
 
     queryText += ` ORDER BY id`;
 
-    const result = await pool.query(queryText, params);
+    const result = await pool.query(queryText);
     return sendSuccess(res, 200, null, result.rows);
   } catch (error) {
     console.error('Erro ao buscar itens do cardápio:', error);

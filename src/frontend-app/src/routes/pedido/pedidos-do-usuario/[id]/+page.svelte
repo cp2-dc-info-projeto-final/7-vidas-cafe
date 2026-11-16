@@ -139,7 +139,7 @@
         </div>
     {:else if pedidosUsuario.length === 0}
         <div class="w-full bg-primary-900/90 backdrop-blur-md border border-primary-800 rounded-2xl shadow-2xl p-12 text-center text-primary-300 text-xs tracking-wider uppercase font-medium space-y-4">
-            <p>Este usuário ainda não realizou ou cancelou nenhum pedido.</p>
+            <p>Este usuário ainda não realizou nenhum pedido.</p>
             <div>
                 <button on:click={() => history.back()} class="px-6 py-3 bg-tertiary-500 text-primary-950 text-xs font-bold uppercase tracking-widest hover:bg-tertiary-600 transition-colors rounded-xl shadow-md cursor-pointer">
                     Voltar

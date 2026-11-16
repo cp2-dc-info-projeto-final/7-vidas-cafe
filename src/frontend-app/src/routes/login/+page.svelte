@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Card, Button, Input, Label } from "flowbite-svelte";
+  import { Button, Label } from "flowbite-svelte";
   import { goto } from "$app/navigation";
   import { login as authLogin } from "$lib/auth";
   
@@ -9,8 +9,8 @@
   let error = '';
 
   async function handleLogin() {
-    if (!login || !password) {
-      error = 'Por favor, preencha todos os campos';
+    if (!login.trim() || !password) {
+      error = 'Por favor, preencha todos os campos.';
       return;
     }
 
@@ -20,13 +20,20 @@
     try {
       const result = await authLogin({ login, password });
       
-      if (result.success) {
+      if (result && result.success) {
         await goto('/');
       } else {
-        error = result.message || 'Credenciais inválidas';
+        error = 'Usuário, e-mail ou senha incorretos.';
       }
-    } catch (err) {
-      error = 'Erro interno do servidor';
+    } catch (err: any) {
+      const isAdblockOrNetwork = !err.response || err.message === 'Network Error' || err instanceof TypeError;
+
+      if (isAdblockOrNetwork) {
+        error = 'Requisição bloqueada por AdBlock ou falha de conexão.';
+      } else {
+        error = 'Erro interno do servidor.';
+      }
+      
       console.error('Erro no login:', err);
     } finally {
       loading = false;
@@ -60,8 +67,8 @@
       
       <div class="flex flex-col gap-1.5">
         <Label for="login" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Usuário ou E-mail</Label>
-        <Input
-          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+        <input
+          class="login-input w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none transition-colors"
           id="login"
           type="text"
           bind:value={login}
@@ -72,8 +79,8 @@
 
       <div class="flex flex-col gap-1.5">
         <Label for="password" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Senha</Label>
-        <Input
-          class="w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
+        <input
+          class="login-input w-full text-primary-50 bg-primary-950/40 border border-primary-700 rounded-xl p-3 text-xs focus:outline-none transition-colors"
           id="password"
           type="password"
           bind:value={password}
@@ -102,18 +109,30 @@
 </main>
 
 <style>
-  :global(input::placeholder) {
+  :global(.login-input) {
+    color-scheme: dark;
+  }
+
+  /* Aplica o tom equivalente ao tertiary-100 (#fefae0) no texto ao focar/clicar para escrever */
+  :global(.login-input:focus),
+  :global(.login-input:active) {
+    border-color: #d4a373 !important; 
+    box-shadow: 0 0 0 1px #d4a373 !important;
+    outline: none !important;
+    color: #fefae0 !important; 
+  }
+
+  input::placeholder {
     color: #C0AA9B !important; 
     opacity: 0.6 !important; 
   }
 
-  /* Mantém o fundo translúcido original do input durante o autofill */
-  :global(input:-webkit-autofill),
-  :global(input:-webkit-autofill:hover),
-  :global(input:-webkit-autofill:focus),
-  :global(input:-webkit-autofill:active) {
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
     -webkit-box-shadow: 0 0 0 30px rgba(16, 12, 10, 0.4) inset !important;
-    -webkit-text-fill-color: #F5F2EF !important;
+    -webkit-text-fill-color: #fefae0 !important;
     transition: background-color 5000s ease-in-out 0s;
   }
 </style>

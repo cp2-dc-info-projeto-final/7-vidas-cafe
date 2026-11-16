@@ -26,6 +26,26 @@
     .toISOString()
     .split('T')[0];
 
+  // --- Funções de Máscara ---
+  function formatCPF(value: string): string {
+    const digits = value.replace(/\D/g, '').substring(0, 11);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+  }
+
+  function formatPhone(value: string): string {
+    const digits = value.replace(/\D/g, '').substring(0, 11);
+    if (digits.length === 0) return '';
+    if (digits.length <= 2) return `(${digits}`;
+    if (digits.length <= 6) return `(${digits.slice(0, 2)})${digits.slice(2)}`;
+    if (digits.length <= 10) {
+      return `(${digits.slice(0, 2)})${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    return `(${digits.slice(0, 2)})${digits.slice(2, 7)}-${digits.slice(7, 11)}`;
+  }
+
   function errorOf(field: string): string | null {
     return fieldErrors.find((item) => item.field === field)?.message ?? null;
   }
@@ -44,6 +64,8 @@
 
           user = { 
             ...body.data, 
+            cpf: formatCPF(body.data.cpf || ''),
+            num_tel: formatPhone(body.data.num_tel || ''),
             dat_nas: dataFormatada, 
             senha: '',
             confirmarSenha: ''
@@ -181,8 +203,6 @@
   <title>Sete Vidas Café</title>
 </svelte:head>
 
-<!-- Overlay de blur fixo que não bloqueia o ponteiro nem o scroll da página -->
-
 <main class="pt-36 pb-20 px-4 sm:px-6 lg:px-8 relative z-40 flex justify-center min-h-screen">
   <div class="w-full max-w-lg bg-primary-900 border border-primary-700 shadow-2xl rounded-2xl p-6 sm:p-10 flex flex-col gap-6 h-fit my-auto">
     
@@ -255,11 +275,14 @@
 
       <div class="flex flex-col gap-1.5">
         <Label for="cpf" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">CPF</Label>
-        <Input
+        <input
           id="cpf"
+          type="text"
           bind:value={user.cpf}
+          on:input={(e) => { user.cpf = formatCPF(e.currentTarget.value); }}
           placeholder="123.456.789-00"    
           required
+          maxlength="14"
           class="w-full text-primary-50 bg-primary-950/40 backdrop-blur-md border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
         />
         {#if errorOf('cpf')}
@@ -283,13 +306,16 @@
         {/if}
       </div>
 
-      <div class="flex flex-col gap-1.5">
+     <div class="flex flex-col gap-1.5">
         <Label for="num_tel" class="text-[10px] font-bold uppercase tracking-widest text-primary-300">Telefone</Label>
-        <Input
+        <input
           id="num_tel"
+          type="text"
           bind:value={user.num_tel}
+          on:input={(e) => { user.num_tel = formatPhone(e.currentTarget.value); }}
           placeholder="(21)92345-6789"
           required
+          maxlength="14"
           class="w-full text-primary-50 bg-primary-950/40 backdrop-blur-md border border-primary-700 rounded-xl p-3 text-xs focus:outline-none focus:border-tertiary-500 transition-colors"
         />
         {#if errorOf('num_tel')}
